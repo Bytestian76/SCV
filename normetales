@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+ROOT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+SCRIPTS_DIR="$ROOT_DIR/scripts"
+RUN_DIR="$ROOT_DIR/.normetales"
+
+BACKEND_PID_FILE="$RUN_DIR/backend.pid"
+FRONTEND_PID_FILE="$RUN_DIR/frontend.pid"
+BACKEND_LOG_FILE="$RUN_DIR/backend.log"
+FRONTEND_LOG_FILE="$RUN_DIR/frontend.log"
+GATEWAY_COMPOSE_FILE="$ROOT_DIR/docker-compose.gateway.yml"
+GATEWAY_SERVICE="gateway"
+
+mkdir -p "$RUN_DIR"
+
+usage() {
+    cat <<'EOF'
+Uso:
+  normetales start            Inicia backend y frontend
+  normetales stop             Detiene backend y frontend
+  normetales status           Muestra estado de servicios
+  normetales start-backend    Inicia solo backend
+  normetales start-gateway    Inicia solo gateway (Docker)
+  normetales start-frontend   Inicia solo frontend
+  normetales stop-gateway     Detiene solo gateway (Docker)
+  normetales help             Muestra esta ayuda
+
+Variables opcionales:
+  SCV_BACKEND_PORT=<puerto>
+  SCV_FRONTEND_PORT=<puerto>
+EOF
+}
+
+require_docker() {
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "[normetales] Docker no esta instalado o no esta en PATH"
+        return 1
+    fi
+}
+
+start_gateway() {
+    if [[ ! -f "$GATEWAY_COMPOSE_FILE" ]]; then
+        echo "[normetales] No se encontro el compose del gateway: $GATEWAY_COMPOSE_FILE"
+        return 1
+    fi
+
+    require_docker
+    docker compose -f "$GATEWAY_COMPOSE_FILE" up -d "$GATEWAY_SERVICE"
+    echo "[normetales] gateway iniciado en http://localhost:8000"
+}
+
+stop_gateway() {
+    if [[ ! -f "$GATEWAY_COMPOSE_FILE" ]]; then
+        echo "[normetales] No se encontro el compose del gateway: $GATEWAY_COMPOSE_FILE"
+        return 1
+    fi
+
+    require_docker
+    docker compose -f "$GATEWAY_COMPOSE_FILE" stop "$GATEWAY_SERVICE" >/dev/null 2>&1 || true
+    docker compose -f "$GATEWAY_COMPOSE_FILE" rm -f "$GATEWAY_SERVICE" >/dev/null 2>&1 || true
+    echo "[normetales] gateway detenido"
+}
+
+status_gateway() {
+    if [[ ! -f "$GATEWAY_COMPOSE_FILE" ]]; then
+        echo "[normetales] gateway: NOT CONFIGURED"
+        return 0
+    fi
+
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "[normetales] gateway: UNKNOWN (docker no disponible)"
+        return 0
+    fi
+
+    local state
+    state="$(docker compose -f "$GATEWAY_COMPOSE_FILE" ps --status running --services 2>/dev/null || true)"
+
+    if [[ "$state" == *"$GATEWAY_SERVICE"* ]]; then
+        echo "[normetales] gateway: RUNNING (http://localhost:8000)"
+    else
+        echo "[normetales] gateway: STOPPED"
+    fi
+}
+
+read_pid() {
+    local pid_file="$1"
+    if [[ -f "$pid_file" ]]; then
+        cat "$pid_file"
+    fi
+}
+
+is_running() {
+    local pid_file="$1"
+    local pid
+    pid="$(read_pid "$pid_file")"
+
+    if [[ -z "${pid:-}" ]]; then
+        return 1
+    fi
+
+    if kill -0 "$pid" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    rm -f "$pid_file"
+    return 1
+}
+
+start_service() {
+    local name="$1"
+    local pid_file="$2"
+    local log_file="$3"
+    shift 3
+
+    if is_running "$pid_file"; then
+        echo "[normetales] $name ya esta corriendo (PID $(read_pid "$pid_file"))"
+        return 0
+    fi
+
+    nohup "$@" >"$log_file" 2>&1 &
+    local pid=$!
+    echo "$pid" >"$pid_file"
+    echo "[normetales] $name iniciado (PID $pid)"
+}
+
+stop_service() {
+    local name="$1"
+    local pid_file="$2"
+
+    if ! is_running "$pid_file"; then
+        echo "[normetales] $name no esta corriendo"
+        return 0
+    fi
+
+    local pid
+    pid="$(read_pid "$pid_file")"
+    kill "$pid" >/dev/null 2>&1 || true
+
+    for _ in {1..20}; do
+        if ! kill -0 "$pid" >/dev/null 2>&1; then
+            rm -f "$pid_file"
+            echo "[normetales] $name detenido"
+            return 0
+        fi
+        sleep 0.2
+    done
+
+    kill -9 "$pid" >/dev/null 2>&1 || true
+    rm -f "$pid_file"
+    echo "[normetales] $name forzado a detenerse"
+}
+
+status_service() {
+    local name="$1"
+    local pid_file="$2"
+    local log_file="$3"
+
+    if is_running "$pid_file"; then
+        echo "[normetales] $name: RUNNING (PID $(read_pid "$pid_file"))"
+    else
+        echo "[normetales] $name: STOPPED"
+    fi
+    echo "[normetales] $name log: $log_file"
+}
+
+if [[ $# -lt 1 ]]; then
+    usage
+    exit 1
+fi
+
+command="$1"
+
+case "$command" in
+    start)
+        start_service "backend" "$BACKEND_PID_FILE" "$BACKEND_LOG_FILE" "$SCRIPTS_DIR/start-backend.sh"
+        start_gateway
+        start_service "frontend" "$FRONTEND_PID_FILE" "$FRONTEND_LOG_FILE" "$SCRIPTS_DIR/start-frontend.sh"
+        echo "[normetales] Servicios iniciados"
+        echo "[normetales] Backend:  http://localhost:${SCV_BACKEND_PORT:-9000}"
+        echo "[normetales] Gateway:  http://localhost:8000"
+        echo "[normetales] Frontend: http://localhost:${SCV_FRONTEND_PORT:-8080}"
+        echo "[normetales] Ejecuta 'normetales status' para ver estado"
+        ;;
+
+    stop)
+        stop_service "frontend" "$FRONTEND_PID_FILE"
+        stop_gateway
+        stop_service "backend" "$BACKEND_PID_FILE"
+        ;;
+
+    status)
+        status_service "backend" "$BACKEND_PID_FILE" "$BACKEND_LOG_FILE"
+        status_gateway
+        status_service "frontend" "$FRONTEND_PID_FILE" "$FRONTEND_LOG_FILE"
+        ;;
+
+    start-backend)
+        exec "$SCRIPTS_DIR/start-backend.sh"
+        ;;
+
+    start-frontend)
+        exec "$SCRIPTS_DIR/start-frontend.sh"
+        ;;
+
+    start-gateway)
+        start_gateway
+        ;;
+
+    stop-gateway)
+        stop_gateway
+        ;;
+
+    help|-h|--help)
+        usage
+        ;;
+
+    *)
+        echo "Comando no reconocido: $command"
+        usage
+        exit 1
+        ;;
+esac
