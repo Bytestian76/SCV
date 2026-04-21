@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#203246">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SCV">
+    <title>SCV - Sistema de Control Vehicular</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="images/logo-claro.png">
+</head>
+<body>
+    <div class="container">
+        <!-- Pantalla de Login -->
+        <div id="login-screen" class="screen active">
+            <div class="login-shell">
+                <section class="login-identity">
+                    <p class="identity-kicker">Centro de operaciones</p>
+                    <h1>Control vehicular para jornada industrial</h1>
+                    <p class="identity-copy">Monitorea entradas, salidas e inspecciones con trazabilidad en tiempo real para el patio de carga.</p>
+                    <div class="identity-markers" aria-hidden="true">
+                        <span>Despacho</span>
+                        <span>Chequeo</span>
+                        <span>Turnos</span>
+                    </div>
+                </section>
+                <section class="login-box">
+                    <div class="logo">
+                        <p class="login-title">Sistema de Control Vehicular</p>
+                    </div>
+                    <form id="login-form">
+                    <div class="form-group">
+                        <label for="email">Correo electrónico</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            placeholder="correo@empresa.com"
+                            required
+                            autocomplete="email"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="••••••••"
+                            required
+                            autocomplete="current-password"
+                        >
+                    </div>
+                    <div class="form-group remember-me">
+                        <label>
+                            <input type="checkbox" id="remember" name="remember">
+                            Recordar sesión
+                        </label>
+                    </div>
+                        <button type="submit" class="btn-primary btn-login-submit">
+                            <span class="btn-text">Iniciar Sesión</span>
+                            <span class="btn-loading" style="display:none;">Cargando...</span>
+                        </button>
+                        <div id="login-error" class="error-message" style="display:none;"></div>
+                    </form>
+                </section>
+            </div>
+            <p class="footer">Comercializadora Normetales S.A.S</p>
+        </div>
+
+        <!-- Pantalla de Dashboard Admin -->
+        <div id="dashboard-admin" class="screen">
+            <header class="app-header">
+                <div class="header-brand">
+                    <p>Tablero de despacho</p>
+                </div>
+                <button class="btn-logout" onclick="logout()">
+                    <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                    <span>Cerrar Sesión</span>
+                </button>
+            </header>
+            <div class="dashboard-content">
+                <div class="ops-layout">
+                    <section class="ops-command">
+                        <p class="section-kicker">Estado del turno</p>
+                        <h2>Centro de mando de movilidad</h2>
+                        <div class="ops-critical">
+                            <span class="stat-number" id="stat-movimientos">0</span>
+                            <span class="stat-label">Movimientos reportados hoy</span>
+                        </div>
+                        <div class="ops-kpi-rack">
+                            <div class="stat-card">
+                                <span class="stat-number" id="stat-vehiculos">0</span>
+                                <span class="stat-label">Vehículos Activos</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="stat-conductores">0</span>
+                                <span class="stat-label">Conductores en línea</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="stat-chequeos">0</span>
+                                <span class="stat-label">Chequeos del día</span>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="quick-actions">
+                        <h3>Acciones rápidas</h3>
+                        <div class="actions-grid">
+                            <button class="action-btn" onclick="navigate('vehiculos')">
+                                <img src="assets/icons/truck.svg" alt="" class="action-icon" aria-hidden="true">
+                                <span>Gestionar Vehículos</span>
+                            </button>
+                            <button class="action-btn" onclick="navigate('conductores')">
+                                <img src="assets/icons/people.svg" alt="" class="action-icon" aria-hidden="true">
+                                <span>Gestionar Conductores</span>
+                            </button>
+                            <button class="action-btn" onclick="navigate('usuarios')">
+                                <img src="assets/icons/people.svg" alt="" class="action-icon" aria-hidden="true">
+                                <span>Gestionar Usuarios</span>
+                            </button>
+                            <button class="action-btn" onclick="navigate('movimientos')">
+                                <img src="assets/icons/bar-chart-line.svg" alt="" class="action-icon" aria-hidden="true">
+                                <span>Ver Movimientos</span>
+                            </button>
+                            <button class="action-btn" onclick="showForm('salida')">
+                                <img src="assets/icons/box-arrow-up-right.svg" alt="" class="action-icon" aria-hidden="true">
+                                <span>Registrar Salida</span>
+                            </button>
+                            <button class="action-btn" onclick="showForm('entrada')">
+                                <img src="assets/icons/box-arrow-in-left.svg" alt="" class="action-icon" aria-hidden="true">
+                                <span>Registrar Entrada</span>
+                            </button>
+                            <button class="action-btn" onclick="navigate('chequeos')">
+                                <img src="assets/icons/clipboard-check.svg" alt="" class="action-icon" aria-hidden="true">
+                                <span>Ver Chequeos</span>
+                            </button>
+                        </div>
+                    </section>
+                </div>
+                <section class="admin-analytics-panel">
+                    <div class="management-toolbar">
+                        <h3>Lectura dinamica de operaciones</h3>
+                        <div class="toolbar-actions">
+                            <div class="form-group compact-control">
+                                <label for="admin-chart-range">Rango</label>
+                                <select id="admin-chart-range">
+                                    <option value="7">Ultimos 7 dias</option>
+                                    <option value="15">Ultimos 15 dias</option>
+                                    <option value="30">Ultimos 30 dias</option>
+                                    <option value="60">Ultimos 60 dias</option>
+                                </select>
+                            </div>
+                            <button id="admin-charts-refresh" type="button" class="btn-ghost">Actualizar graficas</button>
+                        </div>
+                    </div>
+                    <div class="analytics-grid">
+                        <article class="analytics-card analytics-card-wide">
+                            <div class="chart-panel-head">Tendencia diaria</div>
+                            <div class="chart-holder">
+                                <p class="analytics-caption">Movimientos y chequeos por dia</p>
+                                <div id="admin-trend-chart" class="trend-chart"></div>
+                            </div>
+                        </article>
+                        <article class="analytics-card">
+                            <div class="chart-panel-head">Distribucion por tipo</div>
+                            <div class="chart-holder">
+                                <p class="analytics-caption">Entradas vs salidas</p>
+                                <div id="admin-tipo-chart" class="donut-chart"></div>
+                            </div>
+                        </article>
+                        <article class="analytics-card">
+                            <div class="chart-panel-head">Vehiculos con mas actividad</div>
+                            <div class="chart-holder">
+                                <p class="analytics-caption">Top en el rango seleccionado</p>
+                                <div id="admin-top-vehiculos-chart" class="bars-chart"></div>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Pantalla Dashboard Operario Movimientos -->
+        <div id="dashboard-movimientos" class="screen">
+            <header class="app-header">
+                <h2>Registro de Movimientos</h2>
+                <button class="btn-logout" onclick="logout()">
+                    <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                    <span>Cerrar Sesión</span>
+                </button>
+            </header>
+            <div class="dashboard-content">
+                <div class="operations-layout">
+                    <section class="operations-panel">
+                        <p class="section-kicker">Flujo del patio</p>
+                        <h3>Selecciona el movimiento del vehículo</h3>
+                        <div class="main-actions">
+                            <button class="btn-large btn-salida" onclick="showForm('salida')">
+                                <img src="assets/icons/box-arrow-up-right.svg" alt="" class="btn-large-icon" aria-hidden="true">
+                                <span>Registrar Salida</span>
+                            </button>
+                            <button class="btn-large btn-entrada" onclick="showForm('entrada')">
+                                <img src="assets/icons/box-arrow-in-left.svg" alt="" class="btn-large-icon" aria-hidden="true">
+                                <span>Registrar Entrada</span>
+                            </button>
+                            <button class="btn-large btn-entrada" onclick="openMovimientosPanel()">
+                                <img src="assets/icons/bar-chart-line.svg" alt="" class="btn-large-icon" aria-hidden="true">
+                                <span>Ver Historial</span>
+                            </button>
+                        </div>
+                    </section>
+                    <section class="recent-section">
+                        <h3>Movimientos recientes</h3>
+                        <div id="movimientos-recientes" class="list-container"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla Dashboard Operario Chequeo -->
+        <div id="dashboard-chequeo" class="screen">
+            <header class="app-header">
+                <h2>Lista de Chequeo</h2>
+                <button class="btn-logout" onclick="logout()">
+                    <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                    <span>Cerrar Sesión</span>
+                </button>
+            </header>
+            <div class="dashboard-content">
+                <div class="operations-layout single-action-layout">
+                    <section class="operations-panel">
+                        <p class="section-kicker">Preoperacional</p>
+                        <h3>Inicia una inspección de seguridad</h3>
+                        <div class="main-actions">
+                            <button class="btn-large btn-chequeo" onclick="showForm('chequeo')">
+                                <img src="assets/icons/search.svg" alt="" class="btn-large-icon" aria-hidden="true">
+                                <span>Lista de Chequeo</span>
+                            </button>
+                            <button class="btn-large btn-entrada" onclick="openChequeosPanel()">
+                                <img src="assets/icons/bar-chart-line.svg" alt="" class="btn-large-icon" aria-hidden="true">
+                                <span>Ver Historial</span>
+                            </button>
+                        </div>
+                    </section>
+                    <section class="recent-section">
+                        <h3>Últimos chequeos</h3>
+                        <div id="chequeos-recientes" class="list-container"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Registro de Salida/Entrada -->
+        <div id="form-movimiento" class="screen">
+            <header class="app-header">
+                <button class="btn-back" onclick="goBack()">← Volver</button>
+                <h2 id="form-title">Registro de Salida</h2>
+            </header>
+            <form id="movimiento-form" class="form-container">
+                <div class="form-group selector-search-group">
+                    <label for="mov-vehiculo-search">Vehículo *</label>
+                    <input type="search" id="mov-vehiculo-search" placeholder="Escribe placa, marca o modelo" autocomplete="off">
+                    <input type="hidden" id="vehiculo" name="vehiculo_id">
+                    <div id="mov-vehiculo-results" class="selector-results" role="listbox" aria-label="Resultados de vehiculos"></div>
+                    <p id="mov-vehiculo-selected" class="selector-selected">Sin vehículo seleccionado.</p>
+                </div>
+                <div class="form-group selector-search-group">
+                    <label for="mov-conductor-search">Conductor *</label>
+                    <input type="search" id="mov-conductor-search" placeholder="Escribe nombre o cedula" autocomplete="off">
+                    <input type="hidden" id="conductor" name="conductor_id">
+                    <div id="mov-conductor-results" class="selector-results" role="listbox" aria-label="Resultados de conductores"></div>
+                    <p id="mov-conductor-selected" class="selector-selected">Sin conductor seleccionado.</p>
+                </div>
+                <div class="form-group">
+                    <label for="kilometraje">Kilometraje *</label>
+                    <input type="number" id="kilometraje" name="kilometraje" required min="0">
+                </div>
+                <div class="form-group">
+                    <label for="auxiliar">Auxiliar</label>
+                    <input type="text" id="auxiliar" name="auxiliar" placeholder="Nombre del auxiliar">
+                </div>
+                <div class="form-group">
+                    <label for="proveedor">Proveedor / Destino</label>
+                    <input type="text" id="proveedor" name="proveedor" placeholder="Destino o cliente">
+                </div>
+                <div class="form-group">
+                    <label for="bascula">Bascula (si/no)</label>
+                    <input type="text" id="bascula" name="bascula" maxlength="3" placeholder="si o no">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="mov-soat">Vencimiento SOAT</label>
+                        <input type="date" id="mov-soat" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="mov-rtm">Vencimiento RTM</label>
+                        <input type="date" id="mov-rtm" readonly>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="sacas">Sacas</label>
+                    <input type="number" id="sacas" name="sacas" min="0" placeholder="Cantidad de sacas">
+                </div>
+                <div class="form-group">
+                    <label for="cajon">Estado del Cajón</label>
+                    <input type="text" id="cajon" name="cajon" placeholder="Observación del cajón">
+                </div>
+                <div class="form-group">
+                    <label for="observaciones">Observaciones</label>
+                    <textarea id="observaciones" name="observaciones" rows="3" placeholder="Observaciones adicionales"></textarea>
+                </div>
+                <button type="submit" class="btn-primary btn-full">Guardar Registro</button>
+            </form>
+        </div>
+
+        <!-- Formulario de Chequeo Preoperacional -->
+        <div id="chequeo-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window management-modal chequeo-modal-window" role="dialog" aria-modal="true" aria-labelledby="chequeo-form-title">
+                <div class="modal-header">
+                    <h3 id="chequeo-form-title">Chequeo Preoperacional</h3>
+                    <button id="chequeo-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+                </div>
+                <form id="chequeo-form" class="management-form chequeo-form-scroll">
+                    <div class="form-section">
+                        <h3>Datos del Vehículo</h3>
+                        <div class="form-group selector-search-group">
+                            <label for="ch-vehiculo-search">Vehículo *</label>
+                            <input type="search" id="ch-vehiculo-search" placeholder="Escribe placa, marca o modelo" autocomplete="off">
+                            <input type="hidden" id="ch-vehiculo" name="vehiculo_id">
+                            <div id="ch-vehiculo-results" class="selector-results" role="listbox" aria-label="Resultados de vehiculos"></div>
+                            <p id="ch-vehiculo-selected" class="selector-selected">Sin vehículo seleccionado.</p>
+                        </div>
+                        <div class="form-group selector-search-group">
+                            <label for="ch-conductor-search">Conductor *</label>
+                            <input type="search" id="ch-conductor-search" placeholder="Escribe nombre o cedula" autocomplete="off">
+                            <input type="hidden" id="ch-conductor" name="conductor_id">
+                            <div id="ch-conductor-results" class="selector-results" role="listbox" aria-label="Resultados de conductores"></div>
+                            <p id="ch-conductor-selected" class="selector-selected">Sin conductor seleccionado.</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="ch-kilometraje">Kilometraje *</label>
+                            <input type="number" id="ch-kilometraje" name="kilometraje" required>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Fechas de Vencimiento</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ch-soat">SOAT</label>
+                                <input type="date" id="ch-soat" name="fecha_venc_soat">
+                            </div>
+                            <div class="form-group">
+                                <label for="ch-rtm">RTM</label>
+                                <input type="date" id="ch-rtm" name="fecha_venc_rtm">
+                            </div>
+                            <div class="form-group">
+                                <label for="ch-extintor">Extintor</label>
+                                <input type="date" id="ch-extintor" name="fecha_venc_extintor">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="secciones-chequeo"></div>
+
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label for="ch-obs">Observaciones Generales</label>
+                            <textarea id="ch-obs" name="obs_generales" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary btn-form-action">Finalizar Chequeo</button>
+                        <button id="chequeo-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Pantalla Gestión de Vehículos (Admin) -->
+        <div id="admin-vehiculos" class="screen">
+            <header class="app-header">
+                <button class="btn-back" onclick="goBack()">← Volver</button>
+                <h2>Gestión de Vehículos</h2>
+                <button class="btn-logout" onclick="logout()">
+                    <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                    <span>Cerrar Sesión</span>
+                </button>
+            </header>
+            <div class="dashboard-content admin-management-layout">
+                <section class="management-panel">
+                    <div class="management-toolbar">
+                        <h3>Flota registrada</h3>
+                        <div class="toolbar-actions">
+                            <button id="vehiculo-nuevo-btn" type="button" class="btn-secondary">Nuevo vehículo</button>
+                            <button id="vehiculo-refresh-btn" type="button" class="btn-ghost">Actualizar</button>
+                        </div>
+                    </div>
+                    <p id="vehiculos-feedback" class="helper-text" aria-live="polite"></p>
+                    <div class="management-filters">
+                        <div class="form-group filter-search-group">
+                            <label for="vehiculos-search">Buscar en flota</label>
+                            <input id="vehiculos-search" type="search" placeholder="Placa, marca, modelo, empresa o año">
+                        </div>
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label for="vehiculos-estado">Estado</label>
+                                <select id="vehiculos-estado">
+                                    <option value="todos">Todos</option>
+                                    <option value="activos">Solo activos</option>
+                                    <option value="inactivos">Solo inactivos</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="vehiculos-orden">Ordenar por</label>
+                                <select id="vehiculos-orden">
+                                    <option value="placa_asc">Placa (A-Z)</option>
+                                    <option value="placa_desc">Placa (Z-A)</option>
+                                    <option value="anio_desc">Año (más reciente)</option>
+                                    <option value="anio_asc">Año (más antiguo)</option>
+                                    <option value="marca_asc">Marca (A-Z)</option>
+                                </select>
+                            </div>
+                            <button id="vehiculos-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                        </div>
+                        <div class="filter-row filter-row-secondary">
+                            <div class="form-group">
+                                <label for="vehiculos-anio-min">Año desde</label>
+                                <input id="vehiculos-anio-min" type="number" min="1950" max="2100" placeholder="Ej: 2018">
+                            </div>
+                            <div class="form-group">
+                                <label for="vehiculos-anio-max">Año hasta</label>
+                                <input id="vehiculos-anio-max" type="number" min="1950" max="2100" placeholder="Ej: 2026">
+                            </div>
+                        </div>
+                        <p id="vehiculos-results" class="helper-text filter-results" aria-live="polite"></p>
+                    </div>
+                    <div id="vehiculos-list" class="management-list"></div>
+                </section>
+            </div>
+        </div>
+
+        <div id="admin-conductores" class="screen">
+            <header class="app-header">
+                <button class="btn-back" onclick="goBack()">← Volver</button>
+                <h2>Gestión de Conductores</h2>
+                <button class="btn-logout" onclick="logout()">
+                    <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                    <span>Cerrar Sesión</span>
+                </button>
+            </header>
+            <div class="dashboard-content admin-management-layout">
+                <section class="management-panel">
+                    <div class="management-toolbar">
+                        <h3>Conductores registrados</h3>
+                        <div class="toolbar-actions">
+                            <button id="conductor-nuevo-btn" type="button" class="btn-secondary">Nuevo conductor</button>
+                            <button id="conductor-refresh-btn" type="button" class="btn-ghost">Actualizar</button>
+                        </div>
+                    </div>
+                    <p id="conductores-feedback" class="helper-text" aria-live="polite"></p>
+                    <div class="management-filters">
+                        <div class="form-group filter-search-group">
+                            <label for="conductores-search">Buscar conductores</label>
+                            <input id="conductores-search" type="search" placeholder="Nombre, cédula, licencia o categoría">
+                        </div>
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label for="conductores-estado">Estado</label>
+                                <select id="conductores-estado">
+                                    <option value="todos">Todos</option>
+                                    <option value="activos">Solo activos</option>
+                                    <option value="inactivos">Solo inactivos</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="conductores-categoria">Categoría</label>
+                                <select id="conductores-categoria">
+                                    <option value="todas">Todas</option>
+                                    <option value="A2">A2</option>
+                                    <option value="B1">B1</option>
+                                    <option value="B2">B2</option>
+                                    <option value="C1">C1</option>
+                                    <option value="C2">C2</option>
+                                    <option value="C3">C3</option>
+                                </select>
+                            </div>
+                            <button id="conductores-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                        </div>
+                        <div class="filter-row filter-row-secondary">
+                            <div class="form-group">
+                                <label for="conductores-orden">Ordenar por</label>
+                                <select id="conductores-orden">
+                                    <option value="nombre_asc">Nombre (A-Z)</option>
+                                    <option value="nombre_desc">Nombre (Z-A)</option>
+                                    <option value="cedula_asc">Cédula (ascendente)</option>
+                                    <option value="categoria_asc">Categoría (A-Z)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="conductores-licencia">Licencia contiene</label>
+                                <input id="conductores-licencia" type="text" placeholder="Ej: 1234">
+                            </div>
+                        </div>
+                        <p id="conductores-results" class="helper-text filter-results" aria-live="polite"></p>
+                    </div>
+                    <div id="conductores-list" class="management-list"></div>
+                </section>
+            </div>
+        </div>
+
+        <div id="admin-chequeos" class="screen">
+            <header class="app-header">
+                <button class="btn-back" onclick="goBack()">← Volver</button>
+                <h2>Historial de Chequeos</h2>
+                <button class="btn-logout" onclick="logout()">
+                    <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                    <span>Cerrar Sesión</span>
+                </button>
+            </header>
+            <div class="dashboard-content admin-management-layout">
+                <section class="management-panel">
+                    <div class="management-toolbar">
+                        <h3>Chequeos preoperacionales</h3>
+                        <div class="toolbar-actions">
+                            <button id="chequeo-nuevo-btn" type="button" class="btn-secondary">Nuevo chequeo</button>
+                            <button id="chequeos-refresh-btn" type="button" class="btn-ghost">Actualizar</button>
+                        </div>
+                    </div>
+                    <p id="chequeos-feedback" class="helper-text" aria-live="polite"></p>
+                    <div class="management-filters">
+                        <div class="form-group filter-search-group">
+                            <label for="chequeos-search">Buscar chequeos</label>
+                            <input id="chequeos-search" type="search" placeholder="Placa, conductor, inspector o observaciones">
+                        </div>
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label for="chequeos-fecha-inicio">Fecha inicio</label>
+                                <input id="chequeos-fecha-inicio" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="chequeos-fecha-fin">Fecha fin</label>
+                                <input id="chequeos-fecha-fin" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="chequeos-orden">Ordenar por</label>
+                                <select id="chequeos-orden">
+                                    <option value="fecha_desc">Recientes primero</option>
+                                    <option value="fecha_asc">Antiguos primero</option>
+                                </select>
+                            </div>
+                            <button id="chequeos-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                        </div>
+                        <p id="chequeos-results" class="helper-text filter-results" aria-live="polite"></p>
+                    </div>
+                    <div id="chequeos-list" class="management-list"></div>
+                </section>
+            </div>
+        </div>
+
+        <div id="admin-movimientos" class="screen">
+            <header class="app-header">
+                <button class="btn-back" onclick="goBack()">← Volver</button>
+                <h2>Historial de Movimientos</h2>
+                <button class="btn-logout" onclick="logout()">
+                    <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                    <span>Cerrar Sesión</span>
+                </button>
+            </header>
+            <div class="dashboard-content admin-management-layout">
+                <section class="management-panel">
+                    <div class="management-toolbar">
+                        <h3>Entradas y salidas registradas</h3>
+                        <div class="toolbar-actions">
+                            <button type="button" class="btn-secondary" onclick="showForm('salida')">Nueva salida</button>
+                            <button type="button" class="btn-secondary" onclick="showForm('entrada')">Nueva entrada</button>
+                            <button id="movimientos-refresh-btn" type="button" class="btn-ghost">Actualizar</button>
+                        </div>
+                    </div>
+                    <p id="movimientos-feedback" class="helper-text" aria-live="polite"></p>
+                    <div class="management-filters">
+                        <div class="form-group filter-search-group">
+                            <label for="movimientos-search">Buscar movimientos</label>
+                            <input id="movimientos-search" type="search" placeholder="Placa, conductor, auxiliar, proveedor o observaciones">
+                        </div>
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label for="movimientos-tipo">Tipo</label>
+                                <select id="movimientos-tipo">
+                                    <option value="todos">Todos</option>
+                                    <option value="entrada">Entradas</option>
+                                    <option value="salida">Salidas</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="movimientos-fecha-inicio">Fecha inicio</label>
+                                <input id="movimientos-fecha-inicio" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="movimientos-fecha-fin">Fecha fin</label>
+                                <input id="movimientos-fecha-fin" type="date">
+                            </div>
+                            <button id="movimientos-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                        </div>
+                        <div class="filter-row filter-row-secondary">
+                            <div class="form-group">
+                                <label for="movimientos-orden">Ordenar por</label>
+                                <select id="movimientos-orden">
+                                    <option value="fecha_desc">Recientes primero</option>
+                                    <option value="fecha_asc">Antiguos primero</option>
+                                    <option value="km_desc">Mayor kilometraje</option>
+                                    <option value="km_asc">Menor kilometraje</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p id="movimientos-results" class="helper-text filter-results" aria-live="polite"></p>
+                    </div>
+                    <div id="movimientos-list" class="management-list"></div>
+                </section>
+            </div>
+        </div>
+
+        <div id="admin-usuarios" class="screen">
+            <header class="app-header">
+                <button class="btn-back" onclick="goBack()">← Volver</button>
+                <h2>Gestión de Usuarios</h2>
+                <button class="btn-logout" onclick="logout()">
+                    <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                    <span>Cerrar Sesión</span>
+                </button>
+            </header>
+            <div class="dashboard-content admin-management-layout">
+                <section class="management-panel">
+                    <div class="management-toolbar">
+                        <h3>Usuarios del sistema</h3>
+                        <div class="toolbar-actions">
+                            <button id="usuario-nuevo-btn" type="button" class="btn-secondary">Nuevo usuario</button>
+                            <button id="usuario-refresh-btn" type="button" class="btn-ghost">Actualizar</button>
+                        </div>
+                    </div>
+                    <p id="usuarios-feedback" class="helper-text" aria-live="polite"></p>
+                    <div class="management-filters">
+                        <div class="form-group filter-search-group">
+                            <label for="usuarios-search">Buscar usuarios</label>
+                            <input id="usuarios-search" type="search" placeholder="Nombre, email o rol">
+                        </div>
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label for="usuarios-estado">Estado</label>
+                                <select id="usuarios-estado">
+                                    <option value="todos">Todos</option>
+                                    <option value="activos">Solo activos</option>
+                                    <option value="inactivos">Solo inactivos</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="usuarios-rol">Rol</label>
+                                <select id="usuarios-rol">
+                                    <option value="todos">Todos</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="operario_movimientos">Operario Movimientos</option>
+                                    <option value="operario_chequeo">Operario Chequeo</option>
+                                </select>
+                            </div>
+                            <button id="usuarios-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                        </div>
+                        <div class="filter-row filter-row-secondary">
+                            <div class="form-group">
+                                <label for="usuarios-orden">Ordenar por</label>
+                                <select id="usuarios-orden">
+                                    <option value="nombre_asc">Nombre (A-Z)</option>
+                                    <option value="nombre_desc">Nombre (Z-A)</option>
+                                    <option value="email_asc">Email (A-Z)</option>
+                                    <option value="rol_asc">Rol (A-Z)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="usuarios-email-domain">Dominio de email</label>
+                                <input id="usuarios-email-domain" type="text" placeholder="Ej: normetales.com">
+                            </div>
+                        </div>
+                        <p id="usuarios-results" class="helper-text filter-results" aria-live="polite"></p>
+                    </div>
+                    <div id="usuarios-list" class="management-list"></div>
+                </section>
+            </div>
+        </div>
+
+        <div id="vehiculo-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="vehiculo-form-title">
+                <div class="modal-header">
+                    <h3 id="vehiculo-form-title">Nuevo vehículo</h3>
+                    <button id="vehiculo-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+                </div>
+                <form id="vehiculo-form" class="management-form">
+                    <div class="form-group">
+                        <label for="vh-placa">Placa *</label>
+                        <input id="vh-placa" name="placa" type="text" required maxlength="20" placeholder="ABC123">
+                    </div>
+                    <div class="form-group">
+                        <label for="vh-marca">Marca *</label>
+                        <input id="vh-marca" name="marca" type="text" required maxlength="80" placeholder="Chevrolet">
+                    </div>
+                    <div class="form-group">
+                        <label for="vh-modelo">Modelo *</label>
+                        <input id="vh-modelo" name="modelo" type="text" required maxlength="80" placeholder="NHR">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="vh-anio">Año *</label>
+                            <input id="vh-anio" name="año" type="number" required min="1950" max="2100" placeholder="2022">
+                        </div>
+                        <div class="form-group">
+                            <label for="vh-empresa">Empresa</label>
+                            <input id="vh-empresa" name="empresa" type="text" maxlength="120" placeholder="Normetales S.A.S">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="vh-soat">Vencimiento SOAT</label>
+                            <input id="vh-soat" name="fecha_venc_soat" type="date">
+                        </div>
+                        <div class="form-group">
+                            <label for="vh-rtm">Vencimiento RTM</label>
+                            <input id="vh-rtm" name="fecha_venc_rtm" type="date">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary btn-form-action">Guardar</button>
+                        <button id="vehiculo-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="conductor-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="conductor-form-title">
+                <div class="modal-header">
+                    <h3 id="conductor-form-title">Nuevo conductor</h3>
+                    <button id="conductor-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+                </div>
+                <form id="conductor-form" class="management-form">
+                    <div class="form-group">
+                        <label for="cnd-nombre">Nombre completo *</label>
+                        <input id="cnd-nombre" name="nombre" type="text" required maxlength="140" placeholder="Nombre del conductor">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cnd-cedula">Cédula *</label>
+                            <input id="cnd-cedula" name="cedula" type="text" required maxlength="30" placeholder="Número de cédula">
+                        </div>
+                        <div class="form-group">
+                            <label for="cnd-licencia">Licencia *</label>
+                            <input id="cnd-licencia" name="licencia" type="text" required maxlength="50" placeholder="Número de licencia">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="cnd-categoria">Categoría *</label>
+                        <select id="cnd-categoria" name="categoria" required>
+                            <option value="">Seleccione categoría</option>
+                            <option value="A2">A2</option>
+                            <option value="B1">B1</option>
+                            <option value="B2">B2</option>
+                            <option value="C1">C1</option>
+                            <option value="C2">C2</option>
+                            <option value="C3">C3</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cnd-venc-licencia">Vencimiento de licencia</label>
+                        <input id="cnd-venc-licencia" name="fecha_venc_licencia" type="date">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary btn-form-action">Guardar</button>
+                        <button id="conductor-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="usuario-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="usuario-form-title">
+                <div class="modal-header">
+                    <h3 id="usuario-form-title">Nuevo usuario</h3>
+                    <button id="usuario-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+                </div>
+                <form id="usuario-form" class="management-form">
+                    <div class="form-group">
+                        <label for="usr-nombre">Nombre completo *</label>
+                        <input id="usr-nombre" name="nombre" type="text" required maxlength="140" placeholder="Nombre del usuario">
+                    </div>
+                    <div class="form-group">
+                        <label for="usr-email">Email *</label>
+                        <input id="usr-email" name="email" type="email" required maxlength="160" placeholder="correo@empresa.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="usr-rol">Rol *</label>
+                        <select id="usr-rol" name="rol" required>
+                            <option value="">Seleccione rol</option>
+                            <option value="admin">Admin</option>
+                            <option value="operario_movimientos">Operario Movimientos</option>
+                            <option value="operario_chequeo">Operario Chequeo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="usr-password">Contraseña *</label>
+                        <input id="usr-password" name="password" type="password" minlength="6" placeholder="Mínimo 6 caracteres">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary btn-form-action">Guardar</button>
+                        <button id="usuario-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="app-dialog" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window app-dialog-window" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+                <div class="modal-header">
+                    <h3 id="dialog-title">Notificación</h3>
+                </div>
+                <p id="dialog-message" class="dialog-message"></p>
+                <div class="dialog-actions">
+                    <button id="dialog-cancel" type="button" class="btn-ghost">Cancelar</button>
+                    <button id="dialog-confirm" type="button" class="btn-primary btn-form-action">Aceptar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="chequeo-detalle-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="chequeo-detalle-title">
+                <div class="modal-header">
+                    <h3 id="chequeo-detalle-title">Detalle de chequeo</h3>
+                    <button id="chequeo-detalle-close" type="button" class="modal-close" aria-label="Cerrar detalle">×</button>
+                </div>
+                <div id="chequeo-detalle-content" class="chequeo-detalle-content"></div>
+                <div class="form-actions">
+                    <button id="chequeo-detalle-accept" type="button" class="btn-primary btn-form-action">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="movimiento-detalle-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="movimiento-detalle-title">
+                <div class="modal-header">
+                    <h3 id="movimiento-detalle-title">Detalle de movimiento</h3>
+                    <button id="movimiento-detalle-close" type="button" class="modal-close" aria-label="Cerrar detalle">×</button>
+                </div>
+                <div id="movimiento-detalle-content" class="chequeo-detalle-content"></div>
+                <div class="form-actions">
+                    <button id="movimiento-detalle-accept" type="button" class="btn-primary btn-form-action">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading" class="loading-overlay" style="display:none;">
+            <div class="spinner"></div>
+            <p>Cargando...</p>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pwa.js"></script>
+</body>
+</html>

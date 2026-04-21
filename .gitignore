@@ -1,6 +1,8 @@
 .venv/
 .normetales/
+release/
+.legacy-git/
 
-# Nested repos managed independently
-scv-backend/
-scv-frontend/
+# Local artifacts outside deploy scope
+Documentacion/
+boton.png
