@@ -1,0 +1,6 @@
+.venv/
+.normetales/
+
+# Nested repos managed independently
+scv-backend/
+scv-frontend/
