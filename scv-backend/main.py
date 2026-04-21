@@ -1,0 +1,101 @@
+"""
+SCV - Sistema de Control Vehicular
+Backend API REST con FastAPI
+"""
+
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.db.database import Base, engine, apply_schema_updates
+from app.models import models
+from app.api.endpoints import auth, vehiculos, conductores, usuarios, selectores, movimientos, chequeos, dashboard
+from app.core.config import settings
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Inicializar base de datos al iniciar"""
+    Base.metadata.create_all(bind=engine)
+    apply_schema_updates()
+    yield
+
+
+app = FastAPI(
+    title="SCV API",
+    description="Sistema de Control Vehicular - API REST",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs" if settings.ENABLE_API_DOCS else None,
+    redoc_url="/redoc" if settings.ENABLE_API_DOCS else None,
+    openapi_url="/openapi.json" if settings.ENABLE_API_DOCS else None,
+)
+
+# Prefijo API v1
+API_V1 = "/api/v1"
+
+# Registrar routers (endpoints) con prefijo API v1
+app.include_router(auth.router, prefix=API_V1)
+app.include_router(vehiculos.router, prefix=API_V1)
+app.include_router(conductores.router, prefix=API_V1)
+app.include_router(usuarios.router, prefix=API_V1)
+app.include_router(selectores.router, prefix=API_V1)
+app.include_router(movimientos.router, prefix=API_V1)
+app.include_router(chequeos.router, prefix=API_V1)
+app.include_router(dashboard.router, prefix=API_V1)
+
+# CORS - Permite que el frontend acceda desde cualquier origen
+# En producción, restrictingías los orígenes permitidos
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.get_cors_origins(),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+def root():
+    """Endpoint de bienvenida"""
+    return {"message": "SCV API - Sistema de Control Vehicular"}
+
+
+@app.get("/ping")
+def ping():
+    """Endpoint de prueba para verificar que el servidor funciona"""
+    return {"status": "ok", "message": "El servidor está funcionando"}
+
+
+if settings.ENABLE_TEST_DB_ENDPOINT:
+    @app.get("/test-db")
+    def test_db():
+        """Verificar conexión a la base de datos"""
+        from app.db.database import engine
+        from sqlalchemy import inspect
+
+        inspector = inspect(engine)
+        tablas = inspector.get_table_names()
+
+        from app.db.database import SessionLocal
+        from app.models import models
+
+        db = SessionLocal()
+        try:
+            return {
+                "status": "ok",
+                "database": "connected",
+                "tables": tablas,
+                "counts": {
+                    "usuarios": db.query(models.Usuario).count(),
+                    "vehiculos": db.query(models.Vehiculo).count(),
+                    "conductores": db.query(models.Conductor).count(),
+                }
+            }
+        finally:
+            db.close()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
