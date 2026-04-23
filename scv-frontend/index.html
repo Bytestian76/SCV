@@ -131,14 +131,6 @@
                                 <img src="assets/icons/bar-chart-line.svg" alt="" class="action-icon" aria-hidden="true">
                                 <span>Ver Movimientos</span>
                             </button>
-                            <button class="action-btn" onclick="showForm('salida')">
-                                <img src="assets/icons/box-arrow-up-right.svg" alt="" class="action-icon" aria-hidden="true">
-                                <span>Registrar Salida</span>
-                            </button>
-                            <button class="action-btn" onclick="showForm('entrada')">
-                                <img src="assets/icons/box-arrow-in-left.svg" alt="" class="action-icon" aria-hidden="true">
-                                <span>Registrar Entrada</span>
-                            </button>
                             <button class="action-btn" onclick="navigate('chequeos')">
                                 <img src="assets/icons/clipboard-check.svg" alt="" class="action-icon" aria-hidden="true">
                                 <span>Ver Chequeos</span>
@@ -200,10 +192,11 @@
             </header>
             <div class="dashboard-content">
                 <div class="operations-layout">
-                    <section class="operations-panel">
+                    <section class="operations-panel movimientos-ops-panel">
                         <p class="section-kicker">Flujo del patio</p>
-                        <h3>Selecciona el movimiento del vehículo</h3>
-                        <div class="main-actions">
+                        <h3>Centro de despacho y recepción</h3>
+                        <p class="movimientos-help">Todas las entradas y salidas se registran desde este panel para mantener trazabilidad operativa.</p>
+                        <div class="movement-action-grid">
                             <button class="btn-large btn-salida" onclick="showForm('salida')">
                                 <img src="assets/icons/box-arrow-up-right.svg" alt="" class="btn-large-icon" aria-hidden="true">
                                 <span>Registrar Salida</span>
@@ -212,7 +205,9 @@
                                 <img src="assets/icons/box-arrow-in-left.svg" alt="" class="btn-large-icon" aria-hidden="true">
                                 <span>Registrar Entrada</span>
                             </button>
-                            <button class="btn-large btn-entrada" onclick="openMovimientosPanel()">
+                        </div>
+                        <div class="movement-secondary-actions">
+                            <button class="btn-large btn-historial" onclick="openMovimientosPanel()">
                                 <img src="assets/icons/bar-chart-line.svg" alt="" class="btn-large-icon" aria-hidden="true">
                                 <span>Ver Historial</span>
                             </button>
@@ -280,12 +275,13 @@
         </div>
 
         <!-- Formulario de Registro de Salida/Entrada -->
-        <div id="form-movimiento" class="screen">
-            <header class="app-header">
-                <button class="btn-back" onclick="goBack()">← Volver</button>
-                <h2 id="form-title">Registro de Salida</h2>
-            </header>
-            <form id="movimiento-form" class="form-container">
+        <div id="movimiento-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window management-modal movimiento-modal-window" role="dialog" aria-modal="true" aria-labelledby="form-title">
+                <div class="modal-header">
+                    <h3 id="form-title">Registro de Salida</h3>
+                    <button id="movimiento-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+                </div>
+                <form id="movimiento-form" class="management-form movimiento-form-scroll">
                 <div class="form-group selector-search-group">
                     <label for="mov-vehiculo-search">Vehículo *</label>
                     <input type="search" id="mov-vehiculo-search" placeholder="Escribe placa, marca o modelo" autocomplete="off">
@@ -338,8 +334,12 @@
                     <label for="observaciones">Observaciones</label>
                     <textarea id="observaciones" name="observaciones" rows="3" placeholder="Observaciones adicionales"></textarea>
                 </div>
-                <button type="submit" class="btn-primary btn-full">Guardar Registro</button>
-            </form>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary btn-form-action">Guardar Registro</button>
+                        <button id="movimiento-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <!-- Formulario de Chequeo Preoperacional -->
