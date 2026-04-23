@@ -566,6 +566,9 @@ function setupEventListeners() {
                 loadVehiculosForSelect('vehiculo', movimientoVehiculoSearch.value);
             });
         });
+        movimientoVehiculoSearch.addEventListener('keydown', (e) => {
+            handleSelectorSearchKeydown(e, 'mov-vehiculo');
+        });
     }
 
     if (movimientoConductorSearch) {
@@ -578,6 +581,9 @@ function setupEventListeners() {
             scheduleSelectorSearch('mov-conductor', movimientoConductorSearch.value, () => {
                 loadConductoresForSelect('conductor', movimientoConductorSearch.value);
             });
+        });
+        movimientoConductorSearch.addEventListener('keydown', (e) => {
+            handleSelectorSearchKeydown(e, 'mov-conductor');
         });
     }
 
@@ -592,6 +598,9 @@ function setupEventListeners() {
                 loadVehiculosForSelect('ch-vehiculo', chequeoVehiculoSearch.value);
             });
         });
+        chequeoVehiculoSearch.addEventListener('keydown', (e) => {
+            handleSelectorSearchKeydown(e, 'ch-vehiculo');
+        });
     }
 
     if (chequeoConductorSearch) {
@@ -604,6 +613,9 @@ function setupEventListeners() {
             scheduleSelectorSearch('ch-conductor', chequeoConductorSearch.value, () => {
                 loadConductoresForSelect('ch-conductor', chequeoConductorSearch.value);
             });
+        });
+        chequeoConductorSearch.addEventListener('keydown', (e) => {
+            handleSelectorSearchKeydown(e, 'ch-conductor');
         });
     }
 
@@ -3377,6 +3389,25 @@ function handleSelectorResultClick(e) {
     const optionBtn = e.target.closest('.selector-result-item');
     if (!optionBtn) return;
     selectSearchResult(optionBtn.dataset.selectorKey, optionBtn.dataset.itemId);
+}
+
+function handleSelectorSearchKeydown(event, selectorKey) {
+    if (event.key === 'Escape') {
+        hideAllSelectorResults();
+        return;
+    }
+
+    if (event.key !== 'Enter') {
+        return;
+    }
+
+    const options = APP.selectorOptions[selectorKey] || [];
+    if (!options.length) {
+        return;
+    }
+
+    event.preventDefault();
+    selectSearchResult(selectorKey, options[0].id);
 }
 
 async function loadVehiculosForSelect(selectId, search = '') {
