@@ -48,7 +48,7 @@ app.include_router(dashboard.router, prefix=API_V1)
 # En producción, restrictingías los orígenes permitidos
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.get_cors_origins(),
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
