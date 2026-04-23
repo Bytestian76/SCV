@@ -1,44 +1,55 @@
-# SCV Backend
+# SCV - Sistema de Control Vehicular
 
-API REST de SCV construida con FastAPI.
+Backend API REST desarrollado con FastAPI (Python).
 
-## Desarrollo local
+## Instalación
 
 ```bash
+# Crear entorno virtual
 python3 -m venv venv
+
+# Activar (Linux/Mac)
 source venv/bin/activate
+
+# Activar (Windows)
+venv\Scripts\activate
+
+# Instalar dependencias
 pip install -r requirements.txt
-uvicorn main:app --reload --host 0.0.0.0 --port 9000
 ```
 
-## Configuración
-
-1. Copia `.env.example` a `.env`.
-2. Cambia `SECRET_KEY`.
-3. Configura `CORS_ALLOWED_ORIGINS` con tu dominio real.
-
-Por defecto, para seguridad en producción:
-- `DEBUG=False`
-- `ENABLE_API_DOCS=False`
-- `ENABLE_TEST_DB_ENDPOINT=False`
-
-## Despliegue en servidor (sin Docker)
-
-Ejemplo de comando de producción (systemd):
+## Ejecución
 
 ```bash
-uvicorn main:app --host 127.0.0.1 --port 9000 --workers 2
+# Servidor de desarrollo
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Acceso local
+# http://localhost:8000
+# Documentación API: http://localhost:8000/docs
 ```
 
-La recomendación es exponer la API detrás de Nginx con HTTPS y proxy en `/api/`.
+## Estructura del Proyecto
 
-## Endpoints de salud
+```
+scv-backend/
+├── app/
+│   ├── api/          # Endpoints de la API
+│   ├── core/        # Configuración central
+│   ├── db/         # Base de datos
+│   ├── models/      # Modelos SQLAlchemy
+│   └── schemas/     # Schemas Pydantic
+├── tests/           # Pruebas
+├── requirements.txt
+└── main.py         # Punto de entrada
+```
 
-- `GET /ping`
-- `GET /` (mensaje base)
+## Roles de Usuario
 
-## Roles de usuario
+- `admin` - Acceso total
+- `operario_movimientos` - Registra entradas/salidas
+- `operario_chequeo` - Realiza chequeos preoperacionales
 
-- `admin`
-- `operario_movimientos`
-- `operario_chequeo`
+## Documentación
+
+Ver `../Documentacion/SCV_Endpoints_v1.md` para lista completa de endpoints.
