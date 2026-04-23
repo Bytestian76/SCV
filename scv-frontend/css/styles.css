@@ -26,6 +26,10 @@
     --space-2: 16px;
     --space-3: 24px;
     --space-4: 32px;
+
+    --btn-height-sm: 42px;
+    --btn-height-md: 46px;
+    --btn-height-lg: 72px;
 }
 
 * {
@@ -318,7 +322,19 @@ body {
 .btn-logout:focus-visible {
     outline: none;
     border-color: var(--secondary);
-    box-shadow: 0 0 0 3px rgba(244, 189, 36, 0.22);
+    box-shadow: 0 0 0 3px rgba(138, 191, 95, 0.26);
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-danger,
+.btn-back,
+.btn-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .remember-me label {
@@ -339,7 +355,7 @@ body {
 
 .btn-primary {
     width: 100%;
-    min-height: 48px;
+    min-height: calc(var(--btn-height-md) + 4px);
     border-radius: var(--radius-sm);
     border: 1px solid rgba(24, 88, 61, 0.75);
     color: #ffffff;
@@ -383,7 +399,7 @@ body {
 .btn-secondary,
 .btn-ghost,
 .btn-danger {
-    min-height: 42px;
+    min-height: var(--btn-height-md);
     padding: 0 14px;
     border-radius: var(--radius-sm);
     font-family: var(--font-heading);
@@ -1329,7 +1345,7 @@ body {
 }
 
 .action-btn {
-    min-height: 106px;
+    min-height: 108px;
     border-radius: var(--radius-sm);
     border: 1px solid #b7c8b7;
     background: linear-gradient(180deg, #ffffff, #edf4ee);
@@ -1482,7 +1498,7 @@ body {
 }
 
 .btn-large {
-    min-height: 74px;
+    min-height: var(--btn-height-lg);
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
     color: #ffffff;
@@ -1506,6 +1522,18 @@ body {
 .btn-large-icon {
     width: 20px;
     height: 20px;
+    filter: brightness(0) invert(1);
+}
+
+.btn-inline-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.btn-primary .btn-inline-icon,
+.btn-secondary .btn-inline-icon,
+.btn-danger .btn-inline-icon {
     filter: brightness(0) invert(1);
 }
 

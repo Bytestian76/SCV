@@ -74,7 +74,91 @@ const APP = {
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     setupEventListeners();
+    initAdaptiveButtonIcons();
 });
+
+function normalizeUiText(value = '') {
+    return String(value)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function resolveUnifiedButtonIcon(button, label) {
+    if (label.includes('cerrar sesion')) return 'assets/icons/box-arrow-right.svg';
+    if (label.includes('iniciar sesion')) return 'assets/icons/box-arrow-right.svg';
+    if (label.startsWith('volver')) return 'assets/icons/box-arrow-in-left.svg';
+    if (label.includes('salida')) return 'assets/icons/box-arrow-up-right.svg';
+    if (label.includes('entrada')) return 'assets/icons/box-arrow-in-left.svg';
+    if (label.includes('historial') || label.includes('ver movimientos') || label.includes('ver chequeos')) return 'assets/icons/bar-chart-line.svg';
+    if (label.includes('vehiculo')) return 'assets/icons/truck.svg';
+    if (label.includes('conductor') || label.includes('usuario')) return 'assets/icons/people.svg';
+    if (label.includes('chequeo')) return 'assets/icons/clipboard-check.svg';
+    if (label.includes('buscar') || label.includes('filtro')) return 'assets/icons/search.svg';
+    if (label.includes('actualizar') || label.includes('refrescar')) return 'assets/icons/arrow-clockwise.svg';
+    if (label.includes('exportar') || label.includes('descargar')) return 'assets/icons/download.svg';
+    if (label.includes('cancelar') || label.includes('cerrar') || label.includes('limpiar')) return 'assets/icons/x-lg.svg';
+    if (label.includes('guardar') || label.includes('registrar') || label.includes('nuevo')) return 'assets/icons/plus-lg.svg';
+
+    if (button.classList.contains('btn-danger')) return 'assets/icons/x-lg.svg';
+    return 'assets/icons/search.svg';
+}
+
+function getUnifiedIconClass(button) {
+    if (button.classList.contains('action-btn')) return 'action-icon';
+    if (button.classList.contains('btn-large')) return 'btn-large-icon';
+    if (button.classList.contains('btn-back') || button.classList.contains('btn-logout')) return 'btn-icon';
+    return 'btn-inline-icon';
+}
+
+function decorateButtonWithIcon(button) {
+    if (!button || button.dataset.iconReady === 'true') return;
+    if (button.classList.contains('modal-close')) return;
+    if (button.classList.contains('selector-result-item')) return;
+    if (button.querySelector('img')) {
+        button.dataset.iconReady = 'true';
+        return;
+    }
+
+    const label = normalizeUiText(button.textContent || '');
+    if (!label) return;
+
+    const iconPath = resolveUnifiedButtonIcon(button, label);
+    const icon = document.createElement('img');
+    icon.src = iconPath;
+    icon.alt = '';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.className = getUnifiedIconClass(button);
+
+    button.prepend(icon);
+    button.dataset.iconReady = 'true';
+}
+
+function applyUnifiedButtonIcons(scope = document) {
+    const buttons = scope.querySelectorAll ? scope.querySelectorAll('button') : [];
+    buttons.forEach(decorateButtonWithIcon);
+}
+
+function initAdaptiveButtonIcons() {
+    applyUnifiedButtonIcons(document);
+
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (!(node instanceof HTMLElement)) return;
+                if (node.matches('button')) {
+                    decorateButtonWithIcon(node);
+                    return;
+                }
+                applyUnifiedButtonIcons(node);
+            });
+        });
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+}
 
 function checkAuth() {
     const token = localStorage.getItem(CONFIG.TOKEN_KEY);
