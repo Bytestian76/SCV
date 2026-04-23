@@ -57,6 +57,9 @@ const APP = {
         totalItems: 0,
         returnScreen: 'dashboard-chequeo'
     },
+    movimiento: {
+        returnScreen: 'dashboard-movimientos'
+    },
     ui: {
         dialogResolver: null,
         adminChartsInterval: null
@@ -185,6 +188,9 @@ function setupEventListeners() {
     const movimientoDetalleClose = document.getElementById('movimiento-detalle-close');
     const movimientoDetalleAccept = document.getElementById('movimiento-detalle-accept');
     const chequeoForm = document.getElementById('chequeo-form');
+    const movimientoModal = document.getElementById('movimiento-modal');
+    const movimientoCloseBtn = document.getElementById('movimiento-close-btn');
+    const movimientoCancelBtn = document.getElementById('movimiento-cancel-btn');
     const seccionesChequeo = document.getElementById('secciones-chequeo');
     const movimientoVehiculoSearch = document.getElementById('mov-vehiculo-search');
     const movimientoConductorSearch = document.getElementById('mov-conductor-search');
@@ -684,10 +690,26 @@ function setupEventListeners() {
         chequeoCancelBtn.addEventListener('click', closeChequeoForm);
     }
 
+    if (movimientoCloseBtn) {
+        movimientoCloseBtn.addEventListener('click', closeMovimientoForm);
+    }
+
+    if (movimientoCancelBtn) {
+        movimientoCancelBtn.addEventListener('click', closeMovimientoForm);
+    }
+
     if (chequeoModal) {
         chequeoModal.addEventListener('click', (e) => {
             if (e.target === chequeoModal) {
                 closeChequeoForm();
+            }
+        });
+    }
+
+    if (movimientoModal) {
+        movimientoModal.addEventListener('click', (e) => {
+            if (e.target === movimientoModal) {
+                closeMovimientoForm();
             }
         });
     }
@@ -899,6 +921,7 @@ function navigate(section) {
     }
 
     closeChequeoForm();
+    closeMovimientoForm();
 
     if (section === 'vehiculos') {
         showScreen('admin-vehiculos');
@@ -965,6 +988,7 @@ function openMovimientosPanel() {
     closeConductorForm();
     closeVehiculoForm();
     closeChequeoForm();
+    closeMovimientoForm();
     closeChequeoDetalleModal();
     closeMovimientoDetalleModal();
     resetMovimientosFilters();
@@ -974,10 +998,11 @@ function showForm(type) {
     APP.formType = type;
     
     if (type === 'salida' || type === 'entrada') {
-        document.getElementById('form-title').textContent = 
+        APP.movimiento.returnScreen = APP.currentScreen || 'dashboard-movimientos';
+        document.getElementById('form-title').textContent =
             type === 'salida' ? 'Registro de Salida' : 'Registro de Entrada';
         loadSelectores();
-        showScreen('form-movimiento');
+        toggleModal('movimiento-modal', true);
     } else if (type === 'chequeo') {
         APP.chequeo.returnScreen = APP.currentScreen || 'dashboard-chequeo';
         loadSelectores();
@@ -1526,6 +1551,17 @@ function closeChequeoForm() {
     toggleModal('chequeo-modal', false);
 }
 
+function closeMovimientoForm() {
+    const form = document.getElementById('movimiento-form');
+    if (form) {
+        form.reset();
+    }
+    APP.formType = null;
+    clearSelectorSelection('mov-vehiculo', true);
+    clearSelectorSelection('mov-conductor', true);
+    toggleModal('movimiento-modal', false);
+}
+
 function formatSectionName(value) {
     return String(value || '')
         .split('_')
@@ -1745,6 +1781,12 @@ function handleEscapeKey(e) {
     const chequeoModal = document.getElementById('chequeo-modal');
     if (chequeoModal?.classList.contains('active')) {
         closeChequeoForm();
+        return;
+    }
+
+    const movimientoModal = document.getElementById('movimiento-modal');
+    if (movimientoModal?.classList.contains('active')) {
+        closeMovimientoForm();
         return;
     }
 
@@ -3478,7 +3520,14 @@ document.getElementById('movimiento-form').addEventListener('submit', async (e) 
     try {
         await API.createMovimiento(data);
         await showAppAlert('Movimiento registrado', 'El registro se guardó exitosamente.');
-        showDashboard(APP.user.rol);
+        closeMovimientoForm();
+        if (APP.movimiento.returnScreen === 'admin-movimientos') {
+            await loadMovimientosManagement();
+        } else if (APP.user?.rol === CONFIG.ROLES.OPERARIO_MOVIMIENTOS) {
+            await loadDashboardData(CONFIG.ROLES.OPERARIO_MOVIMIENTOS);
+        } else {
+            showDashboard(APP.user.rol);
+        }
     } catch (error) {
         await showAppAlert('Error al guardar', error.message || 'Ocurrió un error desconocido.');
     }
