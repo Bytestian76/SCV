@@ -179,7 +179,7 @@ const API = {
         if (search) params.set('search', search);
         if (limit) params.set('limit', String(limit));
         const query = params.toString();
-        const endpoint = query ? `/selectores/vehiculos/?${query}` : '/selectores/vehiculos/';
+        const endpoint = query ? `/selectores/vehiculos?${query}` : '/selectores/vehiculos';
         return await this.request('GET', endpoint);
     },
 
@@ -188,7 +188,7 @@ const API = {
         if (search) params.set('search', search);
         if (limit) params.set('limit', String(limit));
         const query = params.toString();
-        const endpoint = query ? `/selectores/conductores/?${query}` : '/selectores/conductores/';
+        const endpoint = query ? `/selectores/conductores?${query}` : '/selectores/conductores';
         return await this.request('GET', endpoint);
     },
 
