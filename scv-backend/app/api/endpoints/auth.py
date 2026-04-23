@@ -2,7 +2,8 @@
 Endpoints de Autenticación
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
@@ -33,13 +34,13 @@ _FAILED_LOGIN_ATTEMPTS: dict[str, list[float]] = {}
 
 
 def _rate_limit_key(request: Request, email: str) -> str:
-    client_host = request.client.host if request.client else "unknown"
-    return f"{client_host}:{email.strip().lower()}"
+    host = request.client.host if request.client else "unknown"
+    return f"{host}:{email.strip().lower()}"
 
 
 def _cleanup_attempts(key: str, now: float) -> list[float]:
     window = settings.LOGIN_RATE_LIMIT_WINDOW_SECONDS
-    attempts = [timestamp for timestamp in _FAILED_LOGIN_ATTEMPTS.get(key, []) if now - timestamp <= window]
+    attempts = [ts for ts in _FAILED_LOGIN_ATTEMPTS.get(key, []) if now - ts <= window]
     _FAILED_LOGIN_ATTEMPTS[key] = attempts
     return attempts
 
