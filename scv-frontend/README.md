@@ -1,33 +1,33 @@
-# SCV Frontend
+# SCV - Sistema de Control Vehicular
 
-Cliente web de SCV (PWA) con HTML, CSS y JavaScript.
+Frontend PWA desarrollado con HTML, CSS y JavaScript.
 
-## Desarrollo local
+## Estructura
+
+```
+scv-frontend/
+├── css/           # Estilos
+├── js/             # Scripts JavaScript
+├── images/         # Imágenes e iconos
+├── assets/         # Otros recursos
+├── index.html      # Entry point
+└── manifest.json  # PWA Manifest
+```
+
+## Usage
+
+Abra `index.html` en un navegador o levante un servidor:
 
 ```bash
+# Servidor Python simple
 python3 -m http.server 8080
+
+# Servidor Node
+npx serve .
 ```
 
-En localhost el frontend consume API en `http://localhost:8000/api/v1`.
+## PWA Installation
 
-## Producción
-
-- Dominio sugerido: `app.tudominio.com`
-- El frontend asume API en el mismo host bajo `/api/v1`
-- Si necesitas otro origen, define antes de `config.js`:
-
-```html
-<script>
-  window.__SCV_API_ORIGIN = "https://api.tudominio.com";
-</script>
-```
-
-## PWA
-
-- Manifest: `manifest.json`
-- Service worker: `sw.js`
-- Registro SW: `js/pwa.js`
-
-Para instalar en móvil:
-1. Abrir la app en HTTPS
-2. Agregar a pantalla de inicio
+Para instalar como app en Android:
+1. Abra en Chrome Android
+2. Vaya a Menu > Agregar a pantalla de inicio
