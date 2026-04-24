@@ -25,8 +25,8 @@ function getFilteredChequeos() {
     });
 
     return filtered.sort((a, b) => {
-        const aTime = new Date(a.fecha_hora).getTime();
-        const bTime = new Date(b.fecha_hora).getTime();
+        const aTime = getApiTimestamp(a.fecha_hora);
+        const bTime = getApiTimestamp(b.fecha_hora);
         return orden === 'fecha_asc' ? aTime - bTime : bTime - aTime;
     });
 }
@@ -53,7 +53,7 @@ function renderChequeosManagementList() {
 
     container.innerHTML = chequeos
         .map((c) => {
-            const fecha = new Date(c.fecha_hora).toLocaleString();
+            const fecha = formatApiDateTime(c.fecha_hora);
             const itemLabel = c.total_items === 1 ? 'item' : 'items';
             return `
                 <article class="management-card">
@@ -171,7 +171,7 @@ function renderChequeoDetalle(detalle) {
         <section class="chequeo-detalle-grid">
             <div class="chequeo-detalle-block">
                 <h4>Cabecera</h4>
-                <p><strong>Fecha:</strong> ${new Date(detalle.fecha_hora).toLocaleString()}</p>
+                <p><strong>Fecha:</strong> ${formatApiDateTime(detalle.fecha_hora)}</p>
                 <p><strong>Vehiculo:</strong> ${detalle.vehiculo?.placa || 'N/A'} (${detalle.vehiculo?.marca || 'N/A'} ${detalle.vehiculo?.modelo || ''})</p>
                 <p><strong>Conductor:</strong> ${detalle.conductor?.nombre || 'N/A'} · ${detalle.conductor?.cedula || 'N/A'}</p>
                 <p><strong>Inspector:</strong> ${detalle.usuario?.nombre || 'N/A'}</p>

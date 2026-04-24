@@ -165,7 +165,23 @@ body {
 
 .logo {
     margin-bottom: var(--space-2);
-    text-align: center;
+    display: flex;
+    justify-content: center;
+}
+
+.login-brand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: min(420px, 100%);
+    margin-inline: auto;
+}
+
+.login-brand-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 8px;
 }
 
 .logo-image {
@@ -184,7 +200,7 @@ body {
 }
 
 .login-title {
-    margin-top: 0;
+    margin: 0;
     font-family: var(--font-heading);
     font-size: clamp(1rem, 2.3vw, 1.32rem);
     font-weight: 800;
@@ -193,8 +209,10 @@ body {
     text-transform: uppercase;
     white-space: normal;
     max-width: 24ch;
-    margin-inline: auto;
+    margin-inline: 0;
+    text-align: left;
     color: #214b38;
+    transform: translateY(-5px);
 }
 
 .form-group {
@@ -417,6 +435,7 @@ body {
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: #f3faf4;
+    margin-right: auto;
 }
 
 .app-brand-logo {
@@ -443,6 +462,14 @@ body {
     background: rgba(255, 255, 255, 0.1);
     cursor: pointer;
     transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.app-header .btn-back {
+    order: 2;
+}
+
+.app-header .btn-logout {
+    order: 3;
 }
 
 .btn-icon {
@@ -1084,12 +1111,12 @@ body {
 }
 
 .trend-chart {
-    min-height: 280px;
+    min-height: 350px;
 }
 
 .trend-svg {
     width: 100%;
-    height: 240px;
+    height: 310px;
     display: block;
 }
 
@@ -1105,7 +1132,13 @@ body {
 
 .trend-y-label {
     fill: #627a96;
-    font-size: 0.74rem;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.trend-x-label {
+    fill: #61796b;
+    font-size: 0.82rem;
     font-weight: 600;
 }
 
@@ -1148,17 +1181,17 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 10px;
+    margin-top: 12px;
     color: #3f5d4f;
-    font-size: 0.86rem;
+    font-size: 0.98rem;
 }
 
 .legend-dot {
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
     border-radius: 999px;
     display: inline-block;
-    margin-right: 6px;
+    margin-right: 8px;
     vertical-align: middle;
 }
 
@@ -1781,8 +1814,8 @@ body {
 
 @media (max-width: 520px) {
     .app-header {
-        align-items: flex-start;
-        flex-direction: column;
+        align-items: center;
+        flex-wrap: nowrap;
     }
 
     .header-brand {
@@ -1794,10 +1827,24 @@ body {
         font-size: 0.86rem;
     }
 
+    .screen:not(#login-screen) .app-header h2,
+    .app-header h2 {
+        display: none;
+    }
+
+    .app-header .btn-back {
+        margin-left: auto;
+    }
+
+    .screen:not(#login-screen) .app-header .btn-logout,
+    .screen:not(#login-screen) .app-header .btn-back,
     .app-header .btn-logout,
     .app-header .btn-back {
-        width: 100%;
-        justify-content: center;
+        width: auto;
+        min-height: 34px;
+        padding: 5px 9px;
+        font-size: 0.74rem;
+        letter-spacing: 0.04em;
     }
 
     .actions-grid {
