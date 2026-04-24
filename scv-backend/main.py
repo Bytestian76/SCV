@@ -13,6 +13,14 @@ from app.api.endpoints import auth, vehiculos, conductores, usuarios, selectores
 from app.core.config import settings
 
 
+def _parse_cors_origins(raw_origins: str):
+    if not raw_origins:
+        return ["*"]
+
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    return origins or ["*"]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Inicializar base de datos al iniciar"""
@@ -48,7 +56,7 @@ app.include_router(dashboard.router, prefix=API_V1)
 # En producción, restrictingías los orígenes permitidos
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_parse_cors_origins(settings.CORS_ALLOWED_ORIGINS),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

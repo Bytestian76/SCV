@@ -2,6 +2,9 @@
 
 Esta guía deja SCV listo para desplegar sin Docker en un servidor Linux estándar.
 
+> Nota: para arquitectura con API Gateway centralizada y multiples subdominios en Docker,
+> usar `infra/gateway/README.md` y los archivos `docker-compose.gateway.vps.yml` + `docker-compose.app.yml`.
+
 ## 1) Preparar backend
 
 ```bash
