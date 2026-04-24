@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1f6a43">
     <title>SCV - Sistema de Control Vehicular</title>
+    <link rel="icon" type="image/png" sizes="1024x1024" href="images/icon-1024.png">
+    <link rel="apple-touch-icon" href="images/icon-1024.png">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/selectors.css">
     <link rel="manifest" href="manifest.json">
@@ -298,7 +300,7 @@
                 </div>
                 <div class="form-group">
                     <label for="kilometraje">Kilometraje *</label>
-                    <input type="number" id="kilometraje" name="kilometraje" required min="0">
+                    <input type="number" id="kilometraje" name="kilometraje" required min="0" placeholder="Se completa al elegir vehiculo">
                 </div>
                 <div class="form-group">
                     <label for="auxiliar">Auxiliar</label>
@@ -368,7 +370,7 @@
                         </div>
                         <div class="form-group">
                             <label for="ch-kilometraje">Kilometraje *</label>
-                            <input type="number" id="ch-kilometraje" name="kilometraje" required>
+                            <input type="number" id="ch-kilometraje" name="kilometraje" required min="0" placeholder="Se completa al elegir vehiculo">
                         </div>
                     </div>
 
@@ -745,6 +747,12 @@
                             <label for="vh-anio">Año *</label>
                             <input id="vh-anio" name="año" type="number" required min="1950" max="2100" placeholder="2022">
                         </div>
+                        <div class="form-group">
+                            <label for="vh-kilometraje">Kilometraje actual *</label>
+                            <input id="vh-kilometraje" name="kilometraje" type="number" required min="0" placeholder="Ej: 125000">
+                        </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
                             <label for="vh-empresa">Empresa</label>
                             <input id="vh-empresa" name="empresa" type="text" maxlength="120" placeholder="Normetales S.A.S">

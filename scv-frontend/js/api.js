@@ -88,6 +88,10 @@ const API = {
         return await this.request('DELETE', `/vehiculos/${id}`);
     },
 
+    async activateVehiculo(id) {
+        return await this.request('PUT', `/vehiculos/${id}`, { activo: true });
+    },
+
     // ============ CONDUCTORES ============
 
     async getConductores() {
@@ -110,6 +114,10 @@ const API = {
         return await this.request('DELETE', `/conductores/${id}`);
     },
 
+    async activateConductor(id) {
+        return await this.request('PUT', `/conductores/${id}`, { activo: true });
+    },
+
     // ============ USUARIOS ============
 
     async getUsuarios() {
@@ -130,6 +138,10 @@ const API = {
 
     async deleteUsuario(id) {
         return await this.request('DELETE', `/usuarios/${id}`);
+    },
+
+    async activateUsuario(id) {
+        return await this.request('PUT', `/usuarios/${id}`, { activo: true });
     },
 
     // ============ MOVIMIENTOS ============

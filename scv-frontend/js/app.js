@@ -1469,17 +1469,20 @@ function normalizeSiNo(value) {
     return null;
 }
 
-function syncVehiculoFechasToFields(vehiculo, { soatFieldId, rtmFieldId }) {
+function syncVehiculoFechasToFields(vehiculo, { kilometrajeFieldId, soatFieldId, rtmFieldId }) {
+    const kilometrajeField = document.getElementById(kilometrajeFieldId || '');
     const soatField = document.getElementById(soatFieldId);
     const rtmField = document.getElementById(rtmFieldId);
     if (!soatField || !rtmField) return;
 
     if (!vehiculo || !vehiculo.id) {
+        if (kilometrajeField) kilometrajeField.value = '';
         soatField.value = '';
         rtmField.value = '';
         return;
     }
 
+    if (kilometrajeField) kilometrajeField.value = vehiculo.kilometraje ?? 0;
     soatField.value = vehiculo.fecha_venc_soat || '';
     rtmField.value = vehiculo.fecha_venc_rtm || '';
 }
