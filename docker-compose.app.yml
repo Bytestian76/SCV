@@ -1,0 +1,33 @@
+services:
+  scv-backend:
+    build:
+      context: ./scv-backend
+    container_name: scv-backend
+    env_file:
+      - ./scv-backend/.env
+    environment:
+      DATABASE_URL: sqlite:////app/data/scv.db
+    volumes:
+      - scv-db:/app/data
+    expose:
+      - "9000"
+    restart: unless-stopped
+    networks:
+      - vps-gateway
+
+  scv-frontend:
+    build:
+      context: ./scv-frontend
+    container_name: scv-frontend
+    expose:
+      - "80"
+    restart: unless-stopped
+    networks:
+      - vps-gateway
+
+volumes:
+  scv-db:
+
+networks:
+  vps-gateway:
+    external: true

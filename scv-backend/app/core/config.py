@@ -3,7 +3,6 @@ Configuración de la aplicación
 """
 
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -17,6 +16,7 @@ class Settings(BaseSettings):
     # Endpoints expuestos
     ENABLE_API_DOCS: bool = False
     ENABLE_TEST_DB_ENDPOINT: bool = False
+    CORS_ALLOWED_ORIGINS: str = "*"
     
     # Security
     SECRET_KEY: str = "scv-secret-key-change-in-production-2026"
