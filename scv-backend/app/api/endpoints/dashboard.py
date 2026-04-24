@@ -1,6 +1,7 @@
 """Endpoints de Dashboard"""
 
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -11,6 +12,19 @@ from app.models.models import Chequeo, Conductor, Movimiento, Vehiculo
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
+UTC = ZoneInfo("UTC")
+LOCAL_TZ = ZoneInfo("America/Bogota")
+
+
+def _as_utc_naive(local_dt: datetime) -> datetime:
+    return local_dt.astimezone(UTC).replace(tzinfo=None)
+
+
+def _to_local_date(utc_naive_dt: datetime):
+    if not utc_naive_dt:
+        return None
+    return utc_naive_dt.replace(tzinfo=UTC).astimezone(LOCAL_TZ).date()
+
 
 @router.get("/")
 def obtener_dashboard(
@@ -20,32 +34,41 @@ def obtener_dashboard(
 ):
     """Resumen general para dashboard administrativo"""
     dias = max(7, min(dias, 60))
-    inicio_hoy = datetime.combine(date.today(), datetime.min.time())
-    fin_hoy = datetime.combine(date.today(), datetime.max.time())
-    inicio_rango_dia = date.today() - timedelta(days=dias - 1)
-    inicio_rango = datetime.combine(inicio_rango_dia, datetime.min.time())
+    now_local = datetime.now(UTC).astimezone(LOCAL_TZ)
+    today_local = now_local.date()
+    inicio_rango_dia = today_local - timedelta(days=dias - 1)
 
-    movimientos_por_dia_raw = (
-        db.query(
-            func.date(Movimiento.fecha_hora).label("dia"),
-            func.count(Movimiento.id).label("total"),
-        )
+    inicio_hoy = _as_utc_naive(datetime.combine(today_local, datetime.min.time(), tzinfo=LOCAL_TZ))
+    fin_hoy = _as_utc_naive(datetime.combine(today_local, datetime.max.time(), tzinfo=LOCAL_TZ))
+    inicio_rango = _as_utc_naive(datetime.combine(inicio_rango_dia, datetime.min.time(), tzinfo=LOCAL_TZ))
+
+    movimientos_rango_raw = (
+        db.query(Movimiento.fecha_hora)
         .filter(Movimiento.fecha_hora >= inicio_rango, Movimiento.fecha_hora <= fin_hoy)
-        .group_by(func.date(Movimiento.fecha_hora))
         .all()
     )
-    chequeos_por_dia_raw = (
-        db.query(
-            func.date(Chequeo.fecha_hora).label("dia"),
-            func.count(Chequeo.id).label("total"),
-        )
+    chequeos_rango_raw = (
+        db.query(Chequeo.fecha_hora)
         .filter(Chequeo.fecha_hora >= inicio_rango, Chequeo.fecha_hora <= fin_hoy)
-        .group_by(func.date(Chequeo.fecha_hora))
         .all()
     )
 
-    movimientos_por_dia = {str(row.dia): int(row.total) for row in movimientos_por_dia_raw}
-    chequeos_por_dia = {str(row.dia): int(row.total) for row in chequeos_por_dia_raw}
+    movimientos_por_dia = {}
+    chequeos_por_dia = {}
+
+    for row in movimientos_rango_raw:
+        local_day = _to_local_date(row.fecha_hora)
+        if not local_day:
+            continue
+        key = local_day.isoformat()
+        movimientos_por_dia[key] = movimientos_por_dia.get(key, 0) + 1
+
+    for row in chequeos_rango_raw:
+        local_day = _to_local_date(row.fecha_hora)
+        if not local_day:
+            continue
+        key = local_day.isoformat()
+        chequeos_por_dia[key] = chequeos_por_dia.get(key, 0) + 1
 
     etiquetas = []
     serie_movimientos = []
