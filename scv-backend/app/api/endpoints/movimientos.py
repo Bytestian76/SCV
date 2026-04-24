@@ -8,7 +8,7 @@ from typing import List, Optional
 from datetime import datetime, date
 
 from app.db.database import get_db
-from app.models.models import Movimiento, Vehiculo, Conductor
+from app.models.models import Movimiento, Vehiculo, Conductor, Chequeo
 from app.core.dependencies import require_role
 from app.schemas.movimiento import (
     MovimientoCreate,
@@ -78,6 +78,22 @@ def _build_movimiento_payload(movimiento: Movimiento) -> dict:
         if movimiento.usuario
         else None,
     }
+
+
+def _get_vehiculo_kilometraje_referencia(db: Session, vehiculo_id: int, vehiculo_km: int) -> int:
+    ultimo_mov = db.query(Movimiento).filter(
+        Movimiento.vehiculo_id == vehiculo_id
+    ).order_by(Movimiento.fecha_hora.desc()).first()
+
+    ultimo_chequeo = db.query(Chequeo).filter(
+        Chequeo.vehiculo_id == vehiculo_id
+    ).order_by(Chequeo.fecha_hora.desc()).first()
+
+    return max(
+        vehiculo_km or 0,
+        ultimo_mov.kilometraje if ultimo_mov else 0,
+        ultimo_chequeo.kilometraje if ultimo_chequeo else 0,
+    )
 
 
 @router.get("/", response_model=List[MovimientoListResponse])
@@ -186,15 +202,16 @@ def crear_movimiento(
             detail="Conductor no encontrado o inactivo"
         )
     
-    # Validar kilometraje no sea menor al último movimiento
-    ultimo_mov = db.query(Movimiento).filter(
-        Movimiento.vehiculo_id == movimiento.vehiculo_id
-    ).order_by(Movimiento.fecha_hora.desc()).first()
-    
-    if ultimo_mov and movimiento.kilometraje < ultimo_mov.kilometraje:
+    kilometraje_referencia = _get_vehiculo_kilometraje_referencia(
+        db,
+        movimiento.vehiculo_id,
+        vehiculo.kilometraje,
+    )
+
+    if movimiento.kilometraje < kilometraje_referencia:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"El kilometraje debe ser mayor o igual al último registrado ({ultimo_mov.kilometraje} km)"
+            detail=f"El kilometraje debe ser mayor o igual al último registrado ({kilometraje_referencia} km)"
         )
     
     # Crear movimiento
@@ -213,6 +230,7 @@ def crear_movimiento(
     )
     
     db.add(db_movimiento)
+    vehiculo.kilometraje = movimiento.kilometraje
     db.commit()
     db.refresh(db_movimiento)
     

@@ -60,6 +60,12 @@ def crear_vehiculo(
     current_user = Depends(require_role(["admin"]))
 ):
     """Crear nuevo vehículo (solo admin)"""
+    if vehiculo.kilometraje < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El kilometraje no puede ser negativo"
+        )
+
     # Verificar que la placa no exista
     existente = db.query(Vehiculo).filter(Vehiculo.placa == vehiculo.placa).first()
     if existente:
@@ -102,6 +108,12 @@ def actualizar_vehiculo(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="La placa ya existe"
             )
+
+    if vehiculo_update.kilometraje is not None and vehiculo_update.kilometraje < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El kilometraje no puede ser negativo"
+        )
     
     # Actualizar campos
     for key, value in vehiculo_update.model_dump(exclude_unset=True).items():

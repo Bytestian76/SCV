@@ -49,6 +49,9 @@ def apply_schema_updates():
     if "vehiculos" in tablas:
         columnas_vehiculos = {column["name"] for column in inspector.get_columns("vehiculos")}
 
+        if "kilometraje" not in columnas_vehiculos:
+            alter_statements.append("ALTER TABLE vehiculos ADD COLUMN kilometraje INTEGER NOT NULL DEFAULT 0")
+
         if "fecha_venc_soat" not in columnas_vehiculos:
             alter_statements.append("ALTER TABLE vehiculos ADD COLUMN fecha_venc_soat DATE")
 
@@ -67,3 +70,18 @@ def apply_schema_updates():
     with engine.begin() as connection:
         for statement in alter_statements:
             connection.execute(text(statement))
+
+        if "vehiculos" in tablas:
+            columnas_vehiculos = {column["name"] for column in inspector.get_columns("vehiculos")}
+            if "kilometraje" in columnas_vehiculos or any("kilometraje" in stmt for stmt in alter_statements):
+                connection.execute(text("""
+                    UPDATE vehiculos
+                    SET kilometraje = COALESCE((
+                        SELECT MAX(km) FROM (
+                            SELECT kilometraje AS km FROM movimientos WHERE vehiculo_id = vehiculos.id
+                            UNION ALL
+                            SELECT kilometraje AS km FROM chequeos WHERE vehiculo_id = vehiculos.id
+                        )
+                    ), 0)
+                    WHERE kilometraje = 0
+                """))

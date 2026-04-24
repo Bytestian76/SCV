@@ -2,7 +2,7 @@ from pathlib import Path
 
 from app.api.endpoints.chequeos import CHEQUEO_FORMULARIO
 from app.core.security import verify_password
-from app.models.models import Chequeo, Movimiento, Usuario
+from app.models.models import Chequeo, Movimiento, Usuario, Vehiculo
 
 
 API_PREFIX = "/api/v1"
@@ -497,6 +497,45 @@ def test_data_002_movimientos_y_chequeos_are_independent(client, seeded_data, lo
 
     assert db_session.query(Movimiento).count() == movimiento_count_before
     assert db_session.query(Chequeo).count() == chequeo_count_before + 1
+
+
+def test_data_004_movimiento_updates_vehiculo_kilometraje(client, seeded_data, login, db_session):
+    creds = seeded_data["credentials"]["mov_1"]
+    _, headers, _ = login(creds["email"], creds["password"])
+
+    response = client.post(
+        f"{API_PREFIX}/movimientos/",
+        headers=headers,
+        json={
+            "tipo": "entrada",
+            "vehiculo_id": seeded_data["vehiculo_id"],
+            "conductor_id": seeded_data["conductor_id"],
+            "kilometraje": 185,
+        },
+    )
+    assert response.status_code == 201
+
+    vehiculo = db_session.query(Vehiculo).filter(Vehiculo.id == seeded_data["vehiculo_id"]).first()
+    assert vehiculo.kilometraje == 185
+
+
+def test_data_005_chequeo_updates_vehiculo_kilometraje(client, seeded_data, login, db_session):
+    creds = seeded_data["credentials"]["chq"]
+    _, headers, _ = login(creds["email"], creds["password"])
+
+    response = client.post(
+        f"{API_PREFIX}/chequeos/",
+        headers=headers,
+        json={
+            "vehiculo_id": seeded_data["vehiculo_id"],
+            "conductor_id": seeded_data["conductor_id"],
+            "kilometraje": 205,
+        },
+    )
+    assert response.status_code == 201
+
+    vehiculo = db_session.query(Vehiculo).filter(Vehiculo.id == seeded_data["vehiculo_id"]).first()
+    assert vehiculo.kilometraje == 205
 
 
 def test_data_003_soft_delete_preserves_movimiento_history(client, seeded_data, login):

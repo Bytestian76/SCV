@@ -11,6 +11,7 @@ class VehiculoBase(BaseModel):
     modelo: str
     año: int
     empresa: Optional[str] = None
+    kilometraje: int = 0
     fecha_venc_soat: Optional[date] = None
     fecha_venc_rtm: Optional[date] = None
 
@@ -25,6 +26,7 @@ class VehiculoUpdate(BaseModel):
     modelo: Optional[str] = None
     año: Optional[int] = None
     empresa: Optional[str] = None
+    kilometraje: Optional[int] = None
     fecha_venc_soat: Optional[date] = None
     fecha_venc_rtm: Optional[date] = None
     activo: Optional[bool] = None
