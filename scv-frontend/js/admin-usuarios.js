@@ -140,7 +140,7 @@ function renderUsuariosList() {
             <div class="management-item-actions">
                 <span class="status-badge ${usuario.activo ? 'is-active' : 'is-inactive'}">${usuario.activo ? 'Activo' : 'Inactivo'}</span>
                 <button type="button" class="btn-ghost btn-item" data-action="edit" data-id="${usuario.id}">Editar</button>
-                <button type="button" class="btn-danger btn-item" data-action="deactivate" data-id="${usuario.id}" ${usuario.activo && !isSelf ? '' : 'disabled'}>${isSelf ? 'Tu sesión' : 'Desactivar'}</button>
+                <button type="button" class="${usuario.activo ? 'btn-danger' : 'btn-ghost'} btn-item" data-action="${usuario.activo ? 'deactivate' : 'activate'}" data-id="${usuario.id}" ${isSelf ? 'disabled' : ''}>${isSelf ? 'Tu sesión' : (usuario.activo ? 'Desactivar' : 'Reactivar')}</button>
             </div>
         </article>
     `;
@@ -244,6 +244,22 @@ async function handleUsuariosListClick(e) {
             await loadUsuariosManagement();
         } catch (error) {
             setUsuariosFeedback(error.message || 'No se pudo desactivar el usuario.', true);
+        }
+    }
+
+    if (button.dataset.action === 'activate') {
+        const confirmed = await showAppConfirm(
+            'Reactivar usuario',
+            `${usuario.nombre} recuperará el acceso al sistema.`
+        );
+        if (!confirmed) return;
+
+        try {
+            await API.activateUsuario(usuarioId);
+            setUsuariosFeedback(`Usuario ${usuario.nombre} reactivado.`);
+            await loadUsuariosManagement();
+        } catch (error) {
+            setUsuariosFeedback(error.message || 'No se pudo reactivar el usuario.', true);
         }
     }
 }
