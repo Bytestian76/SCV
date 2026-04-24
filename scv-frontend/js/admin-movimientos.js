@@ -48,8 +48,8 @@ function getFilteredMovimientos() {
         if (orden === 'km_asc') return (a.kilometraje || 0) - (b.kilometraje || 0);
         if (orden === 'km_desc') return (b.kilometraje || 0) - (a.kilometraje || 0);
 
-        const aTime = new Date(a.fecha_hora).getTime();
-        const bTime = new Date(b.fecha_hora).getTime();
+        const aTime = getApiTimestamp(a.fecha_hora);
+        const bTime = getApiTimestamp(b.fecha_hora);
         return orden === 'fecha_asc' ? aTime - bTime : bTime - aTime;
     });
 }
@@ -76,7 +76,7 @@ function renderMovimientosManagementList() {
 
     container.innerHTML = movimientos
         .map((m) => {
-            const fecha = new Date(m.fecha_hora).toLocaleString();
+            const fecha = formatApiDateTime(m.fecha_hora);
             return `
                 <article class="management-card">
                     <div class="management-card-content">
@@ -153,7 +153,7 @@ function renderMovimientoDetalle(detalle) {
     const container = document.getElementById('movimiento-detalle-content');
     if (!container) return;
 
-    const fecha = new Date(detalle.fecha_hora).toLocaleString();
+    const fecha = formatApiDateTime(detalle.fecha_hora);
 
     container.innerHTML = `
         <section class="chequeo-detalle-grid">

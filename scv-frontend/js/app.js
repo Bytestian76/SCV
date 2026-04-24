@@ -62,7 +62,8 @@ const APP = {
     },
     ui: {
         dialogResolver: null,
-        adminChartsInterval: null
+        adminChartsInterval: null,
+        adminDashboardRequestSeq: 0
     },
     selectorSearchTimers: {},
     selectorOptions: {},
@@ -253,6 +254,7 @@ function setupEventListeners() {
     const movimientosList = document.getElementById('movimientos-list');
     const movimientosRecientes = document.getElementById('movimientos-recientes');
     const adminChartRange = document.getElementById('admin-chart-range');
+    const adminRefreshBtn = document.getElementById('admin-refresh-btn');
     const chequeoModal = document.getElementById('chequeo-modal');
     const chequeoCloseBtn = document.getElementById('chequeo-close-btn');
     const chequeoCancelBtn = document.getElementById('chequeo-cancel-btn');
@@ -613,6 +615,12 @@ function setupEventListeners() {
         });
     }
 
+    if (adminRefreshBtn) {
+        adminRefreshBtn.addEventListener('click', () => {
+            loadDashboardData(CONFIG.ROLES.ADMIN);
+        });
+    }
+
     if (movimientoVehiculoSearch) {
         movimientoVehiculoSearch.addEventListener('input', (e) => {
             scheduleSelectorSearch('mov-vehiculo', e.target.value, () => {
@@ -774,6 +782,11 @@ function setupEventListeners() {
         dialogCancelBtn.addEventListener('click', () => resolveDialog(false));
     }
 
+    window.addEventListener('scv:data-changed', handleDashboardDataChangeEvent);
+    window.addEventListener('storage', handleDashboardStorageSync);
+    document.addEventListener('visibilitychange', handleDashboardVisibilityChange);
+    window.addEventListener('focus', handleDashboardWindowFocus);
+
     document.addEventListener('keydown', handleEscapeKey);
 }
 
@@ -926,6 +939,32 @@ function renderUserCredentialCards() {
     });
 }
 
+function shouldRefreshAdminDashboard() {
+    return APP.user?.rol === CONFIG.ROLES.ADMIN && APP.currentScreen === 'dashboard-admin';
+}
+
+function handleDashboardDataChangeEvent() {
+    if (!shouldRefreshAdminDashboard()) return;
+    loadDashboardData(CONFIG.ROLES.ADMIN);
+}
+
+function handleDashboardStorageSync(event) {
+    if (event.key !== CONFIG.DASHBOARD_SYNC_KEY) return;
+    if (!shouldRefreshAdminDashboard()) return;
+    loadDashboardData(CONFIG.ROLES.ADMIN);
+}
+
+function handleDashboardVisibilityChange() {
+    if (document.hidden) return;
+    if (!shouldRefreshAdminDashboard()) return;
+    loadDashboardData(CONFIG.ROLES.ADMIN);
+}
+
+function handleDashboardWindowFocus() {
+    if (!shouldRefreshAdminDashboard()) return;
+    loadDashboardData(CONFIG.ROLES.ADMIN);
+}
+
 function clearAdminAutoRefresh() {
     if (APP.ui.adminChartsInterval) {
         clearInterval(APP.ui.adminChartsInterval);
@@ -938,18 +977,20 @@ function configureAdminAutoRefresh(rol) {
     if (rol !== CONFIG.ROLES.ADMIN) return;
 
     APP.ui.adminChartsInterval = setInterval(() => {
-        if (APP.currentScreen === 'dashboard-admin') {
+        if (!document.hidden && APP.currentScreen === 'dashboard-admin') {
             loadDashboardData(CONFIG.ROLES.ADMIN);
         }
-    }, 60000);
+    }, CONFIG.ADMIN_REFRESH_INTERVAL_MS || 5000);
 }
 
 async function loadDashboardData(rol) {
     try {
         if (rol === CONFIG.ROLES.ADMIN) {
+            const requestSeq = ++APP.ui.adminDashboardRequestSeq;
             const rangoSelect = document.getElementById('admin-chart-range');
             const dias = parseInt(rangoSelect?.value || '7', 10);
             const stats = await API.getDashboard(Number.isInteger(dias) ? dias : 7);
+            if (requestSeq !== APP.ui.adminDashboardRequestSeq) return;
             document.getElementById('stat-vehiculos').textContent = stats.totales?.vehiculos_activos || 0;
             document.getElementById('stat-conductores').textContent = stats.totales?.conductores_activos || 0;
             document.getElementById('stat-movimientos').textContent = stats.totales?.movimientos_hoy || 0;
@@ -1154,6 +1195,41 @@ function formatCompactNumber(value) {
     return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(numeric);
 }
 
+function parseApiDateTime(value) {
+    if (!value) return null;
+    const raw = String(value).trim();
+    if (!raw) return null;
+
+    const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(raw);
+    const normalized = hasTimezone ? raw : `${raw}Z`;
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed;
+}
+
+function getApiTimestamp(value) {
+    const parsed = parseApiDateTime(value);
+    return parsed ? parsed.getTime() : 0;
+}
+
+function formatApiDateTime(value, locale = 'es-CO') {
+    const parsed = parseApiDateTime(value);
+    if (!parsed) return 'No disponible';
+    return parsed.toLocaleString(locale);
+}
+
+function formatApiDate(value, locale = 'es-CO') {
+    const parsed = parseApiDateTime(value);
+    if (!parsed) return 'No disponible';
+    return parsed.toLocaleDateString(locale);
+}
+
+function formatApiTime(value, locale = 'es-CO') {
+    const parsed = parseApiDateTime(value);
+    if (!parsed) return 'No disponible';
+    return parsed.toLocaleTimeString(locale);
+}
+
 function renderAdminTrendChart(series) {
     const container = document.getElementById('admin-trend-chart');
     if (!container) return;
@@ -1167,13 +1243,13 @@ function renderAdminTrendChart(series) {
         return;
     }
 
-    const width = 860;
-    const height = 320;
+    const width = 940;
+    const height = 380;
     const plotArea = {
         x: 62,
-        y: 18,
+        y: 22,
         width: width - 82,
-        height: height - 56
+        height: height - 76
     };
 
     const allValues = [...movimientos, ...chequeos].map((value) => Number(value || 0));
@@ -1214,18 +1290,27 @@ function renderAdminTrendChart(series) {
         const movValue = movimientos[index] ?? 0;
         const cheValue = chequeos[index] ?? 0;
         return `
-            <circle class="trend-dot trend-dot-mov" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="3.8">
+            <circle class="trend-dot trend-dot-mov" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="4.8">
                 <title>${escapeHtml(label)} · Movimientos: ${movValue} · Chequeos: ${cheValue}</title>
             </circle>
-            <circle class="trend-dot trend-dot-che" cx="${chePoints[index]?.x?.toFixed(2) || point.x.toFixed(2)}" cy="${chePoints[index]?.y?.toFixed(2) || point.y.toFixed(2)}" r="3.3">
+            <circle class="trend-dot trend-dot-che" cx="${chePoints[index]?.x?.toFixed(2) || point.x.toFixed(2)}" cy="${chePoints[index]?.y?.toFixed(2) || point.y.toFixed(2)}" r="4.2">
                 <title>${escapeHtml(label)} · Chequeos: ${cheValue} · Movimientos: ${movValue}</title>
             </circle>
         `;
     }).join('');
 
-    const labelsMarkup = labels
-        .filter((_, idx) => idx === 0 || idx === labels.length - 1 || idx % Math.ceil(labels.length / 6) === 0)
-        .map((label, idx) => `<span>${escapeHtml(label)}</span>`)
+    const labelStep = Math.max(1, Math.ceil(labels.length / 6));
+    const xLabels = labels
+        .map((label, index) => ({ label, index }))
+        .filter(({ index }) => index === 0 || index === labels.length - 1 || index % labelStep === 0)
+        .map(({ label, index }) => {
+            const point = movPoints[index];
+            if (!point) return '';
+            let anchor = 'middle';
+            if (index === 0) anchor = 'start';
+            if (index === labels.length - 1) anchor = 'end';
+            return `<text class="trend-x-label" x="${point.x.toFixed(2)}" y="${(height - 10).toFixed(2)}" text-anchor="${anchor}">${escapeHtml(label)}</text>`;
+        })
         .join('');
 
     container.innerHTML = `
@@ -1244,12 +1329,12 @@ function renderAdminTrendChart(series) {
             <path class="trend-line trend-line-mov" d="${movPath}" />
             <path class="trend-line trend-line-che" d="${chePath}" />
             ${pointsMarkup}
+            ${xLabels}
         </svg>
         <div class="trend-legend">
             <span><i class="legend-dot mov"></i>Movimientos</span>
             <span><i class="legend-dot che"></i>Chequeos</span>
         </div>
-        <div class="trend-axis-labels">${labelsMarkup}</div>
     `;
 }
 

@@ -10,6 +10,8 @@ const CONFIG = {
     TOKEN_KEY: 'scv_token',
     USER_KEY: 'scv_user',
     REMEMBER_KEY: 'scv_remember',
+    DASHBOARD_SYNC_KEY: 'scv_dashboard_sync_tick',
+    ADMIN_REFRESH_INTERVAL_MS: 5000,
     
     // Roles
     ROLES: {
