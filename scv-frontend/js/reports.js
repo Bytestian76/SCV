@@ -456,7 +456,7 @@ async function exportChequeosReport() {
         ],
         headers: ['Fecha', 'Placa', 'Conductor', 'Inspector', 'Kilometraje', 'Items', 'Observaciones'],
         rows: chequeos.map((chequeo) => [
-            chequeo.fecha_hora ? new Date(chequeo.fecha_hora).toLocaleString() : '',
+            chequeo.fecha_hora ? formatApiDateTime(chequeo.fecha_hora) : '',
             chequeo.vehiculo?.placa || '',
             chequeo.conductor?.nombre || '',
             chequeo.usuario?.nombre || '',
@@ -489,7 +489,7 @@ async function exportMovimientosReport() {
         ],
         headers: ['Fecha', 'Tipo', 'Placa', 'Conductor', 'Operario', 'Kilometraje', 'Bascula', 'Auxiliar', 'Proveedor/Destino', 'Sacas', 'Observaciones'],
         rows: movimientos.map((movimiento) => [
-            movimiento.fecha_hora ? new Date(movimiento.fecha_hora).toLocaleString() : '',
+            movimiento.fecha_hora ? formatApiDateTime(movimiento.fecha_hora) : '',
             formatMovimientoTipo(movimiento.tipo),
             movimiento.vehiculo?.placa || '',
             movimiento.conductor?.nombre || '',
@@ -658,7 +658,7 @@ async function exportChequeosPdfReport() {
         summary: `Total chequeos: ${chequeos.length}`,
         headers: ['Fecha', 'Placa', 'Conductor', 'Inspector', 'Kilometraje', 'Items', 'Observaciones'],
         rows: chequeos.map((chequeo) => [
-            chequeo.fecha_hora ? new Date(chequeo.fecha_hora).toLocaleString() : '',
+            chequeo.fecha_hora ? formatApiDateTime(chequeo.fecha_hora) : '',
             chequeo.vehiculo?.placa || '',
             chequeo.conductor?.nombre || '',
             chequeo.usuario?.nombre || '',
@@ -701,7 +701,7 @@ async function exportMovimientosPdfReport() {
         summary: `Total movimientos: ${movimientos.length} | Entradas: ${totalEntradas} | Salidas: ${totalSalidas}`,
         headers: ['Fecha', 'Tipo', 'Placa', 'Conductor', 'Operario', 'Kilometraje', 'Bascula', 'Auxiliar', 'Proveedor/Destino', 'Sacas', 'Observaciones'],
         rows: movimientos.map((movimiento) => [
-            movimiento.fecha_hora ? new Date(movimiento.fecha_hora).toLocaleString() : '',
+            movimiento.fecha_hora ? formatApiDateTime(movimiento.fecha_hora) : '',
             formatMovimientoTipo(movimiento.tipo),
             movimiento.vehiculo?.placa || '',
             movimiento.conductor?.nombre || '',
