@@ -3,6 +3,24 @@
  */
 
 const API = {
+    notifyDashboardDataChanged(method, endpoint) {
+        if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return;
+        if (!/^\/(movimientos|chequeos|vehiculos|conductores)\b/.test(endpoint)) return;
+
+        const detail = {
+            method,
+            endpoint,
+            ts: Date.now()
+        };
+
+        window.dispatchEvent(new CustomEvent('scv:data-changed', { detail }));
+        try {
+            localStorage.setItem(CONFIG.DASHBOARD_SYNC_KEY, JSON.stringify(detail));
+        } catch (error) {
+            console.warn('No se pudo sincronizar evento de dashboard entre pestañas:', error);
+        }
+    },
+
     /**
      * Headers base para todas las peticiones
      */
@@ -23,7 +41,8 @@ const API = {
     async request(method, endpoint, data = null) {
         const options = {
             method: method,
-            headers: this.getHeaders()
+            headers: this.getHeaders(),
+            cache: 'no-store'
         };
         
         if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
@@ -40,6 +59,8 @@ const API = {
                     message: result.detail || 'Error en la petición'
                 };
             }
+
+            this.notifyDashboardDataChanged(method, endpoint);
             
             return result;
         } catch (error) {
@@ -207,6 +228,6 @@ const API = {
     // ============ DASHBOARD ============
 
     async getDashboard(dias = 7) {
-        return await this.request('GET', `/dashboard/?dias=${dias}`);
+        return await this.request('GET', `/dashboard/?dias=${dias}&_ts=${Date.now()}`);
     }
 };

@@ -258,7 +258,7 @@ function renderMovimientosRecientes(movimientos) {
             </div>
             <div class="list-item-actions">
                 <span class="status-badge ${getMovimientoBadgeClass(m.tipo)}">${formatMovimientoTipo(m.tipo)}</span>
-                <span class="list-item-meta">${new Date(m.fecha_hora).toLocaleTimeString()}</span>
+                <span class="list-item-meta">${formatApiTime(m.fecha_hora)}</span>
                 <button type="button" class="btn-ghost btn-item" data-action="view-movimiento" data-id="${m.id}">Detalle</button>
             </div>
         </div>
@@ -281,7 +281,7 @@ function renderChequeosRecientes(chequeos) {
                 <span class="list-item-subtitle">${c.conductor?.nombre || 'N/A'}</span>
             </div>
             <div class="list-item-actions">
-                <span class="list-item-meta">${new Date(c.fecha_hora).toLocaleDateString()}</span>
+                <span class="list-item-meta">${formatApiDate(c.fecha_hora)}</span>
                 <button type="button" class="btn-ghost btn-item" data-action="view-chequeo" data-id="${c.id}">Detalle</button>
             </div>
         </div>
