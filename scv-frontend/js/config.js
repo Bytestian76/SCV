@@ -3,7 +3,7 @@ const API_HOST = window.location.hostname || 'localhost';
 const API_PROTOCOL = window.location.protocol === 'https:' ? 'https:' : 'http:';
 
 const CONFIG = {
-    API_URL: `${API_PROTOCOL}//${API_HOST}:8000`,
+    API_URL: `${API_PROTOCOL}//${API_HOST}`,
     API_VERSION: '/api/v1',
     
     // Tiempos
