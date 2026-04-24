@@ -88,9 +88,10 @@ function normalizeUiText(value = '') {
 }
 
 function resolveUnifiedButtonIcon(button, label) {
+    if (button.classList.contains('btn-back')) return 'assets/icons/box-arrow-in-left.svg';
     if (label.includes('cerrar sesion')) return 'assets/icons/box-arrow-right.svg';
     if (label.includes('iniciar sesion')) return 'assets/icons/box-arrow-right.svg';
-    if (label.startsWith('volver')) return 'assets/icons/box-arrow-in-left.svg';
+    if (label.includes('volver')) return 'assets/icons/box-arrow-in-left.svg';
     if (label.includes('salida')) return 'assets/icons/box-arrow-up-right.svg';
     if (label.includes('entrada')) return 'assets/icons/box-arrow-in-left.svg';
     if (label.includes('historial') || label.includes('ver movimientos') || label.includes('ver chequeos')) return 'assets/icons/bar-chart-line.svg';
