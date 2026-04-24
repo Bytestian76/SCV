@@ -22,6 +22,7 @@ function getSelectorConfig() {
             hiddenId: 'vehiculo',
             resultsId: 'mov-vehiculo-results',
             selectedId: 'mov-vehiculo-selected',
+            kilometrajeFieldId: 'kilometraje',
             soatFieldId: 'mov-soat',
             rtmFieldId: 'mov-rtm'
         },
@@ -38,6 +39,7 @@ function getSelectorConfig() {
             hiddenId: 'ch-vehiculo',
             resultsId: 'ch-vehiculo-results',
             selectedId: 'ch-vehiculo-selected',
+            kilometrajeFieldId: 'ch-kilometraje',
             soatFieldId: 'ch-soat',
             rtmFieldId: 'ch-rtm'
         },
@@ -93,6 +95,7 @@ function clearSelectorSelection(selectorKey, clearInput = false) {
 
     if (config.type === 'vehiculo') {
         syncVehiculoFechasToFields(null, {
+            kilometrajeFieldId: config.kilometrajeFieldId,
             soatFieldId: config.soatFieldId,
             rtmFieldId: config.rtmFieldId
         });
@@ -126,7 +129,7 @@ function renderSelectorResults(selectorKey, items = []) {
             ? `${item.placa} · ${item.marca} ${item.modelo}`
             : `${item.nombre}`;
         const subtitle = config.type === 'vehiculo'
-            ? `SOAT: ${item.fecha_venc_soat || 'N/R'} · RTM: ${item.fecha_venc_rtm || 'N/R'}`
+            ? `Km: ${item.kilometraje ?? 0} · SOAT: ${item.fecha_venc_soat || 'N/R'} · RTM: ${item.fecha_venc_rtm || 'N/R'}`
             : `Cédula: ${item.cedula || 'N/R'}`;
 
         return `
@@ -163,6 +166,7 @@ function selectSearchResult(selectorKey, itemId) {
 
     if (config.type === 'vehiculo') {
         syncVehiculoFechasToFields(item, {
+            kilometrajeFieldId: config.kilometrajeFieldId,
             soatFieldId: config.soatFieldId,
             rtmFieldId: config.rtmFieldId
         });

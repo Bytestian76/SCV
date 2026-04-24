@@ -358,13 +358,14 @@ async function exportVehiculosReport() {
             { label: 'Ano desde', value: APP.admin.filters.anioMin },
             { label: 'Ano hasta', value: APP.admin.filters.anioMax }
         ],
-        headers: ['Placa', 'Marca', 'Modelo', 'Ano', 'Empresa', 'SOAT', 'RTM', 'Estado'],
+        headers: ['Placa', 'Marca', 'Modelo', 'Ano', 'Empresa', 'Kilometraje', 'SOAT', 'RTM', 'Estado'],
         rows: vehiculos.map((vehiculo) => [
             vehiculo.placa || '',
             vehiculo.marca || '',
             vehiculo.modelo || '',
             vehiculo.año || '',
             vehiculo.empresa || '',
+            vehiculo.kilometraje ?? 0,
             vehiculo.fecha_venc_soat || '',
             vehiculo.fecha_venc_rtm || '',
             vehiculo.activo ? 'Activo' : 'Inactivo'
@@ -529,19 +530,20 @@ async function exportVehiculosPdfReport() {
             { label: 'Ano hasta', value: APP.admin.filters.anioMax }
         ],
         summary: `Total vehiculos: ${vehiculos.length}`,
-        headers: ['Placa', 'Marca', 'Modelo', 'Ano', 'Empresa', 'SOAT', 'RTM', 'Estado'],
+        headers: ['Placa', 'Marca', 'Modelo', 'Ano', 'Empresa', 'Kilometraje', 'SOAT', 'RTM', 'Estado'],
         rows: vehiculos.map((vehiculo) => [
             vehiculo.placa || '',
             vehiculo.marca || '',
             vehiculo.modelo || '',
             vehiculo.año || '',
             vehiculo.empresa || '',
+            vehiculo.kilometraje ?? 0,
             vehiculo.fecha_venc_soat || '',
             vehiculo.fecha_venc_rtm || '',
             vehiculo.activo ? 'Activo' : 'Inactivo'
         ]),
         didParseCell: (data) => {
-            if (data.section !== 'body' || data.column.index !== 7) return;
+            if (data.section !== 'body' || data.column.index !== 8) return;
             const value = String(data.cell.raw || '').trim().toLowerCase();
             if (value === 'activo') {
                 data.cell.styles.textColor = [26, 122, 58];
