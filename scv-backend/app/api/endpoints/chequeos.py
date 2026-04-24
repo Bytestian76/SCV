@@ -7,7 +7,7 @@ from typing import List
 
 from app.core.dependencies import require_role
 from app.db.database import get_db
-from app.models.models import Chequeo, ChequeoItem, Conductor, Usuario, Vehiculo
+from app.models.models import Chequeo, ChequeoItem, Conductor, Usuario, Vehiculo, Movimiento
 from app.schemas.chequeo import (
     ChequeoCreate,
     ChequeoDetailResponse,
@@ -232,6 +232,27 @@ def _template_lookup() -> dict[tuple[str, str], set[str]]:
 TEMPLATE_LOOKUP = _template_lookup()
 
 
+def _get_vehiculo_kilometraje_referencia(db: Session, vehiculo_id: int, vehiculo_km: int) -> int:
+    ultimo_chequeo = (
+        db.query(Chequeo)
+        .filter(Chequeo.vehiculo_id == vehiculo_id)
+        .order_by(Chequeo.fecha_hora.desc())
+        .first()
+    )
+    ultimo_mov = (
+        db.query(Movimiento)
+        .filter(Movimiento.vehiculo_id == vehiculo_id)
+        .order_by(Movimiento.fecha_hora.desc())
+        .first()
+    )
+
+    return max(
+        vehiculo_km or 0,
+        ultimo_chequeo.kilometraje if ultimo_chequeo else 0,
+        ultimo_mov.kilometraje if ultimo_mov else 0,
+    )
+
+
 @router.get("/formulario")
 def obtener_formulario_chequeo(
     current_user=Depends(require_role(["admin", "operario_chequeo"])),
@@ -265,20 +286,20 @@ def crear_chequeo_cabecera(
             detail="Conductor no encontrado o inactivo",
         )
 
-    ultimo_chequeo = (
-        db.query(Chequeo)
-        .filter(Chequeo.vehiculo_id == chequeo.vehiculo_id)
-        .order_by(Chequeo.fecha_hora.desc())
-        .first()
+    kilometraje_referencia = _get_vehiculo_kilometraje_referencia(
+        db,
+        chequeo.vehiculo_id,
+        vehiculo.kilometraje,
     )
-    if ultimo_chequeo and chequeo.kilometraje < ultimo_chequeo.kilometraje:
+    if chequeo.kilometraje < kilometraje_referencia:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"El kilometraje debe ser mayor o igual al ultimo chequeo ({ultimo_chequeo.kilometraje} km)",
+            detail=f"El kilometraje debe ser mayor o igual al ultimo registrado ({kilometraje_referencia} km)",
         )
 
     db_chequeo = Chequeo(**chequeo.model_dump(), usuario_id=current_user.id)
     db.add(db_chequeo)
+    vehiculo.kilometraje = chequeo.kilometraje
     db.commit()
     db.refresh(db_chequeo)
 

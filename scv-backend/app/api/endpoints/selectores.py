@@ -40,6 +40,7 @@ def selector_vehiculos(
             "placa": v.placa,
             "marca": v.marca,
             "modelo": v.modelo,
+            "kilometraje": v.kilometraje,
             "fecha_venc_soat": v.fecha_venc_soat,
             "fecha_venc_rtm": v.fecha_venc_rtm,
         }

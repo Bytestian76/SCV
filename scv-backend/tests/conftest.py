@@ -81,6 +81,7 @@ def seeded_data(db_session):
         modelo="NHR",
         año=2022,
         empresa="Normetales",
+        kilometraje=150,
         activo=True,
     )
     conductor = Conductor(
