@@ -71,6 +71,7 @@ function getFilteredVehiculos(vehiculos) {
             vehiculo.marca,
             vehiculo.modelo,
             vehiculo.empresa,
+            vehiculo.kilometraje,
             vehiculo.año,
             vehiculo.fecha_venc_soat,
             vehiculo.fecha_venc_rtm,
@@ -132,12 +133,13 @@ function renderVehiculosList() {
                 <p class="management-item-title">${vehiculo.placa}</p>
                 <p class="management-item-subtitle">${vehiculo.marca} ${vehiculo.modelo} · ${vehiculo.año}</p>
                 <p class="management-item-meta">Empresa: ${vehiculo.empresa || 'Sin asignar'}</p>
+                <p class="management-item-meta">Kilometraje actual: ${vehiculo.kilometraje ?? 0} km</p>
                 <p class="management-item-meta">SOAT: ${formatVencimientoLabel(vehiculo.fecha_venc_soat)} · RTM: ${formatVencimientoLabel(vehiculo.fecha_venc_rtm)}</p>
             </div>
             <div class="management-item-actions">
                 <span class="status-badge ${vehiculo.activo ? 'is-active' : 'is-inactive'}">${vehiculo.activo ? 'Activo' : 'Inactivo'}</span>
                 <button type="button" class="btn-ghost btn-item" data-action="edit" data-id="${vehiculo.id}">Editar</button>
-                <button type="button" class="btn-danger btn-item" data-action="deactivate" data-id="${vehiculo.id}" ${vehiculo.activo ? '' : 'disabled'}>Desactivar</button>
+                <button type="button" class="${vehiculo.activo ? 'btn-danger' : 'btn-ghost'} btn-item" data-action="${vehiculo.activo ? 'deactivate' : 'activate'}" data-id="${vehiculo.id}">${vehiculo.activo ? 'Desactivar' : 'Reactivar'}</button>
             </div>
         </article>
     `).join('');
@@ -157,6 +159,7 @@ function openVehiculoForm(vehiculo = null) {
         form.marca.value = vehiculo.marca || '';
         form.modelo.value = vehiculo.modelo || '';
         form['año'].value = vehiculo.año || '';
+        form.kilometraje.value = vehiculo.kilometraje ?? 0;
         form.empresa.value = vehiculo.empresa || '';
         form.fecha_venc_soat.value = vehiculo.fecha_venc_soat || '';
         form.fecha_venc_rtm.value = vehiculo.fecha_venc_rtm || '';
@@ -182,6 +185,7 @@ async function handleVehiculoSubmit(e) {
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData);
     payload.año = parseInt(payload.año, 10);
+    payload.kilometraje = parseInt(payload.kilometraje, 10);
     payload.fecha_venc_soat = payload.fecha_venc_soat || null;
     payload.fecha_venc_rtm = payload.fecha_venc_rtm || null;
 
@@ -228,6 +232,22 @@ async function handleVehiculosListClick(e) {
             await loadVehiculosManagement();
         } catch (error) {
             setVehiculosFeedback(error.message || 'No se pudo desactivar el vehículo.', true);
+        }
+    }
+
+    if (button.dataset.action === 'activate') {
+        const confirmed = await showAppConfirm(
+            'Reactivar vehículo',
+            `${vehiculo.placa} volverá a estar disponible para operaciones.`
+        );
+        if (!confirmed) return;
+
+        try {
+            await API.activateVehiculo(vehiculoId);
+            setVehiculosFeedback(`Vehículo ${vehiculo.placa} reactivado.`);
+            await loadVehiculosManagement();
+        } catch (error) {
+            setVehiculosFeedback(error.message || 'No se pudo reactivar el vehículo.', true);
         }
     }
 }

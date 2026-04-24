@@ -36,6 +36,7 @@ class Vehiculo(Base):
     modelo = Column(String(100), nullable=False)
     año = Column(Integer, nullable=False)
     empresa = Column(String(255), nullable=True)
+    kilometraje = Column(Integer, nullable=False, default=0)
     fecha_venc_soat = Column(Date, nullable=True)
     fecha_venc_rtm = Column(Date, nullable=True)
     activo = Column(Boolean, default=True)

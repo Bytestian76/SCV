@@ -134,7 +134,7 @@ function renderConductoresList() {
             <div class="management-item-actions">
                 <span class="status-badge ${conductor.activo ? 'is-active' : 'is-inactive'}">${conductor.activo ? 'Activo' : 'Inactivo'}</span>
                 <button type="button" class="btn-ghost btn-item" data-action="edit" data-id="${conductor.id}">Editar</button>
-                <button type="button" class="btn-danger btn-item" data-action="deactivate" data-id="${conductor.id}" ${conductor.activo ? '' : 'disabled'}>Desactivar</button>
+                <button type="button" class="${conductor.activo ? 'btn-danger' : 'btn-ghost'} btn-item" data-action="${conductor.activo ? 'deactivate' : 'activate'}" data-id="${conductor.id}">${conductor.activo ? 'Desactivar' : 'Reactivar'}</button>
             </div>
         </article>
     `).join('');
@@ -221,6 +221,22 @@ async function handleConductoresListClick(e) {
             await loadConductoresManagement();
         } catch (error) {
             setConductoresFeedback(error.message || 'No se pudo desactivar el conductor.', true);
+        }
+    }
+
+    if (button.dataset.action === 'activate') {
+        const confirmed = await showAppConfirm(
+            'Reactivar conductor',
+            `${conductor.nombre} volverá a estar disponible para asignaciones.`
+        );
+        if (!confirmed) return;
+
+        try {
+            await API.activateConductor(conductorId);
+            setConductoresFeedback(`Conductor ${conductor.nombre} reactivado.`);
+            await loadConductoresManagement();
+        } catch (error) {
+            setConductoresFeedback(error.message || 'No se pudo reactivar el conductor.', true);
         }
     }
 }
