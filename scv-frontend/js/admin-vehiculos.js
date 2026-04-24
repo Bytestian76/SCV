@@ -137,7 +137,7 @@ function renderVehiculosList() {
             <div class="management-item-actions">
                 <span class="status-badge ${vehiculo.activo ? 'is-active' : 'is-inactive'}">${vehiculo.activo ? 'Activo' : 'Inactivo'}</span>
                 <button type="button" class="btn-ghost btn-item" data-action="edit" data-id="${vehiculo.id}">Editar</button>
-                <button type="button" class="btn-danger btn-item" data-action="deactivate" data-id="${vehiculo.id}" ${vehiculo.activo ? '' : 'disabled'}>Desactivar</button>
+                <button type="button" class="${vehiculo.activo ? 'btn-danger' : 'btn-ghost'} btn-item" data-action="${vehiculo.activo ? 'deactivate' : 'activate'}" data-id="${vehiculo.id}">${vehiculo.activo ? 'Desactivar' : 'Reactivar'}</button>
             </div>
         </article>
     `).join('');
@@ -228,6 +228,22 @@ async function handleVehiculosListClick(e) {
             await loadVehiculosManagement();
         } catch (error) {
             setVehiculosFeedback(error.message || 'No se pudo desactivar el vehículo.', true);
+        }
+    }
+
+    if (button.dataset.action === 'activate') {
+        const confirmed = await showAppConfirm(
+            'Reactivar vehículo',
+            `${vehiculo.placa} volverá a estar disponible para operaciones.`
+        );
+        if (!confirmed) return;
+
+        try {
+            await API.activateVehiculo(vehiculoId);
+            setVehiculosFeedback(`Vehículo ${vehiculo.placa} reactivado.`);
+            await loadVehiculosManagement();
+        } catch (error) {
+            setVehiculosFeedback(error.message || 'No se pudo reactivar el vehículo.', true);
         }
     }
 }
