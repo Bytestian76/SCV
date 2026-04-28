@@ -5,15 +5,20 @@ Configuración de la base de datos
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
+from app.core.config import settings
 
-# URL de la base de datos SQLite
-DATABASE_URL = "sqlite:///./scv.db"
+# URL de base de datos desde configuracion (.env)
+DATABASE_URL = settings.DATABASE_URL
+
+connect_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    # Necesario para SQLite (incluye rutas de archivo locales o en volumen)
+    connect_args = {"check_same_thread": False}
 
 # Crear motor de base de datos
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}  # Necesario para SQLite
+    connect_args=connect_args,
 )
 
 # Sesión factory
