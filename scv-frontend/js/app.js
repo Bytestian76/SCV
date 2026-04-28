@@ -834,10 +834,11 @@ async function handleLogin(e) {
     }
 }
 
-async function logout() {
+async function logout(options = {}) {
+    const { revoke = true } = options;
     const token = localStorage.getItem(CONFIG.TOKEN_KEY);
 
-    if (token) {
+    if (revoke && token) {
         try {
             await API.logout();
         } catch (error) {
@@ -856,6 +857,12 @@ async function logout() {
     showScreen('login-screen');
     document.getElementById('login-form').reset();
 }
+
+function forceLogoutByExpiredSession() {
+    logout({ revoke: false });
+}
+
+window.forceLogoutByExpiredSession = forceLogoutByExpiredSession;
 
 // ============ NAVEGACIÓN ============
 

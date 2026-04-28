@@ -44,6 +44,8 @@ const API = {
             headers: this.getHeaders(),
             cache: 'no-store'
         };
+        const isAuthLoginEndpoint = endpoint === '/auth/login';
+        const isAuthLogoutEndpoint = endpoint === '/auth/logout';
         
         if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
             options.body = JSON.stringify(data);
@@ -51,7 +53,23 @@ const API = {
         
         try {
             const response = await fetch(API_BASE + endpoint, options);
-            const result = await response.json();
+            let result = {};
+            try {
+                result = await response.json();
+            } catch (_) {
+                result = {};
+            }
+
+            if (response.status === 401 && !isAuthLoginEndpoint && !isAuthLogoutEndpoint) {
+                if (typeof window.forceLogoutByExpiredSession === 'function') {
+                    window.forceLogoutByExpiredSession();
+                } else {
+                    localStorage.removeItem(CONFIG.TOKEN_KEY);
+                    localStorage.removeItem(CONFIG.USER_KEY);
+                    localStorage.removeItem(CONFIG.REMEMBER_KEY);
+                    window.location.reload();
+                }
+            }
             
             if (!response.ok) {
                 throw {

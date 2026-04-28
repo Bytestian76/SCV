@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = "scv-secret-key-change-in-production-2026"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # 15 minutos
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 360  # 6 horas
     LOGIN_RATE_LIMIT_MAX_ATTEMPTS: int = 5
     LOGIN_RATE_LIMIT_WINDOW_SECONDS: int = 60
     
