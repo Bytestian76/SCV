@@ -3,6 +3,15 @@
  */
 
 const API = {
+    normalizeErrorMessage(detail) {
+        if (Array.isArray(detail)) {
+            return detail.map((item) => item?.msg || JSON.stringify(item)).join(' | ');
+        }
+        if (typeof detail === 'string') return detail;
+        if (detail && typeof detail === 'object') return detail.msg || JSON.stringify(detail);
+        return 'Error en la petición';
+    },
+
     notifyDashboardDataChanged(method, endpoint) {
         if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return;
         if (!/^\/(movimientos|chequeos|vehiculos|conductores)\b/.test(endpoint)) return;
@@ -74,7 +83,7 @@ const API = {
             if (!response.ok) {
                 throw {
                     status: response.status,
-                    message: result.detail || 'Error en la petición'
+                    message: this.normalizeErrorMessage(result.detail)
                 };
             }
 
