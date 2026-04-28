@@ -73,11 +73,12 @@ def login(request: LoginRequest, http_request: Request, db: Session = Depends(ge
     
     Valida credenciales y retorna token JWT con los datos del usuario
     """
-    key = _rate_limit_key(http_request, request.email)
+    login_id = request.email.strip()
+    key = _rate_limit_key(http_request, login_id)
     _assert_not_rate_limited(key)
 
     # Buscar usuario por email
-    usuario = db.query(Usuario).filter(Usuario.email == request.email).first()
+    usuario = db.query(Usuario).filter(Usuario.email == login_id).first()
     
     # Verificar que existe y está activo
     if not usuario:
