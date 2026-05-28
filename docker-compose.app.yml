@@ -13,7 +13,7 @@ services:
       - "9000"
     restart: unless-stopped
     networks:
-      - vps-gateway
+      - scv-network
 
   scv-frontend:
     build:
@@ -23,11 +23,11 @@ services:
       - "80"
     restart: unless-stopped
     networks:
-      - vps-gateway
+      - scv-network
 
 volumes:
   scv-db:
 
 networks:
-  vps-gateway:
+  scv-network:
     external: true
