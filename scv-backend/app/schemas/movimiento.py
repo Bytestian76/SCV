@@ -1,6 +1,6 @@
 """Schemas Pydantic - Movimientos"""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -16,6 +16,13 @@ class MovimientoBase(BaseModel):
     sacas: Optional[int] = None
     cajon: Optional[str] = None
     observaciones: Optional[str] = None
+
+    @field_validator("sacas", mode="before")
+    @classmethod
+    def empty_string_to_none(cls, v):
+        if v == "":
+            return None
+        return v
 
 
 class MovimientoCreate(MovimientoBase):
