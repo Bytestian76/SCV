@@ -122,5 +122,6 @@ ROLES = {
     "admin": ["admin"],
     "operario_movimientos": ["admin", "operario_movimientos"],
     "operario_chequeo": ["admin", "operario_chequeo"],
-    "todos": ["admin", "operario_movimientos", "operario_chequeo"]
+    "mecanico": ["admin", "mecanico"],
+    "todos": ["admin", "operario_movimientos", "operario_chequeo", "mecanico"]
 }

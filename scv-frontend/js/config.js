@@ -17,14 +17,16 @@ const CONFIG = {
     ROLES: {
         ADMIN: 'admin',
         OPERARIO_MOVIMIENTOS: 'operario_movimientos',
-        OPERARIO_CHEQUEO: 'operario_chequeo'
+        OPERARIO_CHEQUEO: 'operario_chequeo',
+        MECANICO: 'mecanico'
     },
     
     // Rutas por rol
     DASHBOARDS: {
         'admin': 'dashboard-admin',
         'operario_movimientos': 'dashboard-movimientos',
-        'operario_chequeo': 'dashboard-chequeo'
+        'operario_chequeo': 'dashboard-chequeo',
+        'mecanico': 'dashboard-mecanico'
     }
 };
 

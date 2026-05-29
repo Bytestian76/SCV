@@ -17,13 +17,15 @@ class Usuario(Base):
     nombre = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    rol = Column(String(50), nullable=False)  # admin, operario_movimientos, operario_chequeo
+    rol = Column(String(50), nullable=False)  # admin, operario_movimientos, operario_chequeo, mecanico
     activo = Column(Boolean, default=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
 
     # Relaciones
     movimientos = relationship("Movimiento", back_populates="usuario")
     chequeos = relationship("Chequeo", back_populates="usuario")
+    mantenimientos = relationship("Mantenimiento", back_populates="creador", foreign_keys="Mantenimiento.creado_por")
+    notificaciones = relationship("Notificacion", back_populates="usuario")
 
 
 class Vehiculo(Base):
@@ -44,6 +46,7 @@ class Vehiculo(Base):
     # Relaciones
     movimientos = relationship("Movimiento", back_populates="vehiculo")
     chequeos = relationship("Chequeo", back_populates="vehiculo")
+    mantenimientos = relationship("Mantenimiento", back_populates="vehiculo")
 
 
 class Conductor(Base):
@@ -119,9 +122,69 @@ class ChequeoItem(Base):
     item = Column(String(100), nullable=False)
     valor = Column(String(50), nullable=False)  # conforme, no_conforme, etc.
     observacion = Column(Text, nullable=True)
+    marcar_mantenimiento = Column(Boolean, default=False)
+    mantenimiento_id = Column(Integer, ForeignKey("mantenimientos.id"), nullable=True)
 
     # Relaciones
     chequeo = relationship("Chequeo", back_populates="items")
+    mantenimiento = relationship("Mantenimiento", back_populates="items_origen", foreign_keys=[mantenimiento_id])
+
+
+class Mantenimiento(Base):
+    """Orden de mantenimiento de vehículo"""
+    __tablename__ = "mantenimientos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    vehiculo_id = Column(Integer, ForeignKey("vehiculos.id"), nullable=False)
+    tipo = Column(String(20), nullable=False)  # preventivo, correctivo
+    descripcion = Column(Text, nullable=True)
+    kilometraje = Column(Integer, nullable=True)
+    estado = Column(String(20), nullable=False, default="pendiente")  # pendiente, en_progreso, completado, cancelado
+    creado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    chequeo_origen_id = Column(Integer, ForeignKey("chequeos.id"), nullable=True)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    fecha_actualizacion = Column(DateTime, nullable=True)
+
+    # Relaciones
+    vehiculo = relationship("Vehiculo", back_populates="mantenimientos")
+    creador = relationship("Usuario", back_populates="mantenimientos", foreign_keys=[creado_por])
+    items_origen = relationship("ChequeoItem", back_populates="mantenimiento", foreign_keys="ChequeoItem.mantenimiento_id")
+    items = relationship("MantenimientoItem", back_populates="mantenimiento", cascade="all, delete-orphan")
+
+
+class MantenimientoItem(Base):
+    """Items asociados a un mantenimiento"""
+    __tablename__ = "mantenimiento_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mantenimiento_id = Column(Integer, ForeignKey("mantenimientos.id"), nullable=False)
+    chequeo_item_id = Column(Integer, ForeignKey("chequeo_items.id"), nullable=True)
+    seccion = Column(String(50), nullable=True)
+    item = Column(String(100), nullable=True)
+    observacion = Column(Text, nullable=True)
+    realizado = Column(Boolean, default=False)
+
+    # Relaciones
+    mantenimiento = relationship("Mantenimiento", back_populates="items")
+
+
+class Notificacion(Base):
+    """Notificaciones por usuario"""
+    __tablename__ = "notificaciones"
+
+    id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    tipo = Column(String(30), nullable=False)  # nuevo_mantenimiento, cambio_estado, recordatorio
+    titulo = Column(String(255), nullable=False)
+    mensaje = Column(Text, nullable=True)
+    referencia_tipo = Column(String(50), nullable=True)
+    referencia_id = Column(Integer, nullable=True)
+    leida = Column(Boolean, default=False)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    fecha_leida = Column(DateTime, nullable=True)
+
+    # Relaciones
+    usuario = relationship("Usuario", back_populates="notificaciones")
 
 
 class TokenRevocado(Base):
