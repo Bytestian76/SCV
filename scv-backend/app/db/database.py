@@ -69,6 +69,13 @@ def apply_schema_updates():
         if "fecha_venc_licencia" not in columnas_conductores:
             alter_statements.append("ALTER TABLE conductores ADD COLUMN fecha_venc_licencia DATE")
 
+    if "chequeo_items" in tablas:
+        columnas_ci = {column["name"] for column in inspector.get_columns("chequeo_items")}
+        if "marcar_mantenimiento" not in columnas_ci:
+            alter_statements.append("ALTER TABLE chequeo_items ADD COLUMN marcar_mantenimiento BOOLEAN DEFAULT 0")
+        if "mantenimiento_id" not in columnas_ci:
+            alter_statements.append("ALTER TABLE chequeo_items ADD COLUMN mantenimiento_id INTEGER REFERENCES mantenimientos(id)")
+
     if not alter_statements:
         return
 

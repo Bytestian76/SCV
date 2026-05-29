@@ -189,6 +189,7 @@ function setupEventListeners() {
     window.navigate = navigate;
     window.openChequeosPanel = openChequeosPanel;
     window.openMovimientosPanel = openMovimientosPanel;
+    window.openMantenimientosPanel = openMantenimientosPanel;
     window.showForm = showForm;
     window.goBack = goBack;
 
@@ -912,6 +913,13 @@ function getRoleCredentialMeta(rol) {
         };
     }
 
+    if (rol === CONFIG.ROLES.MECANICO) {
+        return {
+            className: 'is-mecanico',
+            icon: 'assets/icons/wrench.svg'
+        };
+    }
+
     return {
         className: 'is-admin',
         icon: 'assets/icons/people.svg'
@@ -982,13 +990,19 @@ function clearAdminAutoRefresh() {
 
 function configureAdminAutoRefresh(rol) {
     clearAdminAutoRefresh();
-    if (rol !== CONFIG.ROLES.ADMIN) return;
-
-    APP.ui.adminChartsInterval = setInterval(() => {
-        if (!document.hidden && APP.currentScreen === 'dashboard-admin') {
-            loadDashboardData(CONFIG.ROLES.ADMIN);
-        }
-    }, CONFIG.ADMIN_REFRESH_INTERVAL_MS || 5000);
+    if (rol === CONFIG.ROLES.ADMIN) {
+        APP.ui.adminChartsInterval = setInterval(() => {
+            if (!document.hidden && APP.currentScreen === 'dashboard-admin') {
+                loadDashboardData(CONFIG.ROLES.ADMIN);
+            }
+        }, CONFIG.ADMIN_REFRESH_INTERVAL_MS || 5000);
+    } else if (rol === CONFIG.ROLES.MECANICO) {
+        APP.ui.adminChartsInterval = setInterval(() => {
+            if (!document.hidden && APP.currentScreen === 'dashboard-mecanico') {
+                loadDashboardData(CONFIG.ROLES.MECANICO);
+            }
+        }, 10000);
+    }
 }
 
 async function loadDashboardData(rol) {
@@ -1004,20 +1018,80 @@ async function loadDashboardData(rol) {
             document.getElementById('stat-movimientos').textContent = stats.totales?.movimientos_hoy || 0;
             document.getElementById('stat-chequeos').textContent = stats.totales?.chequeos_hoy || 0;
             renderAdminAnalytics(stats.analitica || null);
+            loadAdminMantenimientosWidget();
         } else if (rol === CONFIG.ROLES.OPERARIO_MOVIMIENTOS) {
             const movimientos = await API.getMovimientos();
             renderMovimientosRecientes(movimientos.slice(0, 5));
         } else if (rol === CONFIG.ROLES.OPERARIO_CHEQUEO) {
             const chequeos = await API.getChequeos();
             renderChequeosRecientes(chequeos.slice(0, 5));
+        } else if (rol === CONFIG.ROLES.MECANICO) {
+            await loadDashboardMecanicoData();
         }
     } catch (error) {
         console.error('Error cargando dashboard:', error);
     }
 }
 
+async function loadAdminMantenimientosWidget() {
+    const panel = document.getElementById('admin-mantenimientos-panel');
+    if (!panel) return;
+    try {
+        const data = await API.getMantenimientos({ estado: 'pendiente', limit: '5' });
+        if (!data || data.length === 0) {
+            panel.innerHTML = '<div class="widget-empty"><p class="helper-text">No hay mantenimientos pendientes.</p></div>';
+            return;
+        }
+        panel.innerHTML = `<div class="widget-list">${data.map(m => `
+            <div class="widget-list-item" onclick="verDetalleMantenimiento(${m.id})">
+                <div class="widget-item-icon" style="background:#f39c1220;">
+                    <img src="assets/icons/clipboard-check.svg" alt="" class="btn-inline-icon" aria-hidden="true" style="filter:brightness(0) saturate(100%) invert(67%) sepia(82%) saturate(495%) hue-rotate(354deg) brightness(94%) contrast(96%);">
+                </div>
+                <div class="widget-item-body">
+                    <span class="widget-item-title">${m.vehiculo?.placa || '?'}</span>
+                    <span class="widget-item-sub">${m.descripcion ? m.descripcion.substring(0, 60) : 'Sin descripción'}</span>
+                </div>
+                <button class="btn-item btn-item-ghost" onclick="event.stopPropagation();verDetalleMantenimiento(${m.id})"><img src="assets/icons/search.svg" alt="" class="btn-inline-icon" aria-hidden="true"></button>
+            </div>
+        `).join('')}</div>`;
+    } catch (err) {
+        panel.innerHTML = '<p class="helper-text">Error al cargar</p>';
+    }
+}
+
+async function loadDashboardMecanicoData() {
+    try {
+        const data = await API.getDashboardMecanico();
+        document.getElementById('stat-mant-pendientes').textContent = data.totales?.pendientes || 0;
+        document.getElementById('stat-mant-progreso').textContent = data.totales?.en_progreso || 0;
+        document.getElementById('stat-mant-completados').textContent = data.totales?.completados || 0;
+
+        const listEl = document.getElementById('mantenimientos-pendientes-list');
+        if (listEl && data.pendientes) {
+            if (data.pendientes.length === 0) {
+                listEl.innerHTML = '<div class="empty-state"><p class="helper-text">No hay mantenimientos pendientes.</p></div>';
+            } else {
+                listEl.innerHTML = `<div class="widget-list">${data.pendientes.map(m => `
+                    <div class="widget-list-item" onclick="verDetalleMantenimiento(${m.id})">
+                        <div class="widget-item-icon" style="background:${m.tipo === 'correctivo' ? '#e74c3c20' : '#3498db20'};">
+                            <img src="assets/icons/${m.tipo === 'correctivo' ? 'x-lg' : 'clipboard-check'}.svg" alt="" class="btn-inline-icon" aria-hidden="true" style="filter:brightness(0) saturate(100%) ${m.tipo === 'correctivo' ? 'invert(33%) sepia(69%) saturate(1895%) hue-rotate(341deg) brightness(93%) contrast(87%)' : 'invert(44%) sepia(61%) saturate(470%) hue-rotate(162deg) brightness(97%) contrast(88%)'};">
+                        </div>
+                        <div class="widget-item-body">
+                            <span class="widget-item-title">${m.vehiculo ? `${m.vehiculo.placa} - ${m.vehiculo.marca} ${m.vehiculo.modelo}` : '#' + m.vehiculo_id}</span>
+                            <span class="widget-item-sub">${m.descripcion ? m.descripcion.substring(0, 100) : 'Sin descripción'} · ${new Date(m.fecha_creacion).toLocaleDateString()}</span>
+                        </div>
+                        <span class="status-badge is-pendiente">Pendiente</span>
+                    </div>
+                `).join('')}</div>`;
+            }
+        }
+    } catch (err) {
+        console.error('Error cargando dashboard mecanico:', err);
+    }
+}
+
 function navigate(section) {
-    if (APP.user?.rol !== CONFIG.ROLES.ADMIN) {
+    if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.MECANICO].includes(APP.user?.rol)) {
         return;
     }
 
@@ -1061,7 +1135,29 @@ function navigate(section) {
         return;
     }
 
+    if (section === 'mantenimientos') {
+        openMantenimientosPanel();
+        return;
+    }
+
     showAppAlert('Módulo en construcción', `El módulo ${section} se habilitará en la siguiente iteración.`);
+}
+
+function openMantenimientosPanel() {
+    if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.MECANICO].includes(APP.user?.rol)) {
+        showAppAlert('Acceso denegado', 'No tienes permisos para ver el módulo de mantenimientos.');
+        return;
+    }
+
+    showScreen('admin-mantenimientos');
+    closeUsuarioForm();
+    closeConductorForm();
+    closeVehiculoForm();
+    closeChequeoForm();
+    closeMovimientoForm();
+    if (typeof loadMantenimientosManagement === 'function') {
+        loadMantenimientosManagement();
+    }
 }
 
 function openChequeosPanel() {
@@ -1145,6 +1241,12 @@ function goBack() {
 
     if (current === 'admin-movimientos') {
         showDashboard(APP.user?.rol);
+        return;
+    }
+
+    if (current === 'admin-mantenimientos') {
+        showDashboard(APP.user?.rol);
+        return;
     }
 }
 

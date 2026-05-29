@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import Base, engine, apply_schema_updates
 from app.models import models
-from app.api.endpoints import auth, vehiculos, conductores, usuarios, selectores, movimientos, chequeos, dashboard
+from app.api.endpoints import auth, vehiculos, conductores, usuarios, selectores, movimientos, chequeos, dashboard, mantenimientos, notificaciones
 from app.core.config import settings
 
 
@@ -50,6 +50,8 @@ app.include_router(usuarios.router, prefix=API_V1)
 app.include_router(selectores.router, prefix=API_V1)
 app.include_router(movimientos.router, prefix=API_V1)
 app.include_router(chequeos.router, prefix=API_V1)
+app.include_router(mantenimientos.router, prefix=API_V1)
+app.include_router(notificaciones.router, prefix=API_V1)
 app.include_router(dashboard.router, prefix=API_V1)
 
 # CORS - Permite que el frontend acceda desde cualquier origen
