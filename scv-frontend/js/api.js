@@ -14,7 +14,7 @@ const API = {
 
     notifyDashboardDataChanged(method, endpoint) {
         if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return;
-        if (!/^\/(movimientos|chequeos|vehiculos|conductores)\b/.test(endpoint)) return;
+        if (!/^\/(movimientos|chequeos|vehiculos|conductores|mantenimientos)\b/.test(endpoint)) return;
 
         const detail = {
             method,
@@ -252,9 +252,74 @@ const API = {
         return await this.request('GET', endpoint);
     },
 
+    // ============ MANTENIMIENTOS ============
+
+    async getMantenimientos(filters = {}) {
+        const params = new URLSearchParams(filters).toString();
+        const endpoint = params ? `/mantenimientos/?${params}` : '/mantenimientos/';
+        return await this.request('GET', endpoint);
+    },
+
+    async getMantenimiento(id) {
+        return await this.request('GET', `/mantenimientos/${id}`);
+    },
+
+    async createMantenimiento(data) {
+        return await this.request('POST', '/mantenimientos/', data);
+    },
+
+    async updateMantenimiento(id, data) {
+        return await this.request('PUT', `/mantenimientos/${id}`, data);
+    },
+
+    async updateEstadoMantenimiento(id, estado) {
+        return await this.request('PUT', `/mantenimientos/${id}/estado`, { estado });
+    },
+
+    async deleteMantenimiento(id) {
+        return await this.request('DELETE', `/mantenimientos/${id}`);
+    },
+
+    async addMantenimientoItems(id, items) {
+        return await this.request('POST', `/mantenimientos/${id}/items`, items);
+    },
+
+    // ============ NOTIFICACIONES ============
+
+    async getNotificaciones() {
+        return await this.request('GET', '/notificaciones/');
+    },
+
+    async marcarNotificacionLeida(id) {
+        return await this.request('PUT', `/notificaciones/${id}/leer`);
+    },
+
+    async marcarTodasNotificacionesLeidas() {
+        return await this.request('PUT', '/notificaciones/leer-todas');
+    },
+
     // ============ DASHBOARD ============
 
     async getDashboard(dias = 7) {
         return await this.request('GET', `/dashboard/?dias=${dias}&_ts=${Date.now()}`);
+    },
+
+    async getDashboardMecanico() {
+        return await this.request('GET', `/dashboard/mecanico?_ts=${Date.now()}`);
+    },
+
+    // ============ WEB PUSH ============
+
+    async pushSubscribe(subscription) {
+        return await this.request('POST', '/push/subscribe', {
+            endpoint: subscription.endpoint,
+            auth: subscription.auth,
+            p256dh: subscription.p256dh,
+            user_agent: navigator.userAgent,
+        });
+    },
+
+    async pushUnsubscribe(endpoint) {
+        return await this.request('DELETE', `/push/unsubscribe?endpoint=${encodeURIComponent(endpoint)}`);
     }
 };

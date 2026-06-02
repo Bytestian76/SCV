@@ -34,6 +34,7 @@ class ChequeoItemCreate(BaseModel):
     item: str
     valor: str
     observacion: Optional[str] = None
+    marcar_mantenimiento: Optional[bool] = False
 
 
 class ChequeoItemsCreate(BaseModel):
@@ -69,6 +70,8 @@ class ChequeoItemResponse(BaseModel):
     item: str
     valor: str
     observacion: Optional[str] = None
+    marcar_mantenimiento: Optional[bool] = False
+    mantenimiento_id: Optional[int] = None
 
     class Config:
         from_attributes = True
