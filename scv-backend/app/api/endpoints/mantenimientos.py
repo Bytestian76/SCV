@@ -8,6 +8,7 @@ from typing import List
 from app.core.dependencies import require_role
 from app.db.database import get_db
 from app.models.models import Mantenimiento, MantenimientoItem, Notificacion, Usuario, Vehiculo
+from app.services.push_service import send_push_to_mecanicos
 from app.schemas.mantenimiento import (
     MantenimientoCreate,
     MantenimientoEstadoUpdate,
@@ -164,6 +165,17 @@ def crear_mantenimiento(
     db.commit()
     db.refresh(db_m)
 
+    try:
+        placa = vehiculo.placa
+        send_push_to_mecanicos(
+            db,
+            titulo=f"🛠️ Nuevo mantenimiento {db_m.tipo}",
+            mensaje=f"{placa}: {db_m.descripcion or 'Sin descripción'}",
+            url=f"/?screen=admin-mantenimientos&id={db_m.id}",
+        )
+    except Exception:
+        pass
+
     return obtener_mantenimiento(mantenimiento_id=db_m.id, db=db, current_user=current_user)
 
 
@@ -203,10 +215,23 @@ def actualizar_estado_mantenimiento(
     if not m:
         raise HTTPException(status_code=404, detail="Mantenimiento no encontrado")
 
+    old_estado = m.estado
     m.estado = payload.estado
     m.fecha_actualizacion = datetime.utcnow()
     db.commit()
     db.refresh(m)
+
+    if old_estado != payload.estado:
+        try:
+            placa = m.vehiculo.placa if m.vehiculo else "Desconocido"
+            send_push_to_mecanicos(
+                db,
+                titulo=f"📋 Mantenimiento {payload.estado}",
+                mensaje=f"{placa}: cambió de '{old_estado}' a '{payload.estado}'",
+                url=f"/?screen=admin-mantenimientos&id={m.id}",
+            )
+        except Exception:
+            pass
 
     return obtener_mantenimiento(mantenimiento_id=m.id, db=db, current_user=current_user)
 

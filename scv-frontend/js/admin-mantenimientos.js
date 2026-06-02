@@ -10,6 +10,22 @@ function setMantenimientoFeedback(msg, isError) {
     }
 }
 
+function humanizeLabel(str) {
+    if (!str) return '';
+    return str
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function resumenItems(m) {
+    if (!m.items || m.items.length === 0) return '';
+    const total = m.items.length;
+    const conObs = m.items.filter(i => i.observacion).length;
+    let s = `${total} ítem(s)`;
+    if (conObs > 0) s += `, ${conObs} con observación`;
+    return s;
+}
+
 async function loadMantenimientosManagement() {
     initMantenimientoEventListeners();
     await loadMantenimientosList();
@@ -136,7 +152,7 @@ async function verDetalleMantenimiento(id) {
                 <p><strong>Vehículo:</strong> ${m.vehiculo ? `${m.vehiculo.placa} - ${m.vehiculo.marca} ${m.vehiculo.modelo}` : 'N/A'}</p>
                 <p><strong>Tipo:</strong> ${tipoLabels[m.tipo] || m.tipo}</p>
                 <p><strong>Estado:</strong> ${estadoLabels[m.estado] || m.estado}</p>
-                ${m.descripcion ? `<p><strong>Descripción:</strong> ${m.descripcion}</p>` : ''}
+                ${m.items && m.items.length > 0 ? `<p><strong>Ítems:</strong> ${resumenItems(m)}</p>` : ''}
                 ${m.kilometraje ? `<p><strong>Kilometraje:</strong> ${m.kilometraje}</p>` : ''}
                 <p><strong>Creado:</strong> ${new Date(m.fecha_creacion).toLocaleString()}</p>
                 ${m.creador ? `<p><strong>Por:</strong> ${m.creador.nombre}</p>` : ''}
@@ -145,7 +161,16 @@ async function verDetalleMantenimiento(id) {
                 ${m.items && m.items.length > 0 ? `
                     <hr>
                     <p><strong>Items (${m.items.length}):</strong></p>
-                    <ul>${m.items.map(i => `<li>${i.seccion ? `[${i.seccion}] ` : ''}${i.item || ''}${i.observacion ? `: ${i.observacion}` : ''}${i.realizado ? ' ✅' : ' ❌'}</li>`).join('')}</ul>
+                    <ul class="mantenimiento-items-list">${m.items.map(i => {
+                        const completo = i.realizado ? 'completado' : 'pendiente';
+                        return `<li class="mantenimiento-item-row ${completo}">
+                            <span class="item-section">${humanizeLabel(i.seccion)}</span>
+                            <span class="item-arrow">&rarr;</span>
+                            <span class="item-name">${humanizeLabel(i.item)}</span>
+                            <span class="item-obs">${i.observacion || ''}</span>
+                            <span class="item-status-icon">${i.realizado ? '✅' : '⏳'}</span>
+                        </li>`;
+                    }).join('')}</ul>
                 ` : ''}
             </div>
         `;

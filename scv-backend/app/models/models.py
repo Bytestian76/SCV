@@ -187,6 +187,22 @@ class Notificacion(Base):
     usuario = relationship("Usuario", back_populates="notificaciones")
 
 
+class PushSubscription(Base):
+    """Suscripciones a Web Push por usuario"""
+    __tablename__ = "push_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    endpoint = Column(String(512), nullable=False)
+    auth = Column(String(256), nullable=False)
+    p256dh = Column(String(256), nullable=False)
+    user_agent = Column(String(255), nullable=True)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    fecha_actualizacion = Column(DateTime, nullable=True)
+
+    usuario = relationship("Usuario")
+
+
 class TokenRevocado(Base):
     """Tokens revocados por logout para invalidar sesiones activas"""
     __tablename__ = "tokens_revocados"

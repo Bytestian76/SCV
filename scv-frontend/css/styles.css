@@ -2018,6 +2018,88 @@ body {
     box-shadow: 0 2px 6px rgba(231, 76, 60, 0.4);
 }
 
+/* Push toggle */
+.push-toggle-container {
+    border-top: 1px solid #dce2e8;
+    padding: 12px 16px;
+    background: #fafaf8;
+}
+
+.push-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.push-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #2f4352;
+}
+
+/* Toggle switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #bcc9d4;
+    border-radius: 24px;
+    transition: background 200ms ease;
+}
+
+.switch-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    left: 2px; bottom: 2px;
+    background: #ffffff;
+    border-radius: 50%;
+    transition: transform 200ms ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.switch input:checked + .switch-slider {
+    background: #2d8656;
+}
+
+.switch input:checked + .switch-slider::before {
+    transform: translateX(20px);
+}
+
+.switch input:disabled + .switch-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.push-toggle-row.is-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.push-toggle-nota {
+    font-size: 0.75rem;
+    color: #8a9ba8;
+    font-style: italic;
+}
+
 /* KPI stat cards with color accents */
 .stat-card.is-pendientes .stat-number { color: #d68910; }
 .stat-card.is-progreso .stat-number { color: #2471a3; }
@@ -2045,16 +2127,57 @@ body {
     margin: 4px 0;
 }
 
-#mantenimiento-detalle-content ul {
-    margin: 6px 0 0;
-    padding-left: 20px;
-    font-size: 0.9rem;
-    color: #3d5743;
+/* Mantenimiento items list */
+.mantenimiento-items-list {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
 }
 
-#mantenimiento-detalle-content ul li {
-    margin-bottom: 4px;
+.mantenimiento-item-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #f7f9fb;
+    border-radius: 6px;
+    font-size: 0.9rem;
     line-height: 1.4;
+    flex-wrap: wrap;
+}
+
+.mantenimiento-item-row.completado {
+    background: #eef6f0;
+}
+
+.mantenimiento-item-row .item-section {
+    font-weight: 600;
+    color: #2c4a3b;
+    white-space: nowrap;
+}
+
+.mantenimiento-item-row .item-arrow {
+    color: #8a9ba8;
+    font-size: 0.8rem;
+}
+
+.mantenimiento-item-row .item-name {
+    color: #1d2b36;
+    white-space: nowrap;
+}
+
+.mantenimiento-item-row .item-obs {
+    color: #5d707f;
+    font-style: italic;
+    flex: 1;
+    min-width: 80px;
+}
+
+.mantenimiento-item-row .item-status-icon {
+    margin-left: auto;
+    font-size: 0.85rem;
 }
 
 /* Modal form consistency */

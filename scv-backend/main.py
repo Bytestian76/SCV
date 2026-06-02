@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import Base, engine, apply_schema_updates
 from app.models import models
-from app.api.endpoints import auth, vehiculos, conductores, usuarios, selectores, movimientos, chequeos, dashboard, mantenimientos, notificaciones
+from app.api.endpoints import auth, vehiculos, conductores, usuarios, selectores, movimientos, chequeos, dashboard, mantenimientos, notificaciones, push
 from app.core.config import settings
 
 
@@ -24,7 +24,10 @@ def _parse_cors_origins(raw_origins: str):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Inicializar base de datos al iniciar"""
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception:
+        pass  # Ignorar si otro worker ya creó las tablas
     apply_schema_updates()
     yield
 
@@ -52,6 +55,7 @@ app.include_router(movimientos.router, prefix=API_V1)
 app.include_router(chequeos.router, prefix=API_V1)
 app.include_router(mantenimientos.router, prefix=API_V1)
 app.include_router(notificaciones.router, prefix=API_V1)
+app.include_router(push.router, prefix=API_V1)
 app.include_router(dashboard.router, prefix=API_V1)
 
 # CORS - Permite que el frontend acceda desde cualquier origen
