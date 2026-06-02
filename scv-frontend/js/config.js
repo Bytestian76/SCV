@@ -17,15 +17,20 @@ const CONFIG = {
     ROLES: {
         ADMIN: 'admin',
         OPERARIO_MOVIMIENTOS: 'operario_movimientos',
-        OPERARIO_CHEQUEO: 'operario_chequeo'
+        OPERARIO_CHEQUEO: 'operario_chequeo',
+        MECANICO: 'mecanico'
     },
     
     // Rutas por rol
     DASHBOARDS: {
         'admin': 'dashboard-admin',
         'operario_movimientos': 'dashboard-movimientos',
-        'operario_chequeo': 'dashboard-chequeo'
-    }
+        'operario_chequeo': 'dashboard-chequeo',
+        'mecanico': 'dashboard-mecanico'
+    },
+
+    // Web Push (VAPID public key — es pública, segura para el frontend)
+    VAPID_PUBLIC_KEY: 'BJpbFxN3FZBDCIgvdKUHS3nPCeMBwklO1yYeQW9vBBNrRQee8u9IMN7IBZULhwJdFhIOFNaVNF-3ySri8KEEdOA'
 };
 
 // URL completa de la API

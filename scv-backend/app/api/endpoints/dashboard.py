@@ -6,9 +6,9 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.core.dependencies import require_role
+from app.core.dependencies import require_role, get_current_user
 from app.db.database import get_db
-from app.models.models import Chequeo, Conductor, Movimiento, Vehiculo
+from app.models.models import Chequeo, Conductor, Mantenimiento, Movimiento, Vehiculo
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -138,4 +138,47 @@ def obtener_dashboard(
             },
             "top_vehiculos": top_vehiculos,
         },
+    }
+
+
+@router.get("/mecanico")
+def obtener_dashboard_mecanico(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role(["admin", "mecanico"])),
+):
+    pendientes = db.query(Mantenimiento).filter(Mantenimiento.estado == "pendiente").count()
+    en_progreso = db.query(Mantenimiento).filter(Mantenimiento.estado == "en_progreso").count()
+    completados = db.query(Mantenimiento).filter(Mantenimiento.estado == "completado").count()
+
+    pendientes_lista = (
+        db.query(Mantenimiento)
+        .filter(Mantenimiento.estado == "pendiente")
+        .order_by(Mantenimiento.fecha_creacion.asc())
+        .limit(10)
+        .all()
+    )
+
+    return {
+        "totales": {
+            "pendientes": pendientes,
+            "en_progreso": en_progreso,
+            "completados": completados,
+        },
+        "pendientes": [
+            {
+                "id": m.id,
+                "vehiculo_id": m.vehiculo_id,
+                "tipo": m.tipo,
+                "descripcion": m.descripcion,
+                "kilometraje": m.kilometraje,
+                "fecha_creacion": m.fecha_creacion.isoformat() if m.fecha_creacion else None,
+                "vehiculo": {
+                    "id": m.vehiculo.id,
+                    "placa": m.vehiculo.placa,
+                    "marca": m.vehiculo.marca,
+                    "modelo": m.vehiculo.modelo,
+                } if m.vehiculo else None,
+            }
+            for m in pendientes_lista
+        ],
     }

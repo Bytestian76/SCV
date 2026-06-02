@@ -8,33 +8,21 @@ from sqlalchemy import and_
 
 from app.api.endpoints.chequeos import CHEQUEO_FORMULARIO
 from app.db.database import SessionLocal
-from app.models.models import Chequeo, ChequeoItem, Conductor, Movimiento, TokenRevocado, Usuario, Vehiculo
+from app.models.models import Chequeo, ChequeoItem, Conductor, Mantenimiento, MantenimientoItem, Movimiento, Notificacion, TokenRevocado, Usuario, Vehiculo
 
 
 MAIN_USERS = [
     {
-        "nombre": "Sebastian Administrador",
-        "email": "admin@normetales.com",
-        "password": "admin123",
-        "rol": "admin",
-    },
-    {
-        "nombre": "Juan Operario Movimientos",
-        "email": "mov@normetales.com",
-        "password": "operario123",
-        "rol": "operario_movimientos",
-    },
-    {
-        "nombre": "Pedro Operario Chequeo",
-        "email": "cheq@normetales.com",
-        "password": "operario123",
-        "rol": "operario_chequeo",
+        "nombre": "Carlos Mecanico",
+        "email": "mecanico",
+        "password": "mecanico123",
+        "rol": "mecanico",
     },
 ]
 
 
 def _ensure_main_users(db):
-    preserved_ids = []
+    preserved_ids = [row.id for row in db.query(Usuario.id).all()]
     for user_data in MAIN_USERS:
         user = db.query(Usuario).filter(Usuario.email == user_data["email"]).first()
         if not user:
@@ -47,12 +35,14 @@ def _ensure_main_users(db):
             )
             db.add(user)
             db.flush()
-        preserved_ids.append(user.id)
 
     return preserved_ids
 
 
 def _clear_existing_data(db, preserved_user_ids):
+    db.query(MantenimientoItem).delete(synchronize_session=False)
+    db.query(Mantenimiento).delete(synchronize_session=False)
+    db.query(Notificacion).delete(synchronize_session=False)
     db.query(ChequeoItem).delete(synchronize_session=False)
     db.query(Chequeo).delete(synchronize_session=False)
     db.query(Movimiento).delete(synchronize_session=False)
@@ -306,6 +296,7 @@ def reset_and_seed_data(
         print(f"  - movimientos: {movimientos_total}")
         print(f"  - chequeos: {chequeos_total}")
         print(f"  - chequeo_items: {chequeos_total * sum(len(s['items']) for s in CHEQUEO_FORMULARIO)}")
+        print(f"  - mantenimientos: 0 (creados desde chequeos o manualmente)")
     except Exception as error:
         db.rollback()
         raise RuntimeError(f"No se pudo regenerar los datos: {error}") from error
