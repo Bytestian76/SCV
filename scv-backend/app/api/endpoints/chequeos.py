@@ -7,7 +7,8 @@ from typing import List
 
 from app.core.dependencies import require_role
 from app.db.database import get_db
-from app.models.models import Chequeo, ChequeoItem, Conductor, Usuario, Vehiculo, Movimiento
+from app.models.models import Chequeo, ChequeoItem, Conductor, Mantenimiento, MantenimientoItem, Notificacion, Usuario, Vehiculo, Movimiento
+from app.services.push_service import send_push_to_mecanicos
 from app.schemas.chequeo import (
     ChequeoCreate,
     ChequeoDetailResponse,
@@ -373,23 +374,93 @@ def crear_chequeo_items(
         )
 
     db.query(ChequeoItem).filter(ChequeoItem.chequeo_id == chequeo_id).delete(synchronize_session=False)
+
+    VALORES_MANTENIMIENTO = {"no_conforme", "mal_estado", "largo", "genera_ruido", "vibra", "tira_lado", "bajo", "presenta_fugas", "no_tiene", "incompleto"}
+
+    items_con_mantenimiento = []
     for item in payload.items:
-        db.add(
-            ChequeoItem(
-                chequeo_id=chequeo_id,
-                seccion=item.seccion,
-                item=item.item,
-                valor=item.valor,
-                observacion=item.observacion,
-            )
+        db_item = ChequeoItem(
+            chequeo_id=chequeo_id,
+            seccion=item.seccion,
+            item=item.item,
+            valor=item.valor,
+            observacion=item.observacion,
+            marcar_mantenimiento=item.marcar_mantenimiento or False,
+        )
+        db.add(db_item)
+        db.flush()
+
+        requiere_mante = (
+            item.marcar_mantenimiento or
+            item.valor in VALORES_MANTENIMIENTO or
+            item.observacion
+        )
+        if requiere_mante:
+            items_con_mantenimiento.append(db_item)
+
+    if items_con_mantenimiento:
+        vehiculo = chequeo.vehiculo
+        descripcion = f"Desde chequeo #{chequeo_id}: "
+        descripcion += "; ".join(
+            f"{i.seccion}/{i.item}: {i.observacion or 'Sin observación'}"
+            for i in items_con_mantenimiento
         )
 
+        db_mante = Mantenimiento(
+            vehiculo_id=chequeo.vehiculo_id,
+            tipo="correctivo",
+            descripcion=descripcion[:500],
+            kilometraje=chequeo.kilometraje,
+            estado="pendiente",
+            creado_por=current_user.id,
+            chequeo_origen_id=chequeo_id,
+        )
+        db.add(db_mante)
+        db.flush()
+
+        for ci in items_con_mantenimiento:
+            ci.mantenimiento_id = db_mante.id
+            db.add(MantenimientoItem(
+                mantenimiento_id=db_mante.id,
+                chequeo_item_id=ci.id,
+                seccion=ci.seccion,
+                item=ci.item,
+                observacion=ci.observacion,
+            ))
+
+        mecanicos = db.query(Usuario).filter(Usuario.rol == "mecanico", Usuario.activo.is_(True)).all()
+        for mec in mecanicos:
+            db.add(Notificacion(
+                usuario_id=mec.id,
+                tipo="nuevo_mantenimiento",
+                titulo=f"Nuevo mantenimiento - {vehiculo.placa}",
+                mensaje=f"Desde chequeo #{chequeo_id}: {len(items_con_mantenimiento)} ítem(es) requieren atención",
+                referencia_tipo="mantenimiento",
+                referencia_id=db_mante.id,
+            ))
+
+        db.flush()
+
+        try:
+            send_push_to_mecanicos(
+                db,
+                titulo=f"🛠️ Mantenimiento desde chequeo",
+                mensaje=f"{vehiculo.placa}: {len(items_con_mantenimiento)} ítem(es) requieren atención",
+                url=f"/?screen=admin-mantenimientos&id={db_mante.id}",
+            )
+        except Exception:
+            pass
+
     db.commit()
+
+    mensaje = "Items de chequeo guardados correctamente"
+    if items_con_mantenimiento:
+        mensaje += f" y se crearon {len(items_con_mantenimiento)} tarea(s) de mantenimiento"
 
     return ChequeoItemsResponse(
         chequeo_id=chequeo_id,
         guardados=len(payload.items),
-        message="Items de chequeo guardados correctamente",
+        message=mensaje,
     )
 
 

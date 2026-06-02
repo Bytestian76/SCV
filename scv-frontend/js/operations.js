@@ -151,6 +151,8 @@ function recolectarChequeoItems() {
         }
     });
 
+    const VALORES_PROBLEMATICOS = ['no_conforme', 'mal_estado', 'largo', 'genera_ruido', 'vibra', 'tira_lado', 'bajo', 'presenta_fugas', 'no_tiene', 'incompleto'];
+
     const observacionAplicada = new Set();
     const items = [];
 
@@ -171,11 +173,22 @@ function recolectarChequeoItems() {
         };
 
         if (!observacionAplicada.has(seccion) && observacionesPorSeccion[seccion]) {
-            item.observacion = observacionesPorSeccion[seccion];
-            observacionAplicada.add(seccion);
+            if (VALORES_PROBLEMATICOS.includes(valor)) {
+                item.observacion = observacionesPorSeccion[seccion];
+                observacionAplicada.add(seccion);
+            }
         }
 
         items.push(item);
+    }
+
+    // Si la observación de sección no se aplicó a ningún ítem problemático,
+    // agregarla al primer ítem de la sección igual
+    for (const item of items) {
+        if (!observacionAplicada.has(item.seccion) && observacionesPorSeccion[item.seccion]) {
+            item.observacion = observacionesPorSeccion[item.seccion];
+            observacionAplicada.add(item.seccion);
+        }
     }
 
     return {
