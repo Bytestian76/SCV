@@ -27,7 +27,10 @@ const CONFIG = {
         'operario_movimientos': 'dashboard-movimientos',
         'operario_chequeo': 'dashboard-chequeo',
         'mecanico': 'dashboard-mecanico'
-    }
+    },
+
+    // Web Push (VAPID public key — es pública, segura para el frontend)
+    VAPID_PUBLIC_KEY: 'BJpbFxN3FZBDCIgvdKUHS3nPCeMBwklO1yYeQW9vBBNrRQee8u9IMN7IBZULhwJdFhIOFNaVNF-3ySri8KEEdOA'
 };
 
 // URL completa de la API

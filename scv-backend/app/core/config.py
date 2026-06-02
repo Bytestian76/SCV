@@ -26,7 +26,12 @@ class Settings(BaseSettings):
     LOGIN_RATE_LIMIT_WINDOW_SECONDS: int = 60
     
     # Database
-    DATABASE_URL: str = "sqlite:///./scv.db"
+    DATABASE_URL: str = "sqlite:///./data/scv.db"
+
+    # Web Push (VAPID)
+    VAPID_PUBLIC_KEY: str = "BJpbFxN3FZBDCIgvdKUHS3nPCeMBwklO1yYeQW9vBBNrRQee8u9IMN7IBZULhwJdFhIOFNaVNF-3ySri8KEEdOA"
+    VAPID_PRIVATE_KEY: str = "********"
+    VAPID_CLAIM_EMAIL: str = "admin@scv.normetales.xyz"
     
     class Config:
         env_file = ".env"

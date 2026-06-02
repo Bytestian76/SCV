@@ -16,5 +16,4 @@ services:
 
 networks:
   vps-gateway:
-    name: vps-gateway
-    driver: bridge
+    external: true

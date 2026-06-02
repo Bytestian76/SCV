@@ -8,6 +8,7 @@ from typing import List
 from app.core.dependencies import require_role
 from app.db.database import get_db
 from app.models.models import Chequeo, ChequeoItem, Conductor, Mantenimiento, MantenimientoItem, Notificacion, Usuario, Vehiculo, Movimiento
+from app.services.push_service import send_push_to_mecanicos
 from app.schemas.chequeo import (
     ChequeoCreate,
     ChequeoDetailResponse,
@@ -376,8 +377,6 @@ def crear_chequeo_items(
 
     VALORES_MANTENIMIENTO = {"no_conforme", "mal_estado", "largo", "genera_ruido", "vibra", "tira_lado", "bajo", "presenta_fugas", "no_tiene", "incompleto"}
 
-    secciones_con_obs = {item.seccion for item in payload.items if item.observacion}
-
     items_con_mantenimiento = []
     for item in payload.items:
         db_item = ChequeoItem(
@@ -393,7 +392,8 @@ def crear_chequeo_items(
 
         requiere_mante = (
             item.marcar_mantenimiento or
-            (item.valor in VALORES_MANTENIMIENTO and (item.observacion or item.seccion in secciones_con_obs))
+            item.valor in VALORES_MANTENIMIENTO or
+            item.observacion
         )
         if requiere_mante:
             items_con_mantenimiento.append(db_item)
@@ -440,6 +440,16 @@ def crear_chequeo_items(
             ))
 
         db.flush()
+
+        try:
+            send_push_to_mecanicos(
+                db,
+                titulo=f"🛠️ Mantenimiento desde chequeo",
+                mensaje=f"{vehiculo.placa}: {len(items_con_mantenimiento)} ítem(es) requieren atención",
+                url=f"/?screen=admin-mantenimientos&id={db_mante.id}",
+            )
+        except Exception:
+            pass
 
     db.commit()
 

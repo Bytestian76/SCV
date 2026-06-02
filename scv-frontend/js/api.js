@@ -306,5 +306,20 @@ const API = {
 
     async getDashboardMecanico() {
         return await this.request('GET', `/dashboard/mecanico?_ts=${Date.now()}`);
+    },
+
+    // ============ WEB PUSH ============
+
+    async pushSubscribe(subscription) {
+        return await this.request('POST', '/push/subscribe', {
+            endpoint: subscription.endpoint,
+            auth: subscription.auth,
+            p256dh: subscription.p256dh,
+            user_agent: navigator.userAgent,
+        });
+    },
+
+    async pushUnsubscribe(endpoint) {
+        return await this.request('DELETE', `/push/unsubscribe?endpoint=${encodeURIComponent(endpoint)}`);
     }
 };

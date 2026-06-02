@@ -72,10 +72,11 @@ const APP = {
 
 // ============ INICIALIZACIÓN ============
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     checkAuth();
     setupEventListeners();
     initAdaptiveButtonIcons();
+    await registerServiceWorker();
 });
 
 function normalizeUiText(value = '') {
@@ -160,6 +161,18 @@ function initAdaptiveButtonIcons() {
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
+}
+
+// ============ SERVICE WORKER ============
+
+async function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    try {
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        APP.swRegistration = reg;
+    } catch (err) {
+        console.warn('Error al registrar Service Worker:', err);
+    }
 }
 
 function checkAuth() {
@@ -825,6 +838,11 @@ async function handleLogin(e) {
         
         // Mostrar dashboard según rol
         showDashboard(response.user.rol);
+
+        // Iniciar notificaciones push y auto-refresh
+        if (typeof iniciarNotificaciones === 'function') {
+            iniciarNotificaciones(response.user);
+        }
         
     } catch (error) {
         errorDiv.textContent = error.message || 'Credenciales inválidas';
@@ -854,6 +872,11 @@ async function logout(options = {}) {
     localStorage.removeItem(CONFIG.TOKEN_KEY);
     localStorage.removeItem(CONFIG.USER_KEY);
     localStorage.removeItem(CONFIG.REMEMBER_KEY);
+    
+    // Detener push y notificaciones
+    if (typeof detenerNotificaciones === 'function') {
+        detenerNotificaciones();
+    }
     
     showScreen('login-screen');
     document.getElementById('login-form').reset();
