@@ -12,6 +12,9 @@ const ESTADO_META = {
 
 const TIPO_LABELS = { correctivo: 'Correctivo', preventivo: 'Preventivo' };
 const PRIORIDAD_LABELS = { baja: 'Baja', media: 'Media', alta: 'Alta', critica: 'Crítica' };
+const ESTADO_ACT_LABELS = { pendiente: 'Pendiente', en_progreso: 'En progreso', completada: 'Completada' };
+const COSTO_TIPO_LABELS = { repuesto: 'Repuesto', mano_obra: 'Mano de obra', otro: 'Otro' };
+const AUDITORIA_ACCION_LABELS = { creacion: 'Creada', cambio_estado: 'Cambio de estado', update: 'Actualizada' };
 
 let MANT_VIEW_MODE = 'kanban';
 
@@ -240,6 +243,35 @@ async function verDetalleMantenimiento(id) {
         const estadoLabels = Object.fromEntries(estados.map(e => [e.label, e]));
         const nextStates = { pendiente: 'en_progreso', en_progreso: 'completado', esperando_repuesto: 'en_progreso' };
 
+        const actividadesHtml = (m.actividades || []).map(a => {
+            const evCount = (a.evidencias || []).length;
+            return `
+                <div class="timeline-item is-${a.estado}">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-body">
+                        <div class="timeline-header">
+                            <span class="status-badge is-${a.estado}">${ESTADO_ACT_LABELS[a.estado] || a.estado}</span>
+                            <span class="timeline-date">${a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}</span>
+                        </div>
+                        <p class="timeline-desc">${escapeHtml(a.descripcion)}</p>
+                        ${a.responsable ? `<p class="timeline-responsable"><strong>Resp:</strong> ${escapeHtml(a.responsable)}</p>` : ''}
+                        ${a.fecha_inicio ? `<p class="timeline-range"><strong>Inicio:</strong> ${new Date(a.fecha_inicio).toLocaleString()}</p>` : ''}
+                        ${a.fecha_fin ? `<p class="timeline-range"><strong>Fin:</strong> ${new Date(a.fecha_fin).toLocaleString()}</p>` : ''}
+                        <div class="timeline-actions">
+                            <button class="btn-sm btn-ghost" onclick="cambiarEstadoActividad(${a.id},'en_progreso',${id})">Iniciar</button>
+                            <button class="btn-sm btn-ghost" onclick="cambiarEstadoActividad(${a.id},'completada',${id})">Completar</button>
+                            <button class="btn-sm btn-ghost" onclick="abrirEvidencias(${a.id},${id})">${evCount > 0 ? `Evidencias (${evCount})` : 'Añadir Evidencia'}</button>
+                        </div>
+                        ${evCount > 0 ? `
+                            <div class="timeline-evidencias">${a.evidencias.map(e => `
+                                ${e.archivo_url ? `<img src="${e.archivo_url}" class="evidencia-thumb" onclick="window.open('${e.archivo_url}')">` : ''}
+                            `).join('')}</div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
         content.innerHTML = `
             <div class="item-details">
                 <p><strong>Vehículo:</strong> ${m.vehiculo ? `${m.vehiculo.placa} - ${m.vehiculo.marca} ${m.vehiculo.modelo}` : 'N/A'}</p>
@@ -254,20 +286,50 @@ async function verDetalleMantenimiento(id) {
                 ${m.falla_origen ? `<p><strong>Falla origen:</strong> ${m.falla_origen.categoria} - ${m.falla_origen.descripcion?.substring(0, 60)}</p>` : ''}
                 ${m.falla_origen_id ? `<p><strong>Falla ID:</strong> #${m.falla_origen_id}</p>` : ''}
                 ${m.fecha_actualizacion ? `<p><strong>Actualizado:</strong> ${new Date(m.fecha_actualizacion).toLocaleString()}</p>` : ''}
-                ${m.items && m.items.length > 0 ? `
-                    <hr>
-                    <p><strong>Items (${m.items.length}):</strong></p>
-                    <ul class="mantenimiento-items-list">${m.items.map(i => {
-                        const completo = i.realizado ? 'completado' : 'pendiente';
-                        return `<li class="mantenimiento-item-row ${completo}">
-                            <span class="item-section">${humanizeLabel(i.seccion)}</span>
-                            <span class="item-arrow">&rarr;</span>
-                            <span class="item-name">${humanizeLabel(i.item)}</span>
-                            <span class="item-obs">${i.observacion || ''}</span>
-                            <span class="item-status-icon">${i.realizado ? '✅' : '⏳'}</span>
-                        </li>`;
-                    }).join('')}</ul>
-                ` : ''}
+            </div>
+            ${m.descripcion ? `<hr><p><strong>Descripción:</strong></p><p class="detalle-desc">${escapeHtml(m.descripcion)}</p>` : ''}
+            ${m.items && m.items.length > 0 ? `
+                <hr>
+                <p><strong>Items (${m.items.length}):</strong></p>
+                <ul class="mantenimiento-items-list">${m.items.map(i => {
+                    const completo = i.realizado ? 'completado' : 'pendiente';
+                    return `<li class="mantenimiento-item-row ${completo}">
+                        <span class="item-section">${humanizeLabel(i.seccion)}</span>
+                        <span class="item-arrow">&rarr;</span>
+                        <span class="item-name">${humanizeLabel(i.item)}</span>
+                        <span class="item-obs">${i.observacion || ''}</span>
+                        <span class="item-status-icon">${i.realizado ? '✅' : '⏳'}</span>
+                    </li>`;
+                }).join('')}</ul>
+            ` : ''}
+            <hr>
+            <div class="timeline-section">
+                <div class="timeline-section-header">
+                    <p><strong>Seguimiento (${(m.actividades || []).length})</strong></p>
+                    <button class="btn-sm btn-primary" onclick="abrirNuevaActividad(${id})">+ Actividad</button>
+                </div>
+                <div class="timeline">
+                    ${actividadesHtml || '<p class="helper-text">Sin actividades registradas.</p>'}
+                </div>
+            </div>
+            <hr>
+            <div class="costos-section">
+                <div class="timeline-section-header">
+                    <p><strong>Costos</strong></p>
+                    <button class="btn-sm btn-primary" onclick="abrirNuevoCosto(${id})">+ Costo</button>
+                </div>
+                <div id="costos-list-${id}" class="costos-body">
+                    <p class="helper-text">Cargando costos...</p>
+                </div>
+            </div>
+            <hr>
+            <div class="auditoria-section">
+                <div class="timeline-section-header">
+                    <p><strong>Auditoría</strong></p>
+                </div>
+                <div id="auditoria-list-${id}" class="auditoria-body">
+                    <p class="helper-text">Cargando auditoría...</p>
+                </div>
             </div>
         `;
 
@@ -290,8 +352,72 @@ async function verDetalleMantenimiento(id) {
         }
 
         toggleModal('mantenimiento-detalle-modal', true);
+
+        // Load costos and auditoria in background
+        loadCostosSeccion(id);
+        loadAuditoriaSeccion(id);
     } catch (err) {
         setMantenimientoFeedback(err.message || 'Error al cargar detalle', true);
+    }
+}
+
+async function loadCostosSeccion(mantenimientoId) {
+    try {
+        const costos = await API.getCostos(mantenimientoId);
+        const container = document.getElementById(`costos-list-${mantenimientoId}`);
+        if (!container) return;
+        if (!costos || costos.length === 0) {
+            container.innerHTML = '<p class="helper-text">Sin costos registrados.</p>';
+            return;
+        }
+        const totalGral = costos.reduce((s, c) => s + (c.total || 0), 0);
+        container.innerHTML = `
+            <table class="costos-table">
+                <tr><th>Tipo</th><th>Descripción</th><th>Cant</th><th>V/Unit</th><th>Total</th><th></th></tr>
+                ${costos.map(c => `
+                    <tr>
+                        <td>${COSTO_TIPO_LABELS[c.tipo] || c.tipo}</td>
+                        <td>${escapeHtml(c.descripcion)}</td>
+                        <td>${c.cantidad}</td>
+                        <td>$${c.valor_unitario?.toLocaleString()}</td>
+                        <td><strong>$${c.total?.toLocaleString()}</strong></td>
+                        <td><button class="btn-sm btn-ghost" onclick="eliminarCosto(${c.id}, ${mantenimientoId})">✕</button></td>
+                    </tr>
+                `).join('')}
+                <tr class="costos-total-row"><td colspan="4"><strong>Total general</strong></td><td><strong>$${totalGral.toLocaleString()}</strong></td><td></td></tr>
+            </table>
+        `;
+    } catch (err) {
+        console.error('Error cargando costos:', err);
+    }
+}
+
+async function loadAuditoriaSeccion(mantenimientoId) {
+    try {
+        const registros = await API.getAuditoria(mantenimientoId);
+        const container = document.getElementById(`auditoria-list-${mantenimientoId}`);
+        if (!container) return;
+        if (!registros || registros.length === 0) {
+            container.innerHTML = '<p class="helper-text">Sin registro de auditoría.</p>';
+            return;
+        }
+        container.innerHTML = `
+            <div class="auditoria-list">
+                ${registros.map(r => {
+                    const accionLabel = AUDITORIA_ACCION_LABELS[r.accion] || r.accion;
+                    const detalle = r.estado_anterior && r.estado_nuevo
+                        ? `: ${r.estado_anterior} → ${r.estado_nuevo}`
+                        : '';
+                    return `<div class="auditoria-item">
+                        <span class="auditoria-accion">${accionLabel}${detalle}</span>
+                        <span class="auditoria-usuario">${r.usuario_nombre || '#' + r.usuario_id}</span>
+                        <span class="auditoria-fecha">${new Date(r.created_at).toLocaleString()}</span>
+                    </div>`;
+                }).join('')}
+            </div>
+        `;
+    } catch (err) {
+        console.error('Error cargando auditoría:', err);
     }
 }
 
@@ -302,6 +428,34 @@ function resumenItems(m) {
     let s = `${total} ítem(s)`;
     if (conObs > 0) s += `, ${conObs} con observación`;
     return s;
+}
+
+async function cambiarEstadoActividad(id, estado, mantenimientoId) {
+    try {
+        await API.updateActividad(id, { estado });
+        await verDetalleMantenimiento(mantenimientoId);
+        setMantenimientoFeedback(`Actividad marcada como "${ESTADO_ACT_LABELS[estado] || estado}"`);
+    } catch (err) {
+        setMantenimientoFeedback(err.message || 'Error al actualizar actividad', true);
+    }
+}
+
+function abrirNuevaActividad(mantenimientoId) {
+    const desc = prompt('Descripción de la actividad:');
+    if (!desc || !desc.trim()) return;
+    const resp = prompt('Responsable (opcional):');
+    API.createActividad(mantenimientoId, { descripcion: desc.trim(), responsable: resp?.trim() || null })
+        .then(() => verDetalleMantenimiento(mantenimientoId))
+        .catch(err => setMantenimientoFeedback(err.message || 'Error al crear actividad', true));
+}
+
+function abrirEvidencias(actividadId, mantenimientoId) {
+    const tipo = prompt('Tipo de evidencia (foto/documento):') || 'foto';
+    const desc = prompt('Descripción (opcional):');
+    const url = prompt('URL de la imagen (o vacío para subir después):');
+    API.createEvidencia(actividadId, { tipo, descripcion: desc || null, archivo_url: url || null })
+        .then(() => verDetalleMantenimiento(mantenimientoId))
+        .catch(err => setMantenimientoFeedback(err.message || 'Error al añadir evidencia', true));
 }
 
 async function eliminarMantenimiento(id) {
@@ -453,4 +607,29 @@ function initMantenimientoEventListeners() {
         if (searchEl) searchEl.value = '';
         loadMantenimientosManagement();
     });
+}
+
+async function eliminarCosto(costoId, mantenimientoId) {
+    try {
+        await API.deleteCosto(costoId);
+        loadCostosSeccion(mantenimientoId);
+        setMantenimientoFeedback('Costo eliminado');
+    } catch (err) {
+        setMantenimientoFeedback(err.message || 'Error al eliminar costo', true);
+    }
+}
+
+function abrirNuevoCosto(mantenimientoId) {
+    const tipo = prompt('Tipo (repuesto/mano_obra/otro):') || 'repuesto';
+    const desc = prompt('Descripción:');
+    if (!desc || !desc.trim()) return;
+    const cant = parseInt(prompt('Cantidad:') || '1', 10);
+    const valor = parseInt(prompt('Valor unitario ($):') || '0', 10);
+    const prov = prompt('Proveedor (opcional):');
+    API.createCosto(mantenimientoId, {
+        tipo, descripcion: desc.trim(), cantidad: cant, valor_unitario: valor, proveedor: prov || null
+    }).then(() => {
+        loadCostosSeccion(mantenimientoId);
+        setMantenimientoFeedback('Costo agregado');
+    }).catch(err => setMantenimientoFeedback(err.message || 'Error al crear costo', true));
 }

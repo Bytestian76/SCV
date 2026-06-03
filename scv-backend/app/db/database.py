@@ -102,6 +102,61 @@ def apply_schema_updates():
             )
         """)
 
+    if "orden_actividades" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE orden_actividades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mantenimiento_id INTEGER NOT NULL REFERENCES mantenimientos(id),
+                descripcion TEXT NOT NULL,
+                responsable VARCHAR(140),
+                fecha_inicio DATETIME,
+                fecha_fin DATETIME,
+                estado VARCHAR(30) NOT NULL DEFAULT 'pendiente',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME
+            )
+        """)
+
+    if "orden_evidencias" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE orden_evidencias (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                actividad_id INTEGER NOT NULL REFERENCES orden_actividades(id),
+                tipo VARCHAR(20) NOT NULL DEFAULT 'foto',
+                archivo_url TEXT,
+                descripcion TEXT,
+                uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    if "orden_costos" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE orden_costos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mantenimiento_id INTEGER NOT NULL REFERENCES mantenimientos(id),
+                tipo VARCHAR(20) NOT NULL DEFAULT 'repuesto',
+                descripcion TEXT NOT NULL,
+                cantidad INTEGER NOT NULL DEFAULT 1,
+                valor_unitario INTEGER NOT NULL DEFAULT 0,
+                total INTEGER NOT NULL DEFAULT 0,
+                proveedor VARCHAR(140),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    if "auditoria_mantenimiento" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE auditoria_mantenimiento (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mantenimiento_id INTEGER NOT NULL REFERENCES mantenimientos(id),
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+                accion VARCHAR(30) NOT NULL,
+                estado_anterior VARCHAR(30),
+                estado_nuevo VARCHAR(30),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
     if not alter_statements:
         return
 
