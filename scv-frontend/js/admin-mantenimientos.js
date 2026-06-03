@@ -471,20 +471,18 @@ async function eliminarMantenimiento(id) {
     }
 }
 
-let _mtVehiculoSelectorInit = false;
+// Ensure vehicle search is set up once
+let _mtVehiculoInitDone = false;
 
-function initVehiculoSelector(prefix) {
-    if (_mtVehiculoSelectorInit) return;
-    _mtVehiculoSelectorInit = true;
+function initVehiculoSelector() {
+    if (_mtVehiculoInitDone) return;
 
-    const input = document.getElementById(prefix + 'vehiculo-search');
-    const results = document.getElementById(prefix + 'vehiculo-results');
-    const hidden = document.getElementById(prefix + 'vehiculo');
-    const selected = document.getElementById(prefix + 'vehiculo-selected');
-    if (!input || !results) return;
+    const input = document.getElementById('mt-vehiculo-search');
+    const results = document.getElementById('mt-vehiculo-results');
+    if (!input || !results) { console.warn('mt-vehiculo elements not found'); return; }
 
-    const showResults = () => { results.style.display = 'block'; };
-    const hideResults = () => { results.style.display = 'none'; };
+    const hidden = document.getElementById('mt-vehiculo');
+    const selected = document.getElementById('mt-vehiculo-selected');
 
     input.addEventListener('input', async () => {
         const q = input.value.trim();
@@ -492,22 +490,22 @@ function initVehiculoSelector(prefix) {
             const vehiculos = await API.getSelectorVehiculos(q);
             if (!vehiculos || vehiculos.length === 0) {
                 results.innerHTML = '<div class="selector-empty">Sin resultados</div>';
-                showResults();
+                results.style.display = 'block';
                 return;
             }
-            results.innerHTML = vehiculos.map(v =>
-                `<div class="selector-result-item" data-id="${v.id}" data-label="${v.placa} - ${v.marca} ${v.modelo}">
-                    ${v.placa} - ${v.marca} ${v.modelo}
-                </div>`
-            ).join('');
-            showResults();
+            results.innerHTML = vehiculos.map(v => `
+                <div class="selector-result-item" data-id="${v.id}" data-label="${v.placa} · ${v.marca} ${v.modelo}">
+                    ${v.placa} · ${v.marca} ${v.modelo}
+                </div>
+            `).join('');
+            results.style.display = 'block';
 
             results.querySelectorAll('.selector-result-item').forEach(el => {
                 el.addEventListener('click', () => {
                     input.value = el.dataset.label;
                     if (hidden) hidden.value = el.dataset.id;
                     if (selected) selected.textContent = 'Seleccionado: ' + el.dataset.label;
-                    hideResults();
+                    results.style.display = 'none';
                 });
             });
         } catch (err) {
@@ -516,15 +514,10 @@ function initVehiculoSelector(prefix) {
     });
 
     input.addEventListener('focus', () => {
-        if (results.children.length > 0) showResults();
+        if (results.children.length > 0) results.style.display = 'block';
     });
 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('#' + prefix + 'vehiculo-search') &&
-            !e.target.closest('#' + prefix + 'vehiculo-results')) {
-            hideResults();
-        }
-    });
+    _mtVehiculoInitDone = true;
 }
 
 function openMantenimientoForm(data, fallaOrigenId) {
@@ -540,7 +533,7 @@ function openMantenimientoForm(data, fallaOrigenId) {
     }
     toggleModal('mantenimiento-modal', true);
     if (!data) {
-        initVehiculoSelector('mt-');
+        initVehiculoSelector();
     }
 }
 
