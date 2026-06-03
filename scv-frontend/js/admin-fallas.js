@@ -31,6 +31,7 @@ const LABEL_ESTADO = {
 const APP = window.APP || {};
 
 function loadFallasManagement() {
+    initFallaEventListeners();
     renderFallasList();
 }
 
@@ -73,10 +74,7 @@ async function renderFallasList() {
 }
 
 function openFallaForm(fallaId) {
-    const modal = document.getElementById('falla-modal');
-    if (!modal) return;
-    modal.style.display = 'flex';
-    document.body.classList.add('modal-open');
+    toggleModal('falla-modal', true);
 
     const title = document.getElementById('falla-form-title');
     const form = document.getElementById('falla-form');
@@ -127,9 +125,7 @@ async function loadFallaForEdit(id) {
 }
 
 function closeFallaForm() {
-    const modal = document.getElementById('falla-modal');
-    if (modal) modal.style.display = 'none';
-    document.body.classList.remove('modal-open');
+    toggleModal('falla-modal', false);
 }
 
 async function handleFallaSubmit(e) {
@@ -229,17 +225,14 @@ async function verDetalleFalla(id) {
         if (!modal || !content) return;
         title.textContent = 'Detalle de Falla';
         content.innerHTML = detailHtml;
-        modal.style.display = 'flex';
-        document.body.classList.add('modal-open');
+        toggleModal('falla-detalle-modal', true);
     } catch (err) {
         console.error('Error cargando detalle:', err);
     }
 }
 
 function closeFallaDetalleModal() {
-    const modal = document.getElementById('falla-detalle-modal');
-    if (modal) modal.style.display = 'none';
-    document.body.classList.remove('modal-open');
+    toggleModal('falla-detalle-modal', false);
 }
 
 async function cambiarEstadoFalla(id, estado) {
@@ -328,6 +321,54 @@ function loadConductoresSelect(searchInputId, resultsId) {
     input.addEventListener('focus', () => {
         if (results.children.length > 0) results.style.display = 'block';
     });
+}
+
+function initFallaEventListeners() {
+    const nuevoBtn = document.getElementById('falla-nuevo-btn');
+    if (nuevoBtn) nuevoBtn.addEventListener('click', () => openFallaForm());
+
+    const form = document.getElementById('falla-form');
+    if (form) form.addEventListener('submit', handleFallaSubmit);
+
+    const cancelBtn = document.getElementById('falla-cancel-btn');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => toggleModal('falla-modal', false));
+
+    const closeBtn = document.getElementById('falla-close-btn');
+    if (closeBtn) closeBtn.addEventListener('click', () => toggleModal('falla-modal', false));
+
+    const detalleClose = document.getElementById('falla-detalle-close');
+    if (detalleClose) detalleClose.addEventListener('click', () => toggleModal('falla-detalle-modal', false));
+
+    const detalleAccept = document.getElementById('falla-detalle-accept');
+    if (detalleAccept) detalleAccept.addEventListener('click', () => toggleModal('falla-detalle-modal', false));
+
+    const convertirBtn = document.getElementById('falla-convertir-orden-btn');
+    if (convertirBtn) convertirBtn.addEventListener('click', convertirFallaAOrden);
+
+    ['fallas-filtro-estado', 'fallas-filtro-prioridad', 'fallas-filtro-categoria', 'fallas-search'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => {
+                const filters = APP.admin?.fallasFilters || {};
+                filters.estado = document.getElementById('fallas-filtro-estado')?.value || 'todas';
+                filters.prioridad = document.getElementById('fallas-filtro-prioridad')?.value || 'todas';
+                filters.categoria = document.getElementById('fallas-filtro-categoria')?.value || 'todas';
+                APP.admin.fallasFilters = filters;
+                renderFallasList();
+            });
+            if (el.type === 'search' || el.tagName === 'INPUT') {
+                el.addEventListener('input', () => {
+                    const filters = APP.admin?.fallasFilters || {};
+                    filters.query = el.value.trim();
+                    APP.admin.fallasFilters = filters;
+                    setTimeout(renderFallasList, 300);
+                });
+            }
+        }
+    });
+
+    const clearFiltersBtn = document.getElementById('fallas-clear-filters');
+    if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', resetFallasFilters);
 }
 
 function resetFallasFilters() {
