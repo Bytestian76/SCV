@@ -2820,6 +2820,234 @@ body {
     background: rgba(244, 189, 36, 0.16);
 }
 
+/* ============ Timeline / Seguimiento ============ */
+.timeline-section {
+    margin-top: 12px;
+}
+
+.timeline-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.timeline-section-header p {
+    margin: 0;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: #cad5db;
+    border-radius: 1px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 14px;
+    padding-left: 16px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -18px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #95a5a6;
+    background: #f8faf8;
+    z-index: 1;
+}
+
+.timeline-item.is-pendiente .timeline-marker {
+    border-color: #f39c12;
+    background: #fef5e7;
+}
+
+.timeline-item.is-en_progreso .timeline-marker {
+    border-color: #3498db;
+    background: #ebf5fb;
+}
+
+.timeline-item.is-completada .timeline-marker {
+    border-color: #27ae60;
+    background: #eafaf1;
+}
+
+.timeline-body {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #e5ebef;
+    background: #ffffff;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.timeline-desc {
+    font-size: 0.85rem;
+    margin: 2px 0;
+    color: #1d2f38;
+}
+
+.timeline-responsable,
+.timeline-range {
+    font-size: 0.78rem;
+    margin: 1px 0;
+    color: #4f6f7a;
+}
+
+.timeline-date {
+    font-size: 0.72rem;
+    color: var(--muted);
+}
+
+.timeline-actions {
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.timeline-evidencias {
+    margin-top: 6px;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.evidencia-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #d5dde4;
+    cursor: pointer;
+}
+
+.evidencia-thumb:hover {
+    border-color: #7a9aab;
+}
+
+.btn-sm {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #d5dde4;
+    background: #f8faf8;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.btn-sm.btn-primary {
+    background: #1f6a43;
+    color: #fff;
+    border-color: #1f6a43;
+}
+
+.btn-sm.btn-primary:hover {
+    background: #185434;
+}
+
+.btn-sm.btn-ghost {
+    background: transparent;
+    color: #34533c;
+    border-color: #c8d4da;
+}
+
+.btn-sm.btn-ghost:hover {
+    background: #edf2f2;
+    border-color: #9caab6;
+}
+
+/* ============ Costos ============ */
+.costos-section,
+.auditoria-section {
+    margin-top: 12px;
+}
+
+.costos-body,
+.auditoria-body {
+    margin-top: 6px;
+}
+
+.costos-table {
+    width: 100%;
+    font-size: 0.82rem;
+    border-collapse: collapse;
+}
+
+.costos-table th {
+    background: #edf2f2;
+    padding: 5px 8px;
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #34533c;
+    border-bottom: 1px solid #d5dde4;
+}
+
+.costos-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #eef2f4;
+}
+
+.costos-total-row td {
+    border-top: 2px solid #cad5db;
+    padding-top: 8px;
+}
+
+/* ============ Auditoria ============ */
+.auditoria-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.auditoria-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: #f8faf8;
+    border: 1px solid #eef2f4;
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.auditoria-accion {
+    font-weight: 600;
+    color: #1d2f38;
+}
+
+.auditoria-usuario {
+    color: #34533c;
+}
+
+.auditoria-fecha {
+    font-size: 0.72rem;
+    color: var(--muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
     * {
         animation: none !important;
