@@ -471,6 +471,62 @@ async function eliminarMantenimiento(id) {
     }
 }
 
+let _mtVehiculoSelectorInit = false;
+
+function initVehiculoSelector(prefix) {
+    if (_mtVehiculoSelectorInit) return;
+    _mtVehiculoSelectorInit = true;
+
+    const input = document.getElementById(prefix + 'vehiculo-search');
+    const results = document.getElementById(prefix + 'vehiculo-results');
+    const hidden = document.getElementById(prefix + 'vehiculo');
+    const selected = document.getElementById(prefix + 'vehiculo-selected');
+    if (!input || !results) return;
+
+    const showResults = () => { results.style.display = 'block'; };
+    const hideResults = () => { results.style.display = 'none'; };
+
+    input.addEventListener('input', async () => {
+        const q = input.value.trim();
+        try {
+            const vehiculos = await API.getSelectorVehiculos(q);
+            if (!vehiculos || vehiculos.length === 0) {
+                results.innerHTML = '<div class="selector-empty">Sin resultados</div>';
+                showResults();
+                return;
+            }
+            results.innerHTML = vehiculos.map(v =>
+                `<div class="selector-result-item" data-id="${v.id}" data-label="${v.placa} - ${v.marca} ${v.modelo}">
+                    ${v.placa} - ${v.marca} ${v.modelo}
+                </div>`
+            ).join('');
+            showResults();
+
+            results.querySelectorAll('.selector-result-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    input.value = el.dataset.label;
+                    if (hidden) hidden.value = el.dataset.id;
+                    if (selected) selected.textContent = 'Seleccionado: ' + el.dataset.label;
+                    hideResults();
+                });
+            });
+        } catch (err) {
+            console.error('Error buscando vehículos:', err);
+        }
+    });
+
+    input.addEventListener('focus', () => {
+        if (results.children.length > 0) showResults();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#' + prefix + 'vehiculo-search') &&
+            !e.target.closest('#' + prefix + 'vehiculo-results')) {
+            hideResults();
+        }
+    });
+}
+
 function openMantenimientoForm(data, fallaOrigenId) {
     document.getElementById('mantenimiento-form-title').textContent = data ? 'Editar orden' : 'Nueva orden de mantenimiento';
     document.getElementById('mantenimiento-form').reset();
@@ -483,6 +539,9 @@ function openMantenimientoForm(data, fallaOrigenId) {
         document.getElementById('mt-prioridad').value = data.prioridad || '';
     }
     toggleModal('mantenimiento-modal', true);
+    if (!data) {
+        initVehiculoSelector('mt-');
+    }
 }
 
 async function handleMantenimientoSubmit(e) {

@@ -49,13 +49,6 @@ function getSelectorConfig() {
             hiddenId: 'ch-conductor',
             resultsId: 'ch-conductor-results',
             selectedId: 'ch-conductor-selected'
-        },
-        'mt-vehiculo': {
-            type: 'vehiculo',
-            inputId: 'mt-vehiculo-search',
-            hiddenId: 'mt-vehiculo',
-            resultsId: 'mt-vehiculo-results',
-            selectedId: 'mt-vehiculo-selected'
         }
     };
 }
@@ -207,8 +200,7 @@ function handleSelectorSearchKeydown(event, selectorKey) {
 
 async function loadVehiculosForSelect(selectId, search = '') {
     try {
-        const MAP = { vehiculo: 'mov-vehiculo', 'ch-vehiculo': 'ch-vehiculo', 'mt-vehiculo': 'mt-vehiculo' };
-        const selectorKey = MAP[selectId] || 'mov-vehiculo';
+        const selectorKey = selectId === 'vehiculo' ? 'mov-vehiculo' : 'ch-vehiculo';
         const config = getSelectorConfig()[selectorKey];
         if (!config) return;
 
