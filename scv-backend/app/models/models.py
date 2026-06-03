@@ -26,6 +26,7 @@ class Usuario(Base):
     chequeos = relationship("Chequeo", back_populates="usuario")
     mantenimientos = relationship("Mantenimiento", back_populates="creador", foreign_keys="Mantenimiento.creado_por")
     notificaciones = relationship("Notificacion", back_populates="usuario")
+    fallas = relationship("FallaReportada", back_populates="usuario", foreign_keys="FallaReportada.usuario_id")
 
 
 class Vehiculo(Base):
@@ -47,6 +48,7 @@ class Vehiculo(Base):
     movimientos = relationship("Movimiento", back_populates="vehiculo")
     chequeos = relationship("Chequeo", back_populates="vehiculo")
     mantenimientos = relationship("Mantenimiento", back_populates="vehiculo")
+    fallas = relationship("FallaReportada", back_populates="vehiculo", foreign_keys="FallaReportada.vehiculo_id")
 
 
 class Conductor(Base):
@@ -64,6 +66,7 @@ class Conductor(Base):
     # Relaciones
     movimientos = relationship("Movimiento", back_populates="conductor")
     chequeos = relationship("Chequeo", back_populates="conductor")
+    fallas = relationship("FallaReportada", back_populates="conductor", foreign_keys="FallaReportada.conductor_id")
 
 
 class Movimiento(Base):
@@ -185,6 +188,28 @@ class Notificacion(Base):
 
     # Relaciones
     usuario = relationship("Usuario", back_populates="notificaciones")
+
+
+class FallaReportada(Base):
+    """Fallas reportadas por conductores y chequeos"""
+    __tablename__ = "fallas_reportadas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    vehiculo_id = Column(Integer, ForeignKey("vehiculos.id"), nullable=False)
+    conductor_id = Column(Integer, ForeignKey("conductores.id"), nullable=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    categoria = Column(String(50), nullable=False)
+    descripcion = Column(Text, nullable=False)
+    prioridad = Column(String(20), nullable=False, default="media")
+    estado = Column(String(30), nullable=False, default="pendiente")
+    fotos = Column(Text, nullable=True)
+    fecha_reporte = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=True)
+
+    vehiculo = relationship("Vehiculo")
+    conductor = relationship("Conductor")
+    usuario = relationship("Usuario", foreign_keys=[usuario_id])
 
 
 class PushSubscription(Base):
