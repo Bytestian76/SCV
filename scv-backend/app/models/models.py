@@ -174,6 +174,71 @@ class MantenimientoItem(Base):
     mantenimiento = relationship("Mantenimiento", back_populates="items")
 
 
+class OrdenActividad(Base):
+    """Actividades detalladas dentro de una orden de mantenimiento"""
+    __tablename__ = "orden_actividades"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mantenimiento_id = Column(Integer, ForeignKey("mantenimientos.id"), nullable=False)
+    descripcion = Column(Text, nullable=False)
+    responsable = Column(String(140), nullable=True)
+    fecha_inicio = Column(DateTime, nullable=True)
+    fecha_fin = Column(DateTime, nullable=True)
+    estado = Column(String(30), nullable=False, default="pendiente")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=True)
+
+    mantenimiento = relationship("Mantenimiento")
+    evidencias = relationship("OrdenEvidencia", back_populates="actividad", cascade="all, delete-orphan")
+
+
+class OrdenEvidencia(Base):
+    """Evidencias (fotos/documentos) por actividad"""
+    __tablename__ = "orden_evidencias"
+
+    id = Column(Integer, primary_key=True, index=True)
+    actividad_id = Column(Integer, ForeignKey("orden_actividades.id"), nullable=False)
+    tipo = Column(String(20), nullable=False)  # foto, documento
+    archivo_url = Column(Text, nullable=True)
+    descripcion = Column(Text, nullable=True)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+    actividad = relationship("OrdenActividad", back_populates="evidencias")
+
+
+class OrdenCosto(Base):
+    """Costos asociados a una orden de mantenimiento"""
+    __tablename__ = "orden_costos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mantenimiento_id = Column(Integer, ForeignKey("mantenimientos.id"), nullable=False)
+    tipo = Column(String(20), nullable=False)  # repuesto, mano_obra, otro
+    descripcion = Column(Text, nullable=False)
+    cantidad = Column(Integer, nullable=False, default=1)
+    valor_unitario = Column(Integer, nullable=False, default=0)
+    total = Column(Integer, nullable=False, default=0)
+    proveedor = Column(String(140), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    mantenimiento = relationship("Mantenimiento")
+
+
+class AuditoriaMantenimiento(Base):
+    """Registro de auditoria para cambios en ordenes de mantenimiento"""
+    __tablename__ = "auditoria_mantenimiento"
+
+    id = Column(Integer, primary_key=True, index=True)
+    mantenimiento_id = Column(Integer, ForeignKey("mantenimientos.id"), nullable=False)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    accion = Column(String(30), nullable=False)  # creacion, cambio_estado, update
+    estado_anterior = Column(String(30), nullable=True)
+    estado_nuevo = Column(String(30), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    mantenimiento = relationship("Mantenimiento")
+    usuario = relationship("Usuario")
+
+
 class Notificacion(Base):
     """Notificaciones por usuario"""
     __tablename__ = "notificaciones"

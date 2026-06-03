@@ -8,7 +8,7 @@ from sqlalchemy import func
 
 from app.core.dependencies import require_role, get_current_user
 from app.db.database import get_db
-from app.models.models import Chequeo, Conductor, Mantenimiento, Movimiento, Vehiculo
+from app.models.models import Chequeo, Conductor, Mantenimiento, Movimiento, Vehiculo, OrdenCosto
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -114,6 +114,11 @@ def obtener_dashboard(
         for row in top_vehiculos_raw
     ]
 
+    costo_total = db.query(func.coalesce(func.sum(OrdenCosto.total), 0)).scalar() or 0
+    costo_mes = db.query(func.coalesce(func.sum(OrdenCosto.total), 0)).filter(
+        OrdenCosto.created_at >= inicio_rango
+    ).scalar() or 0
+
     return {
         "totales": {
             "vehiculos_activos": db.query(Vehiculo).filter(Vehiculo.activo.is_(True)).count(),
@@ -137,6 +142,10 @@ def obtener_dashboard(
                 "salida": movimientos_por_tipo.get("salida", 0),
             },
             "top_vehiculos": top_vehiculos,
+        },
+        "costos": {
+            "total_general": int(costo_total),
+            "ultimos_dias": int(costo_mes),
         },
     }
 
