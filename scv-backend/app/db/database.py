@@ -77,6 +77,13 @@ def apply_schema_updates():
         if "mantenimiento_id" not in columnas_ci:
             alter_statements.append("ALTER TABLE chequeo_items ADD COLUMN mantenimiento_id INTEGER REFERENCES mantenimientos(id)")
 
+    if "mantenimientos" in tablas:
+        columnas_mant = {column["name"] for column in inspector.get_columns("mantenimientos")}
+        if "prioridad" not in columnas_mant:
+            alter_statements.append("ALTER TABLE mantenimientos ADD COLUMN prioridad VARCHAR(20)")
+        if "falla_origen_id" not in columnas_mant:
+            alter_statements.append("ALTER TABLE mantenimientos ADD COLUMN falla_origen_id INTEGER REFERENCES fallas_reportadas(id)")
+
     if "fallas_reportadas" not in tablas:
         alter_statements.append("""
             CREATE TABLE fallas_reportadas (

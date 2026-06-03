@@ -205,6 +205,7 @@ function setupEventListeners() {
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     
     // Logout button global
+    window.toggleMantenimientosView = toggleMantenimientosView;
     window.logout = logout;
     window.navigate = navigate;
     window.openChequeosPanel = openChequeosPanel;
@@ -725,6 +726,16 @@ function setupEventListeners() {
         });
     }
 
+    const fallaDetalleModal = document.getElementById('falla-detalle-modal');
+
+    if (fallaDetalleModal) {
+        fallaDetalleModal.addEventListener('click', (e) => {
+            if (e.target === fallaDetalleModal) {
+                closeFallaDetalleModal();
+            }
+        });
+    }
+
     if (chequeoDetalleModal) {
         chequeoDetalleModal.addEventListener('click', (e) => {
             if (e.target === chequeoDetalleModal) {
@@ -1095,6 +1106,8 @@ async function loadDashboardMecanicoData() {
         const data = await API.getDashboardMecanico();
         document.getElementById('stat-mant-pendientes').textContent = data.totales?.pendientes || 0;
         document.getElementById('stat-mant-progreso').textContent = data.totales?.en_progreso || 0;
+        const esperandoEl = document.getElementById('stat-mant-esperando');
+        if (esperandoEl) esperandoEl.textContent = data.totales?.esperando_repuesto || 0;
         document.getElementById('stat-mant-completados').textContent = data.totales?.completados || 0;
 
         const listEl = document.getElementById('mantenimientos-pendientes-list');
