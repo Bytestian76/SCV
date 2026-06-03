@@ -205,6 +205,7 @@ function setupEventListeners() {
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     
     // Logout button global
+    window.toggleMantenimientosView = toggleMantenimientosView;
     window.logout = logout;
     window.navigate = navigate;
     window.openChequeosPanel = openChequeosPanel;
@@ -725,6 +726,43 @@ function setupEventListeners() {
         });
     }
 
+    const fallaDetalleModal = document.getElementById('falla-detalle-modal');
+
+    if (fallaDetalleModal) {
+        fallaDetalleModal.addEventListener('click', (e) => {
+            if (e.target === fallaDetalleModal) {
+                closeFallaDetalleModal();
+            }
+        });
+    }
+
+    const fallaModalOv = document.getElementById('falla-modal');
+    if (fallaModalOv) {
+        fallaModalOv.addEventListener('click', (e) => {
+            if (e.target === fallaModalOv) {
+                toggleModal('falla-modal', false);
+            }
+        });
+    }
+
+    const mantenimientoModalOv = document.getElementById('mantenimiento-modal');
+    if (mantenimientoModalOv) {
+        mantenimientoModalOv.addEventListener('click', (e) => {
+            if (e.target === mantenimientoModalOv) {
+                toggleModal('mantenimiento-modal', false);
+            }
+        });
+    }
+
+    const mantenimientoDetalleModalOv = document.getElementById('mantenimiento-detalle-modal');
+    if (mantenimientoDetalleModalOv) {
+        mantenimientoDetalleModalOv.addEventListener('click', (e) => {
+            if (e.target === mantenimientoDetalleModalOv) {
+                toggleModal('mantenimiento-detalle-modal', false);
+            }
+        });
+    }
+
     if (chequeoDetalleModal) {
         chequeoDetalleModal.addEventListener('click', (e) => {
             if (e.target === chequeoDetalleModal) {
@@ -1095,6 +1133,8 @@ async function loadDashboardMecanicoData() {
         const data = await API.getDashboardMecanico();
         document.getElementById('stat-mant-pendientes').textContent = data.totales?.pendientes || 0;
         document.getElementById('stat-mant-progreso').textContent = data.totales?.en_progreso || 0;
+        const esperandoEl = document.getElementById('stat-mant-esperando');
+        if (esperandoEl) esperandoEl.textContent = data.totales?.esperando_repuesto || 0;
         document.getElementById('stat-mant-completados').textContent = data.totales?.completados || 0;
 
         const listEl = document.getElementById('mantenimientos-pendientes-list');
@@ -1603,6 +1643,12 @@ function toggleModal(modalId, visible) {
 
     modal.classList.toggle('active', visible);
     modal.setAttribute('aria-hidden', visible ? 'false' : 'true');
+
+    if (visible) {
+        document.body.classList.add('modal-open');
+    } else {
+        document.body.classList.remove('modal-open');
+    }
 }
 
 function handleEscapeKey(e) {
@@ -1653,6 +1699,26 @@ function handleEscapeKey(e) {
     const movimientoDetalleModal = document.getElementById('movimiento-detalle-modal');
     if (movimientoDetalleModal?.classList.contains('active')) {
         closeMovimientoDetalleModal();
+    }
+
+    const mantenimientoModal = document.getElementById('mantenimiento-modal');
+    if (mantenimientoModal?.classList.contains('active')) {
+        toggleModal('mantenimiento-modal', false);
+    }
+
+    const mantenimientoDetalleModal = document.getElementById('mantenimiento-detalle-modal');
+    if (mantenimientoDetalleModal?.classList.contains('active')) {
+        toggleModal('mantenimiento-detalle-modal', false);
+    }
+
+    const fallaModal = document.getElementById('falla-modal');
+    if (fallaModal?.classList.contains('active')) {
+        toggleModal('falla-modal', false);
+    }
+
+    const fallaDetalleModalEl = document.getElementById('falla-detalle-modal');
+    if (fallaDetalleModalEl?.classList.contains('active')) {
+        toggleModal('falla-detalle-modal', false);
     }
 }
 

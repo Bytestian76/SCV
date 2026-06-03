@@ -315,7 +315,7 @@
                     <section class="operations-panel">
                         <p class="section-kicker">Mantenimiento de flota</p>
                         <h3>Panel de mantenimiento vehicular</h3>
-                        <div class="ops-kpi-rack">
+                        <div class="ops-kpi-rack kpi-rack-4cols">
                             <div class="stat-card is-pendientes">
                                 <span class="stat-number" id="stat-mant-pendientes">0</span>
                                 <span class="stat-label">Pendientes</span>
@@ -323,6 +323,10 @@
                             <div class="stat-card is-progreso">
                                 <span class="stat-number" id="stat-mant-progreso">0</span>
                                 <span class="stat-label">En progreso</span>
+                            </div>
+                            <div class="stat-card is-esperando">
+                                <span class="stat-number" id="stat-mant-esperando">0</span>
+                                <span class="stat-label">Esperando repuesto</span>
                             </div>
                             <div class="stat-card is-completados">
                                 <span class="stat-number" id="stat-mant-completados">0</span>
@@ -820,22 +824,98 @@
             </div>
         </div>
 
-        <!-- Pantalla Gestion de Mantenimientos -->
-        <div id="admin-mantenimientos" class="screen" data-module="admin-mantenimientos">
+        <!-- Pantalla Gestion de Mantenimientos (Kanban) -->
+        <div id="admin-fallas" class="screen" data-module="admin-fallas">
             <header class="app-header">
                 <button class="btn-back" onclick="goBack()">← Volver</button>
-                <h2>Gestión de Mantenimientos</h2>
-                <button class="btn-logout" onclick="logout()">
-                    <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
-                    <span>Cerrar Sesión</span>
-                </button>
+                <h2>Gestión de Fallas</h2>
+                <div class="header-actions">
+                    <button class="btn-logout" onclick="logout()">
+                        <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                        <span>Cerrar Sesión</span>
+                    </button>
+                </div>
             </header>
             <div class="dashboard-content admin-management-layout">
                 <section class="management-panel">
                     <div class="management-toolbar">
-                        <h3>Ordenes de mantenimiento</h3>
+                        <h3>Fallas Reportadas</h3>
                         <div class="toolbar-actions">
-                            <button id="mantenimiento-nuevo-btn" type="button" class="btn-secondary">Nuevo mantenimiento</button>
+                            <button id="falla-nuevo-btn" type="button" class="btn-secondary">Reportar Falla</button>
+                        </div>
+                    </div>
+                    <p id="fallas-feedback" class="helper-text" aria-live="polite"></p>
+                    <div class="management-filters">
+                        <div class="form-group filter-search-group">
+                            <label for="fallas-search">Buscar</label>
+                            <input id="fallas-search" type="search" placeholder="Placa, descripcion...">
+                        </div>
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label for="fallas-filtro-estado">Estado</label>
+                                <select id="fallas-filtro-estado">
+                                    <option value="todas">Todas</option>
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="evaluada">Evaluada</option>
+                                    <option value="aprobada">Aprobada</option>
+                                    <option value="convertida_a_orden">Convertida a Orden</option>
+                                    <option value="rechazada">Rechazada</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="fallas-filtro-prioridad">Prioridad</label>
+                                <select id="fallas-filtro-prioridad">
+                                    <option value="todas">Todas</option>
+                                    <option value="baja">Baja</option>
+                                    <option value="media">Media</option>
+                                    <option value="alta">Alta</option>
+                                    <option value="critica">Crítica</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="fallas-filtro-categoria">Categoría</label>
+                                <select id="fallas-filtro-categoria">
+                                    <option value="todas">Todas</option>
+                                    <option value="motor">Motor</option>
+                                    <option value="transmision">Transmisión</option>
+                                    <option value="frenos">Frenos</option>
+                                    <option value="suspension">Suspensión</option>
+                                    <option value="electrico">Eléctrico</option>
+                                    <option value="carroceria">Carrocería</option>
+                                    <option value="neumaticos">Neumáticos</option>
+                                    <option value="neumatica">Neumática</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </div>
+                            <button id="fallas-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                        </div>
+                        <p id="fallas-results" class="helper-text filter-results" aria-live="polite"></p>
+                    </div>
+                    <div id="fallas-list" class="management-list"></div>
+                </section>
+            </div>
+        </div>
+
+        <div id="admin-mantenimientos" class="screen" data-module="admin-mantenimientos">
+            <header class="app-header">
+                <button class="btn-back" onclick="goBack()">← Volver</button>
+                <h2>Órdenes de Mantenimiento</h2>
+                <div class="header-actions">
+                    <button class="btn-header-icon" onclick="toggleMantenimientosView()" title="Cambiar vista" id="mant-toggle-view-btn">
+                        <img src="assets/icons/bar-chart-line.svg" alt="" class="btn-icon" aria-hidden="true">
+                    </button>
+                    <button class="btn-logout" onclick="logout()">
+                        <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                        <span>Cerrar Sesión</span>
+                    </button>
+                </div>
+            </header>
+            <div class="dashboard-content admin-management-layout">
+                <section class="management-panel">
+                    <div class="management-toolbar">
+                        <h3 id="mant-view-title">Tablero Kanban</h3>
+                        <div class="toolbar-actions">
+                            <button id="mantenimiento-nuevo-btn" type="button" class="btn-secondary">Nueva orden</button>
                         </div>
                     </div>
                     <p id="mantenimientos-feedback" class="helper-text" aria-live="polite"></p>
@@ -851,6 +931,7 @@
                                     <option value="">Todos</option>
                                     <option value="pendiente">Pendiente</option>
                                     <option value="en_progreso">En progreso</option>
+                                    <option value="esperando_repuesto">Esperando repuesto</option>
                                     <option value="completado">Completado</option>
                                     <option value="cancelado">Cancelado</option>
                                 </select>
@@ -863,11 +944,22 @@
                                     <option value="preventivo">Preventivo</option>
                                 </select>
                             </div>
+                            <div class="form-group">
+                                <label for="mantenimientos-prioridad">Prioridad</label>
+                                <select id="mantenimientos-prioridad">
+                                    <option value="">Todas</option>
+                                    <option value="baja">Baja</option>
+                                    <option value="media">Media</option>
+                                    <option value="alta">Alta</option>
+                                    <option value="critica">Crítica</option>
+                                </select>
+                            </div>
                             <button id="mantenimientos-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
                         </div>
                         <p id="mantenimientos-results" class="helper-text filter-results" aria-live="polite"></p>
                     </div>
-                    <div id="mantenimientos-list" class="management-list"></div>
+                    <div id="mantenimientos-kanban" class="kanban-board"></div>
+                    <div id="mantenimientos-list" class="management-list" style="display:none;"></div>
                 </section>
             </div>
         </div>
@@ -1033,6 +1125,16 @@
                         <textarea id="mt-descripcion" name="descripcion" rows="3" placeholder="Describe el mantenimiento requerido"></textarea>
                     </div>
                     <div class="form-group">
+                        <label for="mt-prioridad">Prioridad</label>
+                        <select id="mt-prioridad" name="prioridad">
+                            <option value="">Sin prioridad</option>
+                            <option value="baja">Baja</option>
+                            <option value="media">Media</option>
+                            <option value="alta">Alta</option>
+                            <option value="critica">Crítica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="mt-kilometraje">Kilometraje</label>
                         <input id="mt-kilometraje" name="kilometraje" type="number" min="0" placeholder="Opcional">
                     </div>
@@ -1097,15 +1199,63 @@
             </div>
         </div>
 
+        <div id="falla-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="falla-form-title">
+                <div class="modal-header">
+                    <h3 id="falla-form-title">Reportar Falla</h3>
+                    <button id="falla-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+                </div>
+                <form id="falla-form" class="management-form">
+                    <div class="form-group selector-search-group">
+                        <label for="falla-vehiculo-search">Vehículo *</label>
+                        <input type="search" id="falla-vehiculo-search" placeholder="Escribe placa, marca o modelo" autocomplete="off">
+                        <input type="hidden" id="falla-vehiculo-id" name="vehiculo_id">
+                        <div id="falla-vehiculo-results" class="selector-results" role="listbox" aria-label="Resultados de vehiculos"></div>
+                        <p id="falla-vehiculo-selected" class="selector-selected">Sin vehículo seleccionado.</p>
+                    </div>
+                    <div class="form-group selector-search-group">
+                        <label for="falla-conductor-search">Conductor</label>
+                        <input type="search" id="falla-conductor-search" placeholder="Buscar conductor" autocomplete="off">
+                        <input type="hidden" id="falla-conductor-id" name="conductor_id">
+                        <div id="falla-conductor-results" class="selector-results" role="listbox" aria-label="Resultados de conductores"></div>
+                        <p id="falla-conductor-selected" class="selector-selected">Sin conductor seleccionado.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="falla-categoria">Categoría *</label>
+                        <select id="falla-categoria" name="categoria" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="falla-prioridad">Prioridad *</label>
+                        <select id="falla-prioridad" name="prioridad" required>
+                            <option value="baja">Baja</option>
+                            <option value="media">Media</option>
+                            <option value="alta">Alta</option>
+                            <option value="critica">Crítica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="falla-descripcion">Descripción *</label>
+                        <textarea id="falla-descripcion" name="descripcion" rows="3" required placeholder="Describe la falla encontrada"></textarea>
+                    </div>
+                    <input type="hidden" id="falla-id" name="falla_id">
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary btn-form-action">Guardar</button>
+                        <button id="falla-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div id="falla-detalle-modal" class="modal-overlay" aria-hidden="true">
             <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="falla-detalle-title">
                 <div class="modal-header">
                     <h3 id="falla-detalle-title">Detalle de Falla</h3>
-                    <button type="button" class="modal-close" onclick="closeFallaDetalleModal()" aria-label="Cerrar detalle">×</button>
+                    <button id="falla-detalle-close" type="button" class="modal-close" aria-label="Cerrar detalle">×</button>
                 </div>
                 <div id="falla-detalle-content" class="chequeo-detalle-content"></div>
                 <div class="form-actions">
-                    <button type="button" class="btn-primary btn-form-action" onclick="closeFallaDetalleModal()">Cerrar</button>
+                    <button id="falla-convertir-orden-btn" type="button" class="btn-primary btn-form-action" style="display:none;">Convertir a Orden</button>
+                    <button id="falla-detalle-accept" type="button" class="btn-ghost btn-form-action">Cerrar</button>
                 </div>
             </div>
         </div>
