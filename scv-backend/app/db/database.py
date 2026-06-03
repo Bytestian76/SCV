@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
+from app.schemas.falla import CATEGORIAS_FALLA
 
 # URL de base de datos desde configuracion (.env)
 DATABASE_URL = settings.DATABASE_URL
@@ -75,6 +76,24 @@ def apply_schema_updates():
             alter_statements.append("ALTER TABLE chequeo_items ADD COLUMN marcar_mantenimiento BOOLEAN DEFAULT 0")
         if "mantenimiento_id" not in columnas_ci:
             alter_statements.append("ALTER TABLE chequeo_items ADD COLUMN mantenimiento_id INTEGER REFERENCES mantenimientos(id)")
+
+    if "fallas_reportadas" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE fallas_reportadas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vehiculo_id INTEGER NOT NULL REFERENCES vehiculos(id),
+                conductor_id INTEGER REFERENCES conductores(id),
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+                categoria VARCHAR(50) NOT NULL,
+                descripcion TEXT NOT NULL,
+                prioridad VARCHAR(20) NOT NULL DEFAULT 'media',
+                estado VARCHAR(30) NOT NULL DEFAULT 'pendiente',
+                fotos TEXT,
+                fecha_reporte DATETIME DEFAULT CURRENT_TIMESTAMP,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME
+            )
+        """)
 
     if not alter_statements:
         return

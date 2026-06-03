@@ -145,6 +145,10 @@
                                 <img src="assets/icons/truck.svg" alt="" class="action-icon" aria-hidden="true">
                                 <span>Gestionar Mantenimientos</span>
                             </button>
+                            <button class="action-btn" onclick="navigate('fallas')">
+                                <img src="assets/icons/search.svg" alt="" class="action-icon" aria-hidden="true">
+                                <span>Gestionar Fallas</span>
+                            </button>
                         </div>
                     </section>
                 </div>
@@ -331,6 +335,9 @@
                             </button>
                             <button class="btn-large btn-entrada" onclick="openMantenimientoForm()">
                                 <span>Nuevo Mantenimiento</span>
+                            </button>
+                            <button class="btn-large btn-salida" onclick="navigate('fallas')">
+                                <span>Gestionar Fallas</span>
                             </button>
                         </div>
                         <article class="user-credential-card" data-user-credential>
@@ -1090,6 +1097,19 @@
             </div>
         </div>
 
+        <div id="falla-detalle-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="falla-detalle-title">
+                <div class="modal-header">
+                    <h3 id="falla-detalle-title">Detalle de Falla</h3>
+                    <button type="button" class="modal-close" onclick="closeFallaDetalleModal()" aria-label="Cerrar detalle">×</button>
+                </div>
+                <div id="falla-detalle-content" class="chequeo-detalle-content"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn-primary btn-form-action" onclick="closeFallaDetalleModal()">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading Overlay -->
         <div id="loading" class="loading-overlay" style="display:none;">
             <div class="spinner"></div>
@@ -1109,6 +1129,7 @@
     <script src="js/operations.js"></script>
     <script src="js/reports.js"></script>
     <script src="js/admin-mantenimientos.js"></script>
+    <script src="js/admin-fallas.js"></script>
     <script src="js/notificaciones.js"></script>
 </body>
 </html>
