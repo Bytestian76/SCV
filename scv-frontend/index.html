@@ -315,7 +315,7 @@
                     <section class="operations-panel">
                         <p class="section-kicker">Mantenimiento de flota</p>
                         <h3>Panel de mantenimiento vehicular</h3>
-                        <div class="ops-kpi-rack">
+                        <div class="ops-kpi-rack kpi-rack-4cols">
                             <div class="stat-card is-pendientes">
                                 <span class="stat-number" id="stat-mant-pendientes">0</span>
                                 <span class="stat-label">Pendientes</span>
@@ -323,6 +323,10 @@
                             <div class="stat-card is-progreso">
                                 <span class="stat-number" id="stat-mant-progreso">0</span>
                                 <span class="stat-label">En progreso</span>
+                            </div>
+                            <div class="stat-card is-esperando">
+                                <span class="stat-number" id="stat-mant-esperando">0</span>
+                                <span class="stat-label">Esperando repuesto</span>
                             </div>
                             <div class="stat-card is-completados">
                                 <span class="stat-number" id="stat-mant-completados">0</span>
@@ -820,22 +824,27 @@
             </div>
         </div>
 
-        <!-- Pantalla Gestion de Mantenimientos -->
+        <!-- Pantalla Gestion de Mantenimientos (Kanban) -->
         <div id="admin-mantenimientos" class="screen" data-module="admin-mantenimientos">
             <header class="app-header">
                 <button class="btn-back" onclick="goBack()">← Volver</button>
-                <h2>Gestión de Mantenimientos</h2>
-                <button class="btn-logout" onclick="logout()">
-                    <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
-                    <span>Cerrar Sesión</span>
-                </button>
+                <h2>Órdenes de Mantenimiento</h2>
+                <div class="header-actions">
+                    <button class="btn-header-icon" onclick="toggleMantenimientosView()" title="Cambiar vista" id="mant-toggle-view-btn">
+                        <img src="assets/icons/bar-chart-line.svg" alt="" class="btn-icon" aria-hidden="true">
+                    </button>
+                    <button class="btn-logout" onclick="logout()">
+                        <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                        <span>Cerrar Sesión</span>
+                    </button>
+                </div>
             </header>
             <div class="dashboard-content admin-management-layout">
                 <section class="management-panel">
                     <div class="management-toolbar">
-                        <h3>Ordenes de mantenimiento</h3>
+                        <h3 id="mant-view-title">Tablero Kanban</h3>
                         <div class="toolbar-actions">
-                            <button id="mantenimiento-nuevo-btn" type="button" class="btn-secondary">Nuevo mantenimiento</button>
+                            <button id="mantenimiento-nuevo-btn" type="button" class="btn-secondary">Nueva orden</button>
                         </div>
                     </div>
                     <p id="mantenimientos-feedback" class="helper-text" aria-live="polite"></p>
@@ -851,6 +860,7 @@
                                     <option value="">Todos</option>
                                     <option value="pendiente">Pendiente</option>
                                     <option value="en_progreso">En progreso</option>
+                                    <option value="esperando_repuesto">Esperando repuesto</option>
                                     <option value="completado">Completado</option>
                                     <option value="cancelado">Cancelado</option>
                                 </select>
@@ -863,11 +873,22 @@
                                     <option value="preventivo">Preventivo</option>
                                 </select>
                             </div>
+                            <div class="form-group">
+                                <label for="mantenimientos-prioridad">Prioridad</label>
+                                <select id="mantenimientos-prioridad">
+                                    <option value="">Todas</option>
+                                    <option value="baja">Baja</option>
+                                    <option value="media">Media</option>
+                                    <option value="alta">Alta</option>
+                                    <option value="critica">Crítica</option>
+                                </select>
+                            </div>
                             <button id="mantenimientos-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
                         </div>
                         <p id="mantenimientos-results" class="helper-text filter-results" aria-live="polite"></p>
                     </div>
-                    <div id="mantenimientos-list" class="management-list"></div>
+                    <div id="mantenimientos-kanban" class="kanban-board"></div>
+                    <div id="mantenimientos-list" class="management-list" style="display:none;"></div>
                 </section>
             </div>
         </div>
@@ -1033,6 +1054,16 @@
                         <textarea id="mt-descripcion" name="descripcion" rows="3" placeholder="Describe el mantenimiento requerido"></textarea>
                     </div>
                     <div class="form-group">
+                        <label for="mt-prioridad">Prioridad</label>
+                        <select id="mt-prioridad" name="prioridad">
+                            <option value="">Sin prioridad</option>
+                            <option value="baja">Baja</option>
+                            <option value="media">Media</option>
+                            <option value="alta">Alta</option>
+                            <option value="critica">Crítica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="mt-kilometraje">Kilometraje</label>
                         <input id="mt-kilometraje" name="kilometraje" type="number" min="0" placeholder="Opcional">
                     </div>
@@ -1105,7 +1136,8 @@
                 </div>
                 <div id="falla-detalle-content" class="chequeo-detalle-content"></div>
                 <div class="form-actions">
-                    <button type="button" class="btn-primary btn-form-action" onclick="closeFallaDetalleModal()">Cerrar</button>
+                    <button id="falla-convertir-orden-btn" type="button" class="btn-primary btn-form-action" style="display:none;" onclick="convertirFallaAOrden()">Convertir a Orden</button>
+                    <button type="button" class="btn-ghost btn-form-action" onclick="closeFallaDetalleModal()">Cerrar</button>
                 </div>
             </div>
         </div>
