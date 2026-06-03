@@ -5,22 +5,28 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 
+ESTADOS_MANTENIMIENTO = ["pendiente", "en_progreso", "esperando_repuesto", "completado", "cancelado"]
+PRIORIDADES_MANTENIMIENTO = ["baja", "media", "alta", "critica"]
+
+
 class MantenimientoBase(BaseModel):
     vehiculo_id: int
-    tipo: str  # preventivo, correctivo
+    tipo: str
     descripcion: Optional[str] = None
     kilometraje: Optional[int] = None
+    prioridad: Optional[str] = None
     estado: Optional[str] = "pendiente"
 
 
 class MantenimientoCreate(MantenimientoBase):
-    pass
+    falla_origen_id: Optional[int] = None
 
 
 class MantenimientoUpdate(BaseModel):
     tipo: Optional[str] = None
     descripcion: Optional[str] = None
     kilometraje: Optional[int] = None
+    prioridad: Optional[str] = None
     estado: Optional[str] = None
     vehiculo_id: Optional[int] = None
 
@@ -53,11 +59,13 @@ class MantenimientoResponse(MantenimientoBase):
     id: int
     creado_por: int
     chequeo_origen_id: Optional[int] = None
+    falla_origen_id: Optional[int] = None
     fecha_creacion: datetime
     fecha_actualizacion: Optional[datetime] = None
     items: List[MantenimientoItemResponse] = []
     vehiculo: Optional[dict] = None
     creador: Optional[dict] = None
+    falla_origen: Optional[dict] = None
 
     class Config:
         from_attributes = True
@@ -69,6 +77,7 @@ class MantenimientoListResponse(BaseModel):
     tipo: str
     descripcion: Optional[str] = None
     kilometraje: Optional[int] = None
+    prioridad: Optional[str] = None
     estado: str
     creado_por: int
     fecha_creacion: datetime
@@ -76,6 +85,7 @@ class MantenimientoListResponse(BaseModel):
     items_count: int = 0
     vehiculo: Optional[dict] = None
     creador: Optional[dict] = None
+    falla_origen_id: Optional[int] = None
 
     class Config:
         from_attributes = True
