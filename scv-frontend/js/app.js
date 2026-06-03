@@ -300,7 +300,6 @@ function setupEventListeners() {
     const movimientoConductorSearch = document.getElementById('mov-conductor-search');
     const chequeoVehiculoSearch = document.getElementById('ch-vehiculo-search');
     const chequeoConductorSearch = document.getElementById('ch-conductor-search');
-    const mtVehiculoSearch = document.getElementById('mt-vehiculo-search');
 
     if (vehiculoNuevoBtn) {
         vehiculoNuevoBtn.addEventListener('click', () => openVehiculoForm());
@@ -707,22 +706,6 @@ function setupEventListeners() {
         });
         chequeoConductorSearch.addEventListener('keydown', (e) => {
             handleSelectorSearchKeydown(e, 'ch-conductor');
-        });
-    }
-
-    if (mtVehiculoSearch) {
-        mtVehiculoSearch.addEventListener('input', (e) => {
-            scheduleSelectorSearch('mt-vehiculo', e.target.value, () => {
-                loadVehiculosForSelect('mt-vehiculo', e.target.value);
-            });
-        });
-        mtVehiculoSearch.addEventListener('focus', () => {
-            scheduleSelectorSearch('mt-vehiculo', mtVehiculoSearch.value, () => {
-                loadVehiculosForSelect('mt-vehiculo', mtVehiculoSearch.value);
-            });
-        });
-        mtVehiculoSearch.addEventListener('keydown', (e) => {
-            handleSelectorSearchKeydown(e, 'mt-vehiculo');
         });
     }
 
