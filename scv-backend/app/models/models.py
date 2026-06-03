@@ -212,7 +212,7 @@ class OrdenCosto(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     mantenimiento_id = Column(Integer, ForeignKey("mantenimientos.id"), nullable=False)
-    tipo = Column(String(20), nullable=False)  # repuesto, mano_obra, otro
+    tipo = Column(String(20), nullable=False)  # repuesto, otro
     descripcion = Column(Text, nullable=False)
     cantidad = Column(Integer, nullable=False, default=1)
     valor_unitario = Column(Integer, nullable=False, default=0)
