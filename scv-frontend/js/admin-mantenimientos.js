@@ -13,7 +13,7 @@ const ESTADO_META = {
 const TIPO_LABELS = { correctivo: 'Correctivo', preventivo: 'Preventivo' };
 const PRIORIDAD_LABELS = { baja: 'Baja', media: 'Media', alta: 'Alta', critica: 'Crítica' };
 const ESTADO_ACT_LABELS = { pendiente: 'Pendiente', en_progreso: 'En progreso', completada: 'Completada' };
-const COSTO_TIPO_LABELS = { repuesto: 'Repuesto', mano_obra: 'Mano de obra', otro: 'Otro' };
+const COSTO_TIPO_LABELS = { repuesto: 'Repuesto', otro: 'Otro' };
 const AUDITORIA_ACCION_LABELS = { creacion: 'Creada', cambio_estado: 'Cambio de estado', update: 'Actualizada' };
 
 let MANT_VIEW_MODE = 'kanban';
@@ -483,9 +483,6 @@ function openMantenimientoForm(data, fallaOrigenId) {
         document.getElementById('mt-prioridad').value = data.prioridad || '';
     }
     toggleModal('mantenimiento-modal', true);
-    if (!data) {
-        initVehiculoSelector('mt-');
-    }
 }
 
 async function handleMantenimientoSubmit(e) {
@@ -620,7 +617,7 @@ async function eliminarCosto(costoId, mantenimientoId) {
 }
 
 function abrirNuevoCosto(mantenimientoId) {
-    const tipo = prompt('Tipo (repuesto/mano_obra/otro):') || 'repuesto';
+    const tipo = prompt('Tipo (repuesto/otro):') || 'repuesto';
     const desc = prompt('Descripción:');
     if (!desc || !desc.trim()) return;
     const cant = parseInt(prompt('Cantidad:') || '1', 10);
