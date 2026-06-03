@@ -43,6 +43,13 @@ const APP = {
             fechaFin: '',
             orden: 'fecha_desc'
         },
+        fallas: [],
+        fallasFilters: {
+            query: '',
+            estado: 'todas',
+            prioridad: 'todas',
+            categoria: 'todas',
+        },
         movimientos: [],
         movimientosFilters: {
             query: '',
@@ -203,6 +210,7 @@ function setupEventListeners() {
     window.openChequeosPanel = openChequeosPanel;
     window.openMovimientosPanel = openMovimientosPanel;
     window.openMantenimientosPanel = openMantenimientosPanel;
+    window.openFallasPanel = openFallasPanel;
     window.showForm = showForm;
     window.goBack = goBack;
 
@@ -1163,6 +1171,11 @@ function navigate(section) {
         return;
     }
 
+    if (section === 'fallas') {
+        openFallasPanel();
+        return;
+    }
+
     showAppAlert('Módulo en construcción', `El módulo ${section} se habilitará en la siguiente iteración.`);
 }
 
@@ -1180,6 +1193,24 @@ function openMantenimientosPanel() {
     closeMovimientoForm();
     if (typeof loadMantenimientosManagement === 'function') {
         loadMantenimientosManagement();
+    }
+}
+
+function openFallasPanel() {
+    if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.MECANICO].includes(APP.user?.rol)) {
+        showAppAlert('Acceso denegado', 'No tienes permisos para ver el módulo de fallas.');
+        return;
+    }
+
+    showScreen('admin-fallas');
+    closeUsuarioForm();
+    closeConductorForm();
+    closeVehiculoForm();
+    closeChequeoForm();
+    closeMovimientoForm();
+    closeFallaForm();
+    if (typeof loadFallasManagement === 'function') {
+        loadFallasManagement();
     }
 }
 
@@ -1268,6 +1299,11 @@ function goBack() {
     }
 
     if (current === 'admin-mantenimientos') {
+        showDashboard(APP.user?.rol);
+        return;
+    }
+
+    if (current === 'admin-fallas') {
         showDashboard(APP.user?.rol);
         return;
     }
@@ -1661,6 +1697,36 @@ function resolveDialog(result) {
 
 async function showAppAlert(title, message) {
     await openDialog({ title, message, confirmText: 'Entendido', showCancel: false });
+}
+
+function showDialogHTML(title, html) {
+    const dialog = document.getElementById('app-dialog');
+    if (!dialog) return;
+    document.getElementById('dialog-title').textContent = title;
+    const msg = document.getElementById('dialog-message');
+    const actions = dialog.querySelector('.dialog-actions');
+    msg.innerHTML = html;
+    msg.style.display = 'block';
+    if (actions) actions.style.display = 'none';
+    dialog.style.display = 'flex';
+    document.body.classList.add('modal-open');
+
+    const closeHandler = () => {
+        dialog.style.display = 'none';
+        document.body.classList.remove('modal-open');
+        msg.innerHTML = '';
+        msg.style.display = '';
+        if (actions) actions.style.display = '';
+        dialog.querySelector('#dialog-cancel')?.removeEventListener('click', closeHandler);
+        dialog.querySelector('#dialog-confirm')?.removeEventListener('click', closeHandler);
+        dialog.removeEventListener('click', overlayHandler);
+    };
+    const overlayHandler = (e) => {
+        if (e.target === dialog) closeHandler();
+    };
+    dialog.querySelector('#dialog-cancel')?.addEventListener('click', closeHandler);
+    dialog.querySelector('#dialog-confirm')?.addEventListener('click', closeHandler);
+    dialog.addEventListener('click', overlayHandler);
 }
 
 async function showAppConfirm(title, message) {
