@@ -288,6 +288,58 @@ const API = {
         return await this.request('GET', '/mantenimientos/kanban/board');
     },
 
+    // ============ ACTIVIDADES ============
+
+    async getActividades(mantenimientoId) {
+        return await this.request('GET', `/mantenimientos/${mantenimientoId}/actividades`);
+    },
+
+    async createActividad(mantenimientoId, data) {
+        return await this.request('POST', `/mantenimientos/${mantenimientoId}/actividades`, data);
+    },
+
+    async updateActividad(actividadId, data) {
+        return await this.request('PUT', `/mantenimientos/actividades/${actividadId}`, data);
+    },
+
+    async deleteActividad(actividadId) {
+        return await this.request('DELETE', `/mantenimientos/actividades/${actividadId}`);
+    },
+
+    // ============ EVIDENCIAS ============
+
+    async createEvidencia(actividadId, data) {
+        return await this.request('POST', `/mantenimientos/actividades/${actividadId}/evidencias`, data);
+    },
+
+    async getEvidencias(actividadId) {
+        return await this.request('GET', `/mantenimientos/actividades/${actividadId}/evidencias`);
+    },
+
+    async deleteEvidencia(evidenciaId) {
+        return await this.request('DELETE', `/mantenimientos/evidencias/${evidenciaId}`);
+    },
+
+    // ============ COSTOS ============
+
+    async getCostos(mantenimientoId) {
+        return await this.request('GET', `/mantenimientos/${mantenimientoId}/costos`);
+    },
+
+    async createCosto(mantenimientoId, data) {
+        return await this.request('POST', `/mantenimientos/${mantenimientoId}/costos`, data);
+    },
+
+    async deleteCosto(costoId) {
+        return await this.request('DELETE', `/mantenimientos/costos/${costoId}`);
+    },
+
+    // ============ AUDITORIA ============
+
+    async getAuditoria(mantenimientoId) {
+        return await this.request('GET', `/mantenimientos/${mantenimientoId}/auditoria`);
+    },
+
     // ============ NOTIFICACIONES ============
 
     async getNotificaciones() {

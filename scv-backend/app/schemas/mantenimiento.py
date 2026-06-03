@@ -55,6 +55,53 @@ class MantenimientoItemResponse(BaseModel):
         from_attributes = True
 
 
+class EvidenciaCreate(BaseModel):
+    tipo: str = "foto"
+    archivo_url: Optional[str] = None
+    descripcion: Optional[str] = None
+
+
+class EvidenciaResponse(BaseModel):
+    id: int
+    actividad_id: int
+    tipo: str
+    archivo_url: Optional[str] = None
+    descripcion: Optional[str] = None
+    uploaded_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ActividadCreate(BaseModel):
+    descripcion: str
+    responsable: Optional[str] = None
+
+
+class ActividadUpdate(BaseModel):
+    descripcion: Optional[str] = None
+    responsable: Optional[str] = None
+    estado: Optional[str] = None
+    fecha_inicio: Optional[datetime] = None
+    fecha_fin: Optional[datetime] = None
+
+
+class ActividadResponse(BaseModel):
+    id: int
+    mantenimiento_id: int
+    descripcion: str
+    responsable: Optional[str] = None
+    fecha_inicio: Optional[datetime] = None
+    fecha_fin: Optional[datetime] = None
+    estado: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    evidencias: List[EvidenciaResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
 class MantenimientoResponse(MantenimientoBase):
     id: int
     creado_por: int
@@ -63,6 +110,7 @@ class MantenimientoResponse(MantenimientoBase):
     fecha_creacion: datetime
     fecha_actualizacion: Optional[datetime] = None
     items: List[MantenimientoItemResponse] = []
+    actividades: List[ActividadResponse] = []
     vehiculo: Optional[dict] = None
     creador: Optional[dict] = None
     falla_origen: Optional[dict] = None
@@ -86,6 +134,43 @@ class MantenimientoListResponse(BaseModel):
     vehiculo: Optional[dict] = None
     creador: Optional[dict] = None
     falla_origen_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CostoCreate(BaseModel):
+    tipo: str = "repuesto"
+    descripcion: str
+    cantidad: int = 1
+    valor_unitario: int = 0
+    proveedor: Optional[str] = None
+
+
+class CostoResponse(BaseModel):
+    id: int
+    mantenimiento_id: int
+    tipo: str
+    descripcion: str
+    cantidad: int
+    valor_unitario: int
+    total: int
+    proveedor: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AuditoriaResponse(BaseModel):
+    id: int
+    mantenimiento_id: int
+    usuario_id: int
+    accion: str
+    estado_anterior: Optional[str] = None
+    estado_nuevo: Optional[str] = None
+    created_at: datetime
+    usuario_nombre: Optional[str] = None
 
     class Config:
         from_attributes = True
