@@ -148,11 +148,12 @@ def obtener_dashboard_mecanico(
 ):
     pendientes = db.query(Mantenimiento).filter(Mantenimiento.estado == "pendiente").count()
     en_progreso = db.query(Mantenimiento).filter(Mantenimiento.estado == "en_progreso").count()
+    esperando_repuesto = db.query(Mantenimiento).filter(Mantenimiento.estado == "esperando_repuesto").count()
     completados = db.query(Mantenimiento).filter(Mantenimiento.estado == "completado").count()
 
     pendientes_lista = (
         db.query(Mantenimiento)
-        .filter(Mantenimiento.estado == "pendiente")
+        .filter(Mantenimiento.estado.in_(["pendiente", "en_progreso", "esperando_repuesto"]))
         .order_by(Mantenimiento.fecha_creacion.asc())
         .limit(10)
         .all()
@@ -162,6 +163,7 @@ def obtener_dashboard_mecanico(
         "totales": {
             "pendientes": pendientes,
             "en_progreso": en_progreso,
+            "esperando_repuesto": esperando_repuesto,
             "completados": completados,
         },
         "pendientes": [

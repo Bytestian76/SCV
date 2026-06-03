@@ -142,9 +142,11 @@ class Mantenimiento(Base):
     tipo = Column(String(20), nullable=False)  # preventivo, correctivo
     descripcion = Column(Text, nullable=True)
     kilometraje = Column(Integer, nullable=True)
-    estado = Column(String(20), nullable=False, default="pendiente")  # pendiente, en_progreso, completado, cancelado
+    prioridad = Column(String(20), nullable=True)  # baja, media, alta, critica
+    estado = Column(String(30), nullable=False, default="pendiente")  # pendiente, en_progreso, esperando_repuesto, completado, cancelado
     creado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     chequeo_origen_id = Column(Integer, ForeignKey("chequeos.id"), nullable=True)
+    falla_origen_id = Column(Integer, ForeignKey("fallas_reportadas.id"), nullable=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     fecha_actualizacion = Column(DateTime, nullable=True)
 
@@ -153,6 +155,7 @@ class Mantenimiento(Base):
     creador = relationship("Usuario", back_populates="mantenimientos", foreign_keys=[creado_por])
     items_origen = relationship("ChequeoItem", back_populates="mantenimiento", foreign_keys="ChequeoItem.mantenimiento_id")
     items = relationship("MantenimientoItem", back_populates="mantenimiento", cascade="all, delete-orphan")
+    falla_origen = relationship("FallaReportada", foreign_keys=[falla_origen_id])
 
 
 class MantenimientoItem(Base):

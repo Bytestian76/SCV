@@ -1,15 +1,16 @@
 """Endpoints de Mantenimientos"""
 
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.core.dependencies import require_role
 from app.db.database import get_db
-from app.models.models import Mantenimiento, MantenimientoItem, Notificacion, Usuario, Vehiculo
+from app.models.models import Mantenimiento, MantenimientoItem, Notificacion, Usuario, Vehiculo, FallaReportada
 from app.services.push_service import send_push_to_mecanicos
 from app.schemas.mantenimiento import (
+    ESTADOS_MANTENIMIENTO,
     MantenimientoCreate,
     MantenimientoEstadoUpdate,
     MantenimientoItemCreate,
@@ -40,23 +41,24 @@ def _crear_notificaciones_mecanicos(db: Session, titulo: str, mensaje: str, ref_
 def listar_mantenimientos(
     skip: int = 0,
     limit: int = 50,
-    estado: str = None,
-    vehiculo_id: int = None,
-    tipo: str = None,
+    estado: Optional[str] = None,
+    vehiculo_id: Optional[int] = None,
+    tipo: Optional[str] = None,
+    prioridad: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["admin", "mecanico"])),
 ):
     query = db.query(Mantenimiento)
 
-    if current_user.rol == "mecanico":
-        pass  # mecanico ve todos los mantenimientos
-
     if estado:
-        query = query.filter(Mantenimiento.estado == estado)
+        estados = [e.strip() for e in estado.split(",")]
+        query = query.filter(Mantenimiento.estado.in_(estados))
     if vehiculo_id:
         query = query.filter(Mantenimiento.vehiculo_id == vehiculo_id)
     if tipo:
         query = query.filter(Mantenimiento.tipo == tipo)
+    if prioridad:
+        query = query.filter(Mantenimiento.prioridad == prioridad)
 
     mantenimientos = query.order_by(Mantenimiento.fecha_creacion.desc()).offset(skip).limit(limit).all()
 
@@ -67,6 +69,7 @@ def listar_mantenimientos(
             tipo=m.tipo,
             descripcion=m.descripcion,
             kilometraje=m.kilometraje,
+            prioridad=m.prioridad,
             estado=m.estado,
             creado_por=m.creado_por,
             fecha_creacion=m.fecha_creacion,
@@ -82,6 +85,7 @@ def listar_mantenimientos(
                 "id": m.creador.id,
                 "nombre": m.creador.nombre,
             } if m.creador else None,
+            falla_origen_id=m.falla_origen_id,
         )
         for m in mantenimientos
     ]
@@ -97,15 +101,28 @@ def obtener_mantenimiento(
     if not m:
         raise HTTPException(status_code=404, detail="Mantenimiento no encontrado")
 
+    falla_data = None
+    if m.falla_origen_id:
+        falla = db.query(FallaReportada).filter(FallaReportada.id == m.falla_origen_id).first()
+        if falla:
+            falla_data = {
+                "id": falla.id,
+                "categoria": falla.categoria,
+                "descripcion": falla.descripcion,
+                "prioridad": falla.prioridad,
+            }
+
     return MantenimientoResponse(
         id=m.id,
         vehiculo_id=m.vehiculo_id,
         tipo=m.tipo,
         descripcion=m.descripcion,
         kilometraje=m.kilometraje,
+        prioridad=m.prioridad,
         estado=m.estado,
         creado_por=m.creado_por,
         chequeo_origen_id=m.chequeo_origen_id,
+        falla_origen_id=m.falla_origen_id,
         fecha_creacion=m.fecha_creacion,
         fecha_actualizacion=m.fecha_actualizacion,
         items=[
@@ -130,6 +147,7 @@ def obtener_mantenimiento(
             "id": m.creador.id,
             "nombre": m.creador.nombre,
         } if m.creador else None,
+        falla_origen=falla_data,
     )
 
 
@@ -143,16 +161,31 @@ def crear_mantenimiento(
     if not vehiculo:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado o inactivo")
 
+    if payload.falla_origen_id:
+        falla = db.query(FallaReportada).filter(FallaReportada.id == payload.falla_origen_id).first()
+        if not falla:
+            raise HTTPException(status_code=404, detail="Falla de origen no encontrada")
+        if falla.estado == "convertida_a_orden":
+            raise HTTPException(status_code=400, detail="Esta falla ya fue convertida a una orden de mantenimiento")
+
     db_m = Mantenimiento(
         vehiculo_id=payload.vehiculo_id,
         tipo=payload.tipo,
         descripcion=payload.descripcion,
         kilometraje=payload.kilometraje,
+        prioridad=payload.prioridad,
         estado=payload.estado or "pendiente",
         creado_por=current_user.id,
+        falla_origen_id=payload.falla_origen_id,
     )
     db.add(db_m)
     db.flush()
+
+    if payload.falla_origen_id:
+        falla = db.query(FallaReportada).filter(FallaReportada.id == payload.falla_origen_id).first()
+        falla.estado = "convertida_a_orden"
+        falla.updated_at = datetime.utcnow()
+        db.flush()
 
     _crear_notificaciones_mecanicos(
         db,
@@ -169,7 +202,7 @@ def crear_mantenimiento(
         placa = vehiculo.placa
         send_push_to_mecanicos(
             db,
-            titulo=f"🛠️ Nuevo mantenimiento {db_m.tipo}",
+            titulo=f"Nuevo mantenimiento {db_m.tipo}",
             mensaje=f"{placa}: {db_m.descripcion or 'Sin descripción'}",
             url=f"/?screen=admin-mantenimientos&id={db_m.id}",
         )
@@ -207,9 +240,8 @@ def actualizar_estado_mantenimiento(
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["admin", "mecanico"])),
 ):
-    estados_validos = {"pendiente", "en_progreso", "completado", "cancelado"}
-    if payload.estado not in estados_validos:
-        raise HTTPException(status_code=400, detail=f"Estado inválido. Válidos: {', '.join(sorted(estados_validos))}")
+    if payload.estado not in ESTADOS_MANTENIMIENTO:
+        raise HTTPException(status_code=400, detail=f"Estado inválido. Válidos: {', '.join(ESTADOS_MANTENIMIENTO)}")
 
     m = db.query(Mantenimiento).filter(Mantenimiento.id == mantenimiento_id).first()
     if not m:
@@ -226,7 +258,7 @@ def actualizar_estado_mantenimiento(
             placa = m.vehiculo.placa if m.vehiculo else "Desconocido"
             send_push_to_mecanicos(
                 db,
-                titulo=f"📋 Mantenimiento {payload.estado}",
+                titulo=f"Orden {payload.estado}",
                 mensaje=f"{placa}: cambió de '{old_estado}' a '{payload.estado}'",
                 url=f"/?screen=admin-mantenimientos&id={m.id}",
             )
@@ -289,3 +321,43 @@ def agregar_items_mantenimiento(
         )
         for n in nuevos
     ]
+
+
+@router.get("/kanban/board", response_model=dict)
+def obtener_tablero_kanban(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role(["admin", "mecanico"])),
+):
+    columnas = {
+        "pendiente": [],
+        "en_progreso": [],
+        "esperando_repuesto": [],
+        "completado": [],
+        "cancelado": [],
+    }
+
+    mantenimientos = db.query(Mantenimiento).order_by(Mantenimiento.fecha_creacion.desc()).limit(100).all()
+
+    for m in mantenimientos:
+        col = m.estado if m.estado in columnas else "pendiente"
+        columnas[col].append({
+            "id": m.id,
+            "vehiculo_id": m.vehiculo_id,
+            "tipo": m.tipo,
+            "descripcion": m.descripcion,
+            "prioridad": m.prioridad,
+            "estado": m.estado,
+            "kilometraje": m.kilometraje,
+            "fecha_creacion": m.fecha_creacion.isoformat() if m.fecha_creacion else None,
+            "items_count": len(m.items),
+            "vehiculo": {
+                "placa": m.vehiculo.placa,
+                "marca": m.vehiculo.marca,
+                "modelo": m.vehiculo.modelo,
+            } if m.vehiculo else None,
+        })
+
+    return {
+        "columnas": columnas,
+        "totales": {k: len(v) for k, v in columnas.items()},
+    }

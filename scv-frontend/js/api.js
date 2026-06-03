@@ -284,6 +284,10 @@ const API = {
         return await this.request('POST', `/mantenimientos/${id}/items`, items);
     },
 
+    async getKanbanBoard() {
+        return await this.request('GET', '/mantenimientos/kanban/board');
+    },
+
     // ============ NOTIFICACIONES ============
 
     async getNotificaciones() {
