@@ -2561,6 +2561,68 @@ body {
     }
 }
 
+/* Status badges for fallas */
+.status-badge.is-baja {
+    background: #27ae6020;
+    color: #1e8449;
+    border-color: #27ae6040;
+}
+
+.status-badge.is-media {
+    background: #f39c1220;
+    color: #d68910;
+    border-color: #f39c1240;
+}
+
+.status-badge.is-alta {
+    background: #e67e2220;
+    color: #ca6f1e;
+    border-color: #e67e2240;
+}
+
+.status-badge.is-critica {
+    background: #e74c3c20;
+    color: #c0392b;
+    border-color: #e74c3c40;
+}
+
+.status-badge.is-evaluada {
+    background: #3498db20;
+    color: #2471a3;
+    border-color: #3498db40;
+}
+
+.status-badge.is-aprobada {
+    background: #27ae6020;
+    color: #1e8449;
+    border-color: #27ae6040;
+}
+
+.status-badge.is-rechazada {
+    background: #95a5a620;
+    color: #717d7e;
+    border-color: #95a5a640;
+}
+
+.status-badge.is-convertida_a_orden {
+    background: #8e44ad20;
+    color: #6c3483;
+    border-color: #8e44ad40;
+}
+
+.detalle-desc {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.estado-select {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #d5dde4;
+    font-size: 0.85rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
     * {
         animation: none !important;

@@ -14,7 +14,7 @@ const API = {
 
     notifyDashboardDataChanged(method, endpoint) {
         if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return;
-        if (!/^\/(movimientos|chequeos|vehiculos|conductores|mantenimientos)\b/.test(endpoint)) return;
+        if (!/^\/(movimientos|chequeos|vehiculos|conductores|mantenimientos|fallas)\b/.test(endpoint)) return;
 
         const detail = {
             method,
@@ -321,5 +321,33 @@ const API = {
 
     async pushUnsubscribe(endpoint) {
         return await this.request('DELETE', `/push/unsubscribe?endpoint=${encodeURIComponent(endpoint)}`);
+    },
+
+    // ============ FALLAS ============
+
+    async getFallas(filters = {}) {
+        const params = new URLSearchParams(filters).toString();
+        const endpoint = params ? `/fallas/?${params}` : '/fallas/';
+        return await this.request('GET', endpoint);
+    },
+
+    async getFalla(id) {
+        return await this.request('GET', `/fallas/${id}`);
+    },
+
+    async createFalla(data) {
+        return await this.request('POST', '/fallas/', data);
+    },
+
+    async updateFalla(id, data) {
+        return await this.request('PUT', `/fallas/${id}`, data);
+    },
+
+    async updateEstadoFalla(id, estado) {
+        return await this.request('PUT', `/fallas/${id}/estado`, { estado });
+    },
+
+    async deleteFalla(id) {
+        return await this.request('DELETE', `/fallas/${id}`);
     }
 };
