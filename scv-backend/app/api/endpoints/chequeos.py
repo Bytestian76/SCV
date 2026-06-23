@@ -7,7 +7,7 @@ from typing import List
 
 from app.core.dependencies import require_role
 from app.db.database import get_db
-from app.models.models import Chequeo, ChequeoItem, Conductor, Mantenimiento, MantenimientoItem, Notificacion, Usuario, Vehiculo, Movimiento
+from app.models.models import Chequeo, ChequeoItem, Conductor, Hallazgo, Mantenimiento, MantenimientoItem, Notificacion, Usuario, Vehiculo, Movimiento
 from app.services.push_service import send_push_to_mecanicos
 from app.schemas.chequeo import (
     ChequeoCreate,
@@ -428,6 +428,25 @@ def crear_chequeo_items(
                 observacion=ci.observacion,
             ))
 
+        criticidad = "media"
+        valores_criticos = {"no_conforme", "mal_estado", "genera_ruido", "vibra", "presenta_fugas"}
+        if any(ci.valor in valores_criticos for ci in items_con_mantenimiento):
+            criticidad = "alta"
+
+        items_desc = "; ".join(
+            f"{i.seccion}/{i.item}: {i.observacion or 'Sin observación'}"
+            for i in items_con_mantenimiento
+        )
+        hallazgo = Hallazgo(
+            vehiculo_id=chequeo.vehiculo_id,
+            chequeo_id=chequeo_id,
+            usuario_reporta_id=current_user.id,
+            origen="chequeo",
+            descripcion=f"Desde chequeo #{chequeo_id}: {items_desc}"[:500],
+            criticidad=criticidad,
+        )
+        db.add(hallazgo)
+
         mecanicos = db.query(Usuario).filter(Usuario.rol == "mecanico", Usuario.activo.is_(True)).all()
         for mec in mecanicos:
             db.add(Notificacion(
@@ -451,11 +470,22 @@ def crear_chequeo_items(
         except Exception:
             pass
 
+        jefes = db.query(Usuario).filter(Usuario.rol == "jefe_mecanicos", Usuario.activo.is_(True)).all()
+        for jefe in jefes:
+            db.add(Notificacion(
+                usuario_id=jefe.id,
+                tipo="nuevo_hallazgo",
+                titulo=f"Nuevo hallazgo - {vehiculo.placa}",
+                mensaje=f"Desde chequeo #{chequeo_id}: {len(items_con_mantenimiento)} ítem(es) como no conforme",
+                referencia_tipo="hallazgo",
+                referencia_id=hallazgo.id,
+            ))
+
     db.commit()
 
     mensaje = "Items de chequeo guardados correctamente"
     if items_con_mantenimiento:
-        mensaje += f" y se crearon {len(items_con_mantenimiento)} tarea(s) de mantenimiento"
+        mensaje += f" y se crearon {len(items_con_mantenimiento)} tarea(s) de mantenimiento y un hallazgo"
 
     return ChequeoItemsResponse(
         chequeo_id=chequeo_id,
