@@ -43,13 +43,6 @@ const APP = {
             fechaFin: '',
             orden: 'fecha_desc'
         },
-        fallas: [],
-        fallasFilters: {
-            query: '',
-            estado: 'todas',
-            prioridad: 'todas',
-            categoria: 'todas',
-        },
         movimientos: [],
         movimientosFilters: {
             query: '',
@@ -57,7 +50,21 @@ const APP = {
             fechaInicio: '',
             fechaFin: '',
             orden: 'fecha_desc'
-        }
+        },
+        hallazgos: [],
+        hallazgosFilters: {
+            query: '',
+            estado: 'todas',
+            prioridad: 'todas',
+            categoria: 'todas'
+        },
+        ordenes: [],
+        ordenesFilters: {
+            query: '',
+            estado: 'todas',
+            prioridad: 'todas'
+        },
+        ordenDetalleId: null
     },
     chequeo: {
         formulario: null,
@@ -205,13 +212,10 @@ function setupEventListeners() {
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     
     // Logout button global
-    window.toggleMantenimientosView = toggleMantenimientosView;
     window.logout = logout;
     window.navigate = navigate;
     window.openChequeosPanel = openChequeosPanel;
     window.openMovimientosPanel = openMovimientosPanel;
-    window.openMantenimientosPanel = openMantenimientosPanel;
-    window.openFallasPanel = openFallasPanel;
     window.showForm = showForm;
     window.goBack = goBack;
 
@@ -726,43 +730,6 @@ function setupEventListeners() {
         });
     }
 
-    const fallaDetalleModal = document.getElementById('falla-detalle-modal');
-
-    if (fallaDetalleModal) {
-        fallaDetalleModal.addEventListener('click', (e) => {
-            if (e.target === fallaDetalleModal) {
-                closeFallaDetalleModal();
-            }
-        });
-    }
-
-    const fallaModalOv = document.getElementById('falla-modal');
-    if (fallaModalOv) {
-        fallaModalOv.addEventListener('click', (e) => {
-            if (e.target === fallaModalOv) {
-                toggleModal('falla-modal', false);
-            }
-        });
-    }
-
-    const mantenimientoModalOv = document.getElementById('mantenimiento-modal');
-    if (mantenimientoModalOv) {
-        mantenimientoModalOv.addEventListener('click', (e) => {
-            if (e.target === mantenimientoModalOv) {
-                toggleModal('mantenimiento-modal', false);
-            }
-        });
-    }
-
-    const mantenimientoDetalleModalOv = document.getElementById('mantenimiento-detalle-modal');
-    if (mantenimientoDetalleModalOv) {
-        mantenimientoDetalleModalOv.addEventListener('click', (e) => {
-            if (e.target === mantenimientoDetalleModalOv) {
-                toggleModal('mantenimiento-detalle-modal', false);
-            }
-        });
-    }
-
     if (chequeoDetalleModal) {
         chequeoDetalleModal.addEventListener('click', (e) => {
             if (e.target === chequeoDetalleModal) {
@@ -847,6 +814,183 @@ function setupEventListeners() {
     window.addEventListener('storage', handleDashboardStorageSync);
     document.addEventListener('visibilitychange', handleDashboardVisibilityChange);
     window.addEventListener('focus', handleDashboardWindowFocus);
+
+    window.addEventListener('scv:hallazgo-edit', (e) => openHallazgoForm(e.detail));
+    window.addEventListener('scv:hallazgo-evaluar', (e) => openHallazgoEvaluarModal(e.detail));
+    window.addEventListener('scv:orden-edit', (e) => openOrdenForm(e.detail));
+    window.addEventListener('scv:orden-detalle', (e) => openOrdenDetalleModal(e.detail));
+
+    const hallazgoNuevoBtn = document.getElementById('hallazgo-nuevo-btn');
+    const hallazgoCancelBtn = document.getElementById('hallazgo-cancel-btn');
+    const hallazgoCloseBtn = document.getElementById('hallazgo-close-btn');
+    const hallazgoForm = document.getElementById('hallazgo-form');
+    const hallazgoEvaluarCancelBtn = document.getElementById('hallazgo-evaluar-cancel-btn');
+    const hallazgoEvaluarCloseBtn = document.getElementById('hallazgo-evaluar-close-btn');
+    const hallazgoEvaluarForm = document.getElementById('hallazgo-evaluar-form');
+    const ordenNuevoBtn = document.getElementById('orden-nuevo-btn');
+    const ordenCancelBtn = document.getElementById('orden-cancel-btn');
+    const ordenCloseBtn = document.getElementById('orden-close-btn');
+    const ordenForm = document.getElementById('orden-form');
+    const ordenDetalleClose = document.getElementById('orden-detalle-close');
+    const ordenDetalleAccept = document.getElementById('orden-detalle-accept');
+    const actividadNuevoBtn = document.getElementById('actividad-nuevo-btn');
+    const actividadCancelBtn = document.getElementById('actividad-cancel-btn');
+    const actividadCloseBtn = document.getElementById('actividad-close-btn');
+    const actividadForm = document.getElementById('actividad-form');
+    const costoNuevoBtn = document.getElementById('costo-nuevo-btn');
+    const costoCancelBtn = document.getElementById('costo-cancel-btn');
+    const costoCloseBtn = document.getElementById('costo-close-btn');
+    const costoForm = document.getElementById('costo-form');
+
+    if (hallazgoNuevoBtn) hallazgoNuevoBtn.addEventListener('click', () => openHallazgoForm(null));
+    if (hallazgoCancelBtn) hallazgoCancelBtn.addEventListener('click', closeHallazgoForm);
+    if (hallazgoCloseBtn) hallazgoCloseBtn.addEventListener('click', closeHallazgoForm);
+    if (hallazgoForm) hallazgoForm.addEventListener('submit', handleHallazgoSubmit);
+    if (hallazgoEvaluarCancelBtn) hallazgoEvaluarCancelBtn.addEventListener('click', closeHallazgoEvaluarModal);
+    if (hallazgoEvaluarCloseBtn) hallazgoEvaluarCloseBtn.addEventListener('click', closeHallazgoEvaluarModal);
+    if (hallazgoEvaluarForm) hallazgoEvaluarForm.addEventListener('submit', handleHallazgoEvaluarSubmit);
+    if (ordenNuevoBtn) ordenNuevoBtn.addEventListener('click', () => openOrdenForm(null));
+    if (ordenCancelBtn) ordenCancelBtn.addEventListener('click', closeOrdenForm);
+    if (ordenCloseBtn) ordenCloseBtn.addEventListener('click', closeOrdenForm);
+    if (ordenForm) ordenForm.addEventListener('submit', handleOrdenSubmit);
+    if (ordenDetalleClose) ordenDetalleClose.addEventListener('click', closeOrdenDetalleModal);
+    if (ordenDetalleAccept) ordenDetalleAccept.addEventListener('click', closeOrdenDetalleModal);
+    if (actividadNuevoBtn) actividadNuevoBtn.addEventListener('click', () => openActividadForm(null));
+    if (actividadCancelBtn) actividadCancelBtn.addEventListener('click', closeActividadForm);
+    if (actividadCloseBtn) actividadCloseBtn.addEventListener('click', closeActividadForm);
+    if (actividadForm) actividadForm.addEventListener('submit', handleActividadSubmit);
+    if (costoNuevoBtn) costoNuevoBtn.addEventListener('click', () => openCostoForm(null));
+    if (costoCancelBtn) costoCancelBtn.addEventListener('click', closeCostoForm);
+    if (costoCloseBtn) costoCloseBtn.addEventListener('click', closeCostoForm);
+    if (costoForm) costoForm.addEventListener('submit', handleCostoSubmit);
+
+    const hallazgoModal = document.getElementById('hallazgo-modal');
+    const hallazgoEvaluarModal = document.getElementById('hallazgo-evaluar-modal');
+    const ordenModal = document.getElementById('orden-modal');
+    const ordenDetalleModal = document.getElementById('orden-detalle-modal');
+    const actividadModal = document.getElementById('actividad-modal');
+    const costoModal = document.getElementById('costo-modal');
+
+    if (hallazgoModal) {
+        hallazgoModal.addEventListener('click', (e) => { if (e.target === hallazgoModal) closeHallazgoForm(); });
+    }
+    if (hallazgoEvaluarModal) {
+        hallazgoEvaluarModal.addEventListener('click', (e) => { if (e.target === hallazgoEvaluarModal) closeHallazgoEvaluarModal(); });
+    }
+    if (ordenModal) {
+        ordenModal.addEventListener('click', (e) => { if (e.target === ordenModal) closeOrdenForm(); });
+    }
+    if (ordenDetalleModal) {
+        ordenDetalleModal.addEventListener('click', (e) => { if (e.target === ordenDetalleModal) closeOrdenDetalleModal(); });
+    }
+    if (actividadModal) {
+        actividadModal.addEventListener('click', (e) => { if (e.target === actividadModal) closeActividadForm(); });
+    }
+    if (costoModal) {
+        costoModal.addEventListener('click', (e) => { if (e.target === costoModal) closeCostoForm(); });
+    }
+
+    const hallazgosList = document.getElementById('hallazgos-list');
+    const ordenesList = document.getElementById('ordenes-list');
+    const ordenActividadesList = document.getElementById('orden-actividades-list');
+    const ordenCostosList = document.getElementById('orden-costos-list');
+
+    if (hallazgosList) hallazgosList.addEventListener('click', handleHallazgosListClick);
+    if (ordenesList) ordenesList.addEventListener('click', handleOrdenesListClick);
+    if (ordenActividadesList) ordenActividadesList.addEventListener('click', handleActividadesListClick);
+    if (ordenCostosList) ordenCostosList.addEventListener('click', handleCostosListClick);
+
+    const hallazgosSearch = document.getElementById('hallazgos-search');
+    const hallazgosEstado = document.getElementById('hallazgos-filtro-estado');
+    const hallazgosPrioridad = document.getElementById('hallazgos-filtro-prioridad');
+    const hallazgosCategoria = document.getElementById('hallazgos-filtro-categoria');
+    const hallazgosClearFilters = document.getElementById('hallazgos-clear-filters');
+    const ordenesSearch = document.getElementById('ordenes-search');
+    const ordenesEstado = document.getElementById('ordenes-filtro-estado');
+    const ordenesPrioridad = document.getElementById('ordenes-filtro-prioridad');
+    const hallazgosExportBtn = document.getElementById('hallazgos-export-btn');
+    const hallazgosExportPdfBtn = document.getElementById('hallazgos-export-pdf-btn');
+    const ordenesExportBtn = document.getElementById('ordenes-export-btn');
+    const ordenesExportPdfBtn = document.getElementById('ordenes-export-pdf-btn');
+    const ordenesClearFilters = document.getElementById('ordenes-clear-filters');
+
+    if (hallazgosSearch) {
+        hallazgosSearch.addEventListener('input', (e) => {
+            APP.admin.hallazgosFilters.query = e.target.value || '';
+            renderHallazgosList();
+        });
+    }
+    if (hallazgosEstado) {
+        hallazgosEstado.addEventListener('change', (e) => {
+            APP.admin.hallazgosFilters.estado = e.target.value;
+            renderHallazgosList();
+        });
+    }
+    if (hallazgosPrioridad) {
+        hallazgosPrioridad.addEventListener('change', (e) => {
+            APP.admin.hallazgosFilters.prioridad = e.target.value;
+            renderHallazgosList();
+        });
+    }
+    if (hallazgosCategoria) {
+        hallazgosCategoria.addEventListener('change', (e) => {
+            APP.admin.hallazgosFilters.categoria = e.target.value;
+            renderHallazgosList();
+        });
+    }
+    if (hallazgosClearFilters) {
+        hallazgosClearFilters.addEventListener('click', resetHallazgosFilters);
+    }
+
+    if (ordenesSearch) {
+        ordenesSearch.addEventListener('input', (e) => {
+            APP.admin.ordenesFilters.query = e.target.value || '';
+            renderOrdenesList();
+        });
+    }
+    if (ordenesEstado) {
+        ordenesEstado.addEventListener('change', (e) => {
+            APP.admin.ordenesFilters.estado = e.target.value;
+            renderOrdenesList();
+        });
+    }
+    if (ordenesPrioridad) {
+        ordenesPrioridad.addEventListener('change', (e) => {
+            APP.admin.ordenesFilters.prioridad = e.target.value;
+            renderOrdenesList();
+        });
+    }
+    if (ordenesClearFilters) {
+        ordenesClearFilters.addEventListener('click', resetOrdenesFilters);
+    }
+
+    if (hallazgosExportBtn) {
+        hallazgosExportBtn.addEventListener('click', function() {
+            if (typeof exportHallazgosReport === 'function') exportHallazgosReport();
+            else console.warn('exportHallazgosReport no definida');
+        });
+    }
+
+    if (hallazgosExportPdfBtn) {
+        hallazgosExportPdfBtn.addEventListener('click', function() {
+            if (typeof exportHallazgosPdfReport === 'function') exportHallazgosPdfReport();
+            else console.warn('exportHallazgosPdfReport no definida');
+        });
+    }
+
+    if (ordenesExportBtn) {
+        ordenesExportBtn.addEventListener('click', function() {
+            if (typeof exportOrdenesReport === 'function') exportOrdenesReport();
+            else console.warn('exportOrdenesReport no definida');
+        });
+    }
+
+    if (ordenesExportPdfBtn) {
+        ordenesExportPdfBtn.addEventListener('click', function() {
+            if (typeof exportOrdenesPdfReport === 'function') exportOrdenesPdfReport();
+            else console.warn('exportOrdenesPdfReport no definida');
+        });
+    }
 
     document.addEventListener('keydown', handleEscapeKey);
 }
@@ -989,6 +1133,13 @@ function getRoleCredentialMeta(rol) {
         };
     }
 
+    if (rol === CONFIG.ROLES.JEFE_MECANICOS) {
+        return {
+            className: 'is-jefe-mecanicos',
+            icon: 'assets/icons/people.svg'
+        };
+    }
+
     return {
         className: 'is-admin',
         icon: 'assets/icons/people.svg'
@@ -1025,29 +1176,34 @@ function renderUserCredentialCards() {
 }
 
 function shouldRefreshAdminDashboard() {
-    return APP.user?.rol === CONFIG.ROLES.ADMIN && APP.currentScreen === 'dashboard-admin';
+    const rol = APP.user?.rol;
+    const screen = APP.currentScreen;
+    if (rol === CONFIG.ROLES.ADMIN && screen === 'dashboard-admin') return true;
+    if (rol === CONFIG.ROLES.JEFE_MECANICOS && screen === 'dashboard-jefe-mecanicos') return true;
+    if (rol === CONFIG.ROLES.MECANICO && screen === 'dashboard-mecanico') return true;
+    return false;
 }
 
 function handleDashboardDataChangeEvent() {
     if (!shouldRefreshAdminDashboard()) return;
-    loadDashboardData(CONFIG.ROLES.ADMIN);
+    loadDashboardData(APP.user?.rol);
 }
 
 function handleDashboardStorageSync(event) {
     if (event.key !== CONFIG.DASHBOARD_SYNC_KEY) return;
     if (!shouldRefreshAdminDashboard()) return;
-    loadDashboardData(CONFIG.ROLES.ADMIN);
+    loadDashboardData(APP.user?.rol);
 }
 
 function handleDashboardVisibilityChange() {
     if (document.hidden) return;
     if (!shouldRefreshAdminDashboard()) return;
-    loadDashboardData(CONFIG.ROLES.ADMIN);
+    loadDashboardData(APP.user?.rol);
 }
 
 function handleDashboardWindowFocus() {
     if (!shouldRefreshAdminDashboard()) return;
-    loadDashboardData(CONFIG.ROLES.ADMIN);
+    loadDashboardData(APP.user?.rol);
 }
 
 function clearAdminAutoRefresh() {
@@ -1065,16 +1221,22 @@ function configureAdminAutoRefresh(rol) {
                 loadDashboardData(CONFIG.ROLES.ADMIN);
             }
         }, CONFIG.ADMIN_REFRESH_INTERVAL_MS || 5000);
+    } else if (rol === CONFIG.ROLES.JEFE_MECANICOS) {
+        APP.ui.adminChartsInterval = setInterval(() => {
+            if (!document.hidden && APP.currentScreen === 'dashboard-jefe-mecanicos') {
+                loadDashboardData(CONFIG.ROLES.JEFE_MECANICOS, true);
+            }
+        }, 10000);
     } else if (rol === CONFIG.ROLES.MECANICO) {
         APP.ui.adminChartsInterval = setInterval(() => {
             if (!document.hidden && APP.currentScreen === 'dashboard-mecanico') {
-                loadDashboardData(CONFIG.ROLES.MECANICO);
+                loadDashboardData(CONFIG.ROLES.MECANICO, true);
             }
         }, 10000);
     }
 }
 
-async function loadDashboardData(rol) {
+async function loadDashboardData(rol, silent = false) {
     try {
         if (rol === CONFIG.ROLES.ADMIN) {
             const requestSeq = ++APP.ui.adminDashboardRequestSeq;
@@ -1087,82 +1249,28 @@ async function loadDashboardData(rol) {
             document.getElementById('stat-movimientos').textContent = stats.totales?.movimientos_hoy || 0;
             document.getElementById('stat-chequeos').textContent = stats.totales?.chequeos_hoy || 0;
             renderAdminAnalytics(stats.analitica || null);
-            loadAdminMantenimientosWidget();
+        } else if (rol === CONFIG.ROLES.JEFE_MECANICOS) {
+            if (typeof loadJefeMecanicosDashboard === 'function') {
+                loadJefeMecanicosDashboard(silent);
+            }
+        } else if (rol === CONFIG.ROLES.MECANICO) {
+            if (typeof loadMecanicoDashboard === 'function') {
+                loadMecanicoDashboard(silent);
+            }
         } else if (rol === CONFIG.ROLES.OPERARIO_MOVIMIENTOS) {
             const movimientos = await API.getMovimientos();
             renderMovimientosRecientes(movimientos.slice(0, 5));
         } else if (rol === CONFIG.ROLES.OPERARIO_CHEQUEO) {
             const chequeos = await API.getChequeos();
             renderChequeosRecientes(chequeos.slice(0, 5));
-        } else if (rol === CONFIG.ROLES.MECANICO) {
-            await loadDashboardMecanicoData();
         }
     } catch (error) {
         console.error('Error cargando dashboard:', error);
     }
 }
 
-async function loadAdminMantenimientosWidget() {
-    const panel = document.getElementById('admin-mantenimientos-panel');
-    if (!panel) return;
-    try {
-        const data = await API.getMantenimientos({ estado: 'pendiente', limit: '5' });
-        if (!data || data.length === 0) {
-            panel.innerHTML = '<div class="widget-empty"><p class="helper-text">No hay mantenimientos pendientes.</p></div>';
-            return;
-        }
-        panel.innerHTML = `<div class="widget-list">${data.map(m => `
-            <div class="widget-list-item" onclick="verDetalleMantenimiento(${m.id})">
-                <div class="widget-item-icon" style="background:#f39c1220;">
-                    <img src="assets/icons/clipboard-check.svg" alt="" class="btn-inline-icon" aria-hidden="true" style="filter:brightness(0) saturate(100%) invert(67%) sepia(82%) saturate(495%) hue-rotate(354deg) brightness(94%) contrast(96%);">
-                </div>
-                <div class="widget-item-body">
-                    <span class="widget-item-title">${m.vehiculo?.placa || '?'}</span>
-                    <span class="widget-item-sub">${m.descripcion ? m.descripcion.substring(0, 60) : 'Sin descripción'}</span>
-                </div>
-                <button class="btn-item btn-item-ghost" onclick="event.stopPropagation();verDetalleMantenimiento(${m.id})"><img src="assets/icons/search.svg" alt="" class="btn-inline-icon" aria-hidden="true"></button>
-            </div>
-        `).join('')}</div>`;
-    } catch (err) {
-        panel.innerHTML = '<p class="helper-text">Error al cargar</p>';
-    }
-}
-
-async function loadDashboardMecanicoData() {
-    try {
-        const data = await API.getDashboardMecanico();
-        document.getElementById('stat-mant-pendientes').textContent = data.totales?.pendientes || 0;
-        document.getElementById('stat-mant-progreso').textContent = data.totales?.en_progreso || 0;
-        const esperandoEl = document.getElementById('stat-mant-esperando');
-        if (esperandoEl) esperandoEl.textContent = data.totales?.esperando_repuesto || 0;
-        document.getElementById('stat-mant-completados').textContent = data.totales?.completados || 0;
-
-        const listEl = document.getElementById('mantenimientos-pendientes-list');
-        if (listEl && data.pendientes) {
-            if (data.pendientes.length === 0) {
-                listEl.innerHTML = '<div class="empty-state"><p class="helper-text">No hay mantenimientos pendientes.</p></div>';
-            } else {
-                listEl.innerHTML = `<div class="widget-list">${data.pendientes.map(m => `
-                    <div class="widget-list-item" onclick="verDetalleMantenimiento(${m.id})">
-                        <div class="widget-item-icon" style="background:${m.tipo === 'correctivo' ? '#e74c3c20' : '#3498db20'};">
-                            <img src="assets/icons/${m.tipo === 'correctivo' ? 'x-lg' : 'clipboard-check'}.svg" alt="" class="btn-inline-icon" aria-hidden="true" style="filter:brightness(0) saturate(100%) ${m.tipo === 'correctivo' ? 'invert(33%) sepia(69%) saturate(1895%) hue-rotate(341deg) brightness(93%) contrast(87%)' : 'invert(44%) sepia(61%) saturate(470%) hue-rotate(162deg) brightness(97%) contrast(88%)'};">
-                        </div>
-                        <div class="widget-item-body">
-                            <span class="widget-item-title">${m.vehiculo ? `${m.vehiculo.placa} - ${m.vehiculo.marca} ${m.vehiculo.modelo}` : '#' + m.vehiculo_id}</span>
-                            <span class="widget-item-sub">${m.descripcion ? m.descripcion.substring(0, 100) : 'Sin descripción'} · ${new Date(m.fecha_creacion).toLocaleDateString()}</span>
-                        </div>
-                        <span class="status-badge is-pendiente">Pendiente</span>
-                    </div>
-                `).join('')}</div>`;
-            }
-        }
-    } catch (err) {
-        console.error('Error cargando dashboard mecanico:', err);
-    }
-}
-
 function navigate(section) {
-    if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.MECANICO].includes(APP.user?.rol)) {
+    if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.MECANICO, CONFIG.ROLES.JEFE_MECANICOS].includes(APP.user?.rol)) {
         return;
     }
 
@@ -1206,52 +1314,31 @@ function navigate(section) {
         return;
     }
 
-    if (section === 'mantenimientos') {
-        openMantenimientosPanel();
+    if (section === 'admin-hallazgos') {
+        if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.JEFE_MECANICOS].includes(APP.user?.rol)) {
+            showAppAlert('Acceso denegado', 'No tienes permisos para ver hallazgos.');
+            return;
+        }
+        showScreen('admin-hallazgos');
+        if (typeof loadHallazgosManagement === 'function') {
+            loadHallazgosManagement();
+        }
         return;
     }
 
-    if (section === 'fallas') {
-        openFallasPanel();
+    if (section === 'admin-ordenes') {
+        if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.JEFE_MECANICOS, CONFIG.ROLES.MECANICO].includes(APP.user?.rol)) {
+            showAppAlert('Acceso denegado', 'No tienes permisos para ver órdenes.');
+            return;
+        }
+        showScreen('admin-ordenes');
+        if (typeof loadOrdenesManagement === 'function') {
+            loadOrdenesManagement();
+        }
         return;
     }
 
     showAppAlert('Módulo en construcción', `El módulo ${section} se habilitará en la siguiente iteración.`);
-}
-
-function openMantenimientosPanel() {
-    if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.MECANICO].includes(APP.user?.rol)) {
-        showAppAlert('Acceso denegado', 'No tienes permisos para ver el módulo de mantenimientos.');
-        return;
-    }
-
-    showScreen('admin-mantenimientos');
-    closeUsuarioForm();
-    closeConductorForm();
-    closeVehiculoForm();
-    closeChequeoForm();
-    closeMovimientoForm();
-    if (typeof loadMantenimientosManagement === 'function') {
-        loadMantenimientosManagement();
-    }
-}
-
-function openFallasPanel() {
-    if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.MECANICO].includes(APP.user?.rol)) {
-        showAppAlert('Acceso denegado', 'No tienes permisos para ver el módulo de fallas.');
-        return;
-    }
-
-    showScreen('admin-fallas');
-    closeUsuarioForm();
-    closeConductorForm();
-    closeVehiculoForm();
-    closeChequeoForm();
-    closeMovimientoForm();
-    closeFallaForm();
-    if (typeof loadFallasManagement === 'function') {
-        loadFallasManagement();
-    }
 }
 
 function openChequeosPanel() {
@@ -1312,19 +1399,19 @@ function goBack() {
 
     if (current === 'admin-vehiculos') {
         closeVehiculoForm();
-        showScreen('dashboard-admin');
+        showDashboard(APP.user?.rol);
         return;
     }
 
     if (current === 'admin-conductores') {
         closeConductorForm();
-        showScreen('dashboard-admin');
+        showDashboard(APP.user?.rol);
         return;
     }
 
     if (current === 'admin-usuarios') {
         closeUsuarioForm();
-        showScreen('dashboard-admin');
+        showDashboard(APP.user?.rol);
         return;
     }
 
@@ -1338,12 +1425,7 @@ function goBack() {
         return;
     }
 
-    if (current === 'admin-mantenimientos') {
-        showDashboard(APP.user?.rol);
-        return;
-    }
-
-    if (current === 'admin-fallas') {
+    if (current === 'admin-hallazgos' || current === 'admin-ordenes') {
         showDashboard(APP.user?.rol);
         return;
     }
@@ -1701,24 +1783,39 @@ function handleEscapeKey(e) {
         closeMovimientoDetalleModal();
     }
 
-    const mantenimientoModal = document.getElementById('mantenimiento-modal');
-    if (mantenimientoModal?.classList.contains('active')) {
-        toggleModal('mantenimiento-modal', false);
+    const hallazgoModal = document.getElementById('hallazgo-modal');
+    if (hallazgoModal?.classList.contains('active')) {
+        closeHallazgoForm();
+        return;
     }
 
-    const mantenimientoDetalleModal = document.getElementById('mantenimiento-detalle-modal');
-    if (mantenimientoDetalleModal?.classList.contains('active')) {
-        toggleModal('mantenimiento-detalle-modal', false);
+    const hallazgoEvaluarModal = document.getElementById('hallazgo-evaluar-modal');
+    if (hallazgoEvaluarModal?.classList.contains('active')) {
+        closeHallazgoEvaluarModal();
+        return;
     }
 
-    const fallaModal = document.getElementById('falla-modal');
-    if (fallaModal?.classList.contains('active')) {
-        toggleModal('falla-modal', false);
+    const ordenModal = document.getElementById('orden-modal');
+    if (ordenModal?.classList.contains('active')) {
+        closeOrdenForm();
+        return;
     }
 
-    const fallaDetalleModalEl = document.getElementById('falla-detalle-modal');
-    if (fallaDetalleModalEl?.classList.contains('active')) {
-        toggleModal('falla-detalle-modal', false);
+    const ordenDetalleModal = document.getElementById('orden-detalle-modal');
+    if (ordenDetalleModal?.classList.contains('active')) {
+        closeOrdenDetalleModal();
+        return;
+    }
+
+    const actividadModal = document.getElementById('actividad-modal');
+    if (actividadModal?.classList.contains('active')) {
+        closeActividadForm();
+        return;
+    }
+
+    const costoModal = document.getElementById('costo-modal');
+    if (costoModal?.classList.contains('active')) {
+        closeCostoForm();
     }
 }
 

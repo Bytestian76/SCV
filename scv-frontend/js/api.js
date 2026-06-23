@@ -14,7 +14,7 @@ const API = {
 
     notifyDashboardDataChanged(method, endpoint) {
         if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) return;
-        if (!/^\/(movimientos|chequeos|vehiculos|conductores|mantenimientos|fallas)\b/.test(endpoint)) return;
+        if (!/^\/(movimientos|chequeos|vehiculos|conductores|hallazgos|ordenes-trabajo)\b/.test(endpoint)) return;
 
         const detail = {
             method,
@@ -172,6 +172,10 @@ const API = {
         return await this.request('GET', '/usuarios/');
     },
 
+    async getMecanicos() {
+        return await this.request('GET', '/mecanicos/');
+    },
+
     async getUsuario(id) {
         return await this.request('GET', `/usuarios/${id}`);
     },
@@ -252,94 +256,6 @@ const API = {
         return await this.request('GET', endpoint);
     },
 
-    // ============ MANTENIMIENTOS ============
-
-    async getMantenimientos(filters = {}) {
-        const params = new URLSearchParams(filters).toString();
-        const endpoint = params ? `/mantenimientos/?${params}` : '/mantenimientos/';
-        return await this.request('GET', endpoint);
-    },
-
-    async getMantenimiento(id) {
-        return await this.request('GET', `/mantenimientos/${id}`);
-    },
-
-    async createMantenimiento(data) {
-        return await this.request('POST', '/mantenimientos/', data);
-    },
-
-    async updateMantenimiento(id, data) {
-        return await this.request('PUT', `/mantenimientos/${id}`, data);
-    },
-
-    async updateEstadoMantenimiento(id, estado) {
-        return await this.request('PUT', `/mantenimientos/${id}/estado`, { estado });
-    },
-
-    async deleteMantenimiento(id) {
-        return await this.request('DELETE', `/mantenimientos/${id}`);
-    },
-
-    async addMantenimientoItems(id, items) {
-        return await this.request('POST', `/mantenimientos/${id}/items`, items);
-    },
-
-    async getKanbanBoard() {
-        return await this.request('GET', '/mantenimientos/kanban/board');
-    },
-
-    // ============ ACTIVIDADES ============
-
-    async getActividades(mantenimientoId) {
-        return await this.request('GET', `/mantenimientos/${mantenimientoId}/actividades`);
-    },
-
-    async createActividad(mantenimientoId, data) {
-        return await this.request('POST', `/mantenimientos/${mantenimientoId}/actividades`, data);
-    },
-
-    async updateActividad(actividadId, data) {
-        return await this.request('PUT', `/mantenimientos/actividades/${actividadId}`, data);
-    },
-
-    async deleteActividad(actividadId) {
-        return await this.request('DELETE', `/mantenimientos/actividades/${actividadId}`);
-    },
-
-    // ============ EVIDENCIAS ============
-
-    async createEvidencia(actividadId, data) {
-        return await this.request('POST', `/mantenimientos/actividades/${actividadId}/evidencias`, data);
-    },
-
-    async getEvidencias(actividadId) {
-        return await this.request('GET', `/mantenimientos/actividades/${actividadId}/evidencias`);
-    },
-
-    async deleteEvidencia(evidenciaId) {
-        return await this.request('DELETE', `/mantenimientos/evidencias/${evidenciaId}`);
-    },
-
-    // ============ COSTOS ============
-
-    async getCostos(mantenimientoId) {
-        return await this.request('GET', `/mantenimientos/${mantenimientoId}/costos`);
-    },
-
-    async createCosto(mantenimientoId, data) {
-        return await this.request('POST', `/mantenimientos/${mantenimientoId}/costos`, data);
-    },
-
-    async deleteCosto(costoId) {
-        return await this.request('DELETE', `/mantenimientos/costos/${costoId}`);
-    },
-
-    // ============ AUDITORIA ============
-
-    async getAuditoria(mantenimientoId) {
-        return await this.request('GET', `/mantenimientos/${mantenimientoId}/auditoria`);
-    },
-
     // ============ NOTIFICACIONES ============
 
     async getNotificaciones() {
@@ -379,31 +295,123 @@ const API = {
         return await this.request('DELETE', `/push/unsubscribe?endpoint=${encodeURIComponent(endpoint)}`);
     },
 
-    // ============ FALLAS ============
+    // ============ HALLAZGOS ============
 
-    async getFallas(filters = {}) {
+    async getHallazgos(filters = {}) {
         const params = new URLSearchParams(filters).toString();
-        const endpoint = params ? `/fallas/?${params}` : '/fallas/';
+        const endpoint = params ? `/hallazgos/?${params}` : '/hallazgos/';
         return await this.request('GET', endpoint);
     },
 
-    async getFalla(id) {
-        return await this.request('GET', `/fallas/${id}`);
+    async getHallazgo(id) {
+        return await this.request('GET', `/hallazgos/${id}`);
     },
 
-    async createFalla(data) {
-        return await this.request('POST', '/fallas/', data);
+    async createHallazgo(data) {
+        return await this.request('POST', '/hallazgos/', data);
     },
 
-    async updateFalla(id, data) {
-        return await this.request('PUT', `/fallas/${id}`, data);
+    async updateHallazgo(id, data) {
+        return await this.request('PUT', `/hallazgos/${id}`, data);
     },
 
-    async updateEstadoFalla(id, estado) {
-        return await this.request('PUT', `/fallas/${id}/estado`, { estado });
+    async evaluarHallazgo(id, data) {
+        return await this.request('PUT', `/hallazgos/${id}/evaluar`, data);
     },
 
-    async deleteFalla(id) {
-        return await this.request('DELETE', `/fallas/${id}`);
-    }
+    async deleteHallazgo(id) {
+        return await this.request('DELETE', `/hallazgos/${id}`);
+    },
+
+    // ============ ORDENES DE TRABAJO ============
+
+    async getOrdenesTrabajo(filters = {}) {
+        const params = new URLSearchParams(filters).toString();
+        const endpoint = params ? `/ordenes-trabajo/?${params}` : '/ordenes-trabajo/';
+        return await this.request('GET', endpoint);
+    },
+
+    async getOrdenTrabajo(id) {
+        return await this.request('GET', `/ordenes-trabajo/${id}`);
+    },
+
+    async createOrdenTrabajo(data) {
+        return await this.request('POST', '/ordenes-trabajo/', data);
+    },
+
+    async updateOrdenTrabajo(id, data) {
+        return await this.request('PUT', `/ordenes-trabajo/${id}`, data);
+    },
+
+    async cambiarEstadoOrden(id, data) {
+        return await this.request('PUT', `/ordenes-trabajo/${id}/estado`, data);
+    },
+
+    async deleteOrdenTrabajo(id) {
+        return await this.request('DELETE', `/ordenes-trabajo/${id}`);
+    },
+
+    // ============ ORDENES - ACTIVIDADES ============
+
+    async getOrdenActividades(ordenId, filters = {}) {
+        const params = new URLSearchParams(filters).toString();
+        const endpoint = params ? `/ordenes-trabajo/${ordenId}/actividades/?${params}` : `/ordenes-trabajo/${ordenId}/actividades/`;
+        return await this.request('GET', endpoint);
+    },
+
+    async createOrdenActividad(ordenId, data) {
+        return await this.request('POST', `/ordenes-trabajo/${ordenId}/actividades/`, data);
+    },
+
+    async updateOrdenActividad(ordenId, actividadId, data) {
+        return await this.request('PUT', `/ordenes-trabajo/${ordenId}/actividades/${actividadId}`, data);
+    },
+
+    async deleteOrdenActividad(ordenId, actividadId) {
+        return await this.request('DELETE', `/ordenes-trabajo/${ordenId}/actividades/${actividadId}`);
+    },
+
+    // ============ ORDENES - COSTOS ============
+
+    async getOrdenCostos(ordenId, filters = {}) {
+        const params = new URLSearchParams(filters).toString();
+        const endpoint = params ? `/ordenes-trabajo/${ordenId}/costos/?${params}` : `/ordenes-trabajo/${ordenId}/costos/`;
+        return await this.request('GET', endpoint);
+    },
+
+    async createOrdenCosto(ordenId, data) {
+        return await this.request('POST', `/ordenes-trabajo/${ordenId}/costos/`, data);
+    },
+
+    async updateOrdenCosto(ordenId, costoId, data) {
+        return await this.request('PUT', `/ordenes-trabajo/${ordenId}/costos/${costoId}`, data);
+    },
+
+    async deleteOrdenCosto(ordenId, costoId) {
+        return await this.request('DELETE', `/ordenes-trabajo/${ordenId}/costos/${costoId}`);
+    },
+
+    // ============ ORDENES - EVIDENCIAS ============
+
+    async getOrdenEvidencias(ordenId, filters = {}) {
+        const params = new URLSearchParams(filters).toString();
+        const endpoint = params ? `/ordenes-trabajo/${ordenId}/evidencias/?${params}` : `/ordenes-trabajo/${ordenId}/evidencias/`;
+        return await this.request('GET', endpoint);
+    },
+
+    async createOrdenEvidencia(ordenId, data) {
+        return await this.request('POST', `/ordenes-trabajo/${ordenId}/evidencias/`, data);
+    },
+
+    async deleteOrdenEvidencia(ordenId, evidenciaId) {
+        return await this.request('DELETE', `/ordenes-trabajo/${ordenId}/evidencias/${evidenciaId}`);
+    },
+
+    // ============ ORDENES - HISTORIAL ============
+
+    async getOrdenHistorial(ordenId, filters = {}) {
+        const params = new URLSearchParams(filters).toString();
+        const endpoint = params ? `/ordenes-trabajo/${ordenId}/historial/?${params}` : `/ordenes-trabajo/${ordenId}/historial/`;
+        return await this.request('GET', endpoint);
+    },
 };
