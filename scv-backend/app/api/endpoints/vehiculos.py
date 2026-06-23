@@ -24,9 +24,9 @@ def listar_vehiculos(
     limit: int = 100,
     activo: bool = None,
     db: Session = Depends(get_db),
-    current_user = Depends(require_role(["admin"]))
+    current_user = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"]))
 ):
-    """Listar todos los vehículos (solo admin)"""
+    """Listar todos los vehículos"""
     query = db.query(Vehiculo)
     
     if activo is not None:
@@ -39,9 +39,9 @@ def listar_vehiculos(
 def obtener_vehiculo(
     vehiculo_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(require_role(["admin"]))
+    current_user = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"]))
 ):
-    """Obtener un vehículo por ID (solo admin)"""
+    """Obtener un vehículo por ID"""
     vehiculo = db.query(Vehiculo).filter(Vehiculo.id == vehiculo_id).first()
     
     if not vehiculo:

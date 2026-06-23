@@ -26,7 +26,11 @@ class Usuario(Base):
     chequeos = relationship("Chequeo", back_populates="usuario")
     mantenimientos = relationship("Mantenimiento", back_populates="creador", foreign_keys="Mantenimiento.creado_por")
     notificaciones = relationship("Notificacion", back_populates="usuario")
-    fallas = relationship("FallaReportada", back_populates="usuario", foreign_keys="FallaReportada.usuario_id")
+    hallazgos_reportados = relationship("Hallazgo", back_populates="usuario_reporta", foreign_keys="Hallazgo.usuario_reporta_id")
+    ordenes_responsable = relationship("OrdenTrabajo", back_populates="responsable", foreign_keys="OrdenTrabajo.responsable_id")
+    actividades_responsable = relationship("NuevaOrdenActividad", back_populates="responsable", foreign_keys="NuevaOrdenActividad.responsable_id")
+    evidencias_subidas = relationship("NuevaOrdenEvidencia", back_populates="usuario", foreign_keys="NuevaOrdenEvidencia.usuario_id")
+    historial_acciones = relationship("OrdenHistorial", back_populates="usuario", foreign_keys="OrdenHistorial.usuario_id")
 
 
 class Vehiculo(Base):
@@ -48,7 +52,8 @@ class Vehiculo(Base):
     movimientos = relationship("Movimiento", back_populates="vehiculo")
     chequeos = relationship("Chequeo", back_populates="vehiculo")
     mantenimientos = relationship("Mantenimiento", back_populates="vehiculo")
-    fallas = relationship("FallaReportada", back_populates="vehiculo", foreign_keys="FallaReportada.vehiculo_id")
+    hallazgos = relationship("Hallazgo", back_populates="vehiculo", foreign_keys="Hallazgo.vehiculo_id")
+    ordenes_trabajo = relationship("OrdenTrabajo", back_populates="vehiculo", foreign_keys="OrdenTrabajo.vehiculo_id")
 
 
 class Conductor(Base):
@@ -66,8 +71,6 @@ class Conductor(Base):
     # Relaciones
     movimientos = relationship("Movimiento", back_populates="conductor")
     chequeos = relationship("Chequeo", back_populates="conductor")
-    fallas = relationship("FallaReportada", back_populates="conductor", foreign_keys="FallaReportada.conductor_id")
-
 
 class Movimiento(Base):
     """Registro de entradas y salidas de vehículos"""
@@ -146,7 +149,6 @@ class Mantenimiento(Base):
     estado = Column(String(30), nullable=False, default="pendiente")  # pendiente, en_progreso, esperando_repuesto, completado, cancelado
     creado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     chequeo_origen_id = Column(Integer, ForeignKey("chequeos.id"), nullable=True)
-    falla_origen_id = Column(Integer, ForeignKey("fallas_reportadas.id"), nullable=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     fecha_actualizacion = Column(DateTime, nullable=True)
 
@@ -155,7 +157,6 @@ class Mantenimiento(Base):
     creador = relationship("Usuario", back_populates="mantenimientos", foreign_keys=[creado_por])
     items_origen = relationship("ChequeoItem", back_populates="mantenimiento", foreign_keys="ChequeoItem.mantenimiento_id")
     items = relationship("MantenimientoItem", back_populates="mantenimiento", cascade="all, delete-orphan")
-    falla_origen = relationship("FallaReportada", foreign_keys=[falla_origen_id])
 
 
 class MantenimientoItem(Base):
@@ -212,7 +213,7 @@ class OrdenCosto(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     mantenimiento_id = Column(Integer, ForeignKey("mantenimientos.id"), nullable=False)
-    tipo = Column(String(20), nullable=False)  # repuesto, mano_obra, otro
+    tipo = Column(String(20), nullable=False)  # repuesto, otro
     descripcion = Column(Text, nullable=False)
     cantidad = Column(Integer, nullable=False, default=1)
     valor_unitario = Column(Integer, nullable=False, default=0)
@@ -258,28 +259,6 @@ class Notificacion(Base):
     usuario = relationship("Usuario", back_populates="notificaciones")
 
 
-class FallaReportada(Base):
-    """Fallas reportadas por conductores y chequeos"""
-    __tablename__ = "fallas_reportadas"
-
-    id = Column(Integer, primary_key=True, index=True)
-    vehiculo_id = Column(Integer, ForeignKey("vehiculos.id"), nullable=False)
-    conductor_id = Column(Integer, ForeignKey("conductores.id"), nullable=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
-    categoria = Column(String(50), nullable=False)
-    descripcion = Column(Text, nullable=False)
-    prioridad = Column(String(20), nullable=False, default="media")
-    estado = Column(String(30), nullable=False, default="pendiente")
-    fotos = Column(Text, nullable=True)
-    fecha_reporte = Column(DateTime, default=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=True)
-
-    vehiculo = relationship("Vehiculo")
-    conductor = relationship("Conductor")
-    usuario = relationship("Usuario", foreign_keys=[usuario_id])
-
-
 class PushSubscription(Base):
     """Suscripciones a Web Push por usuario"""
     __tablename__ = "push_subscriptions"
@@ -305,3 +284,126 @@ class TokenRevocado(Base):
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     token_exp = Column(DateTime, nullable=False)
     fecha_revocacion = Column(DateTime, default=datetime.utcnow)
+
+
+class Hallazgo(Base):
+    """Hallazgo: anomalía, falla o condición detectada en un vehículo"""
+    __tablename__ = "hallazgos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    vehiculo_id = Column(Integer, ForeignKey("vehiculos.id"), nullable=False)
+    chequeo_id = Column(Integer, ForeignKey("chequeos.id"), nullable=True)
+    usuario_reporta_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    origen = Column(String(20), nullable=False, default="manual")  # chequeo, movimiento, manual
+    descripcion = Column(Text, nullable=False)
+    criticidad = Column(String(20), nullable=False, default="media")  # baja, media, alta, critica
+    tipo = Column(String(20), nullable=False, default="operacion")  # operacion
+    categoria = Column(String(50), nullable=True)
+    estado = Column(String(30), nullable=False, default="abierto")  # abierto, evaluado, convertido_orden, descartado
+    observaciones = Column(Text, nullable=True)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+
+    vehiculo = relationship("Vehiculo")
+    chequeo = relationship("Chequeo")
+    usuario_reporta = relationship("Usuario", foreign_keys=[usuario_reporta_id])
+    orden_trabajo = relationship("OrdenTrabajo", back_populates="hallazgo", uselist=False)
+
+
+class OrdenTrabajo(Base):
+    """Orden de trabajo generada a partir de un hallazgo evaluado"""
+    __tablename__ = "ordenes_trabajo"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hallazgo_id = Column(Integer, ForeignKey("hallazgos.id"), nullable=False, unique=True)
+    vehiculo_id = Column(Integer, ForeignKey("vehiculos.id"), nullable=False)
+    responsable_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    prioridad = Column(String(20), nullable=False, default="media")  # urgente, alta, media, baja
+    estado = Column(String(30), nullable=False, default="pendiente")  # pendiente, asignada, en_progreso, pausada, completada, cancelada
+    descripcion = Column(Text, nullable=True)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    fecha_inicio = Column(DateTime, nullable=True)
+    fecha_cierre = Column(DateTime, nullable=True)
+
+    hallazgo = relationship("Hallazgo", back_populates="orden_trabajo")
+    vehiculo = relationship("Vehiculo")
+    responsable = relationship("Usuario", foreign_keys=[responsable_id])
+    actividades = relationship("NuevaOrdenActividad", back_populates="orden", cascade="all, delete-orphan")
+    costos = relationship("NuevaOrdenCosto", back_populates="orden", cascade="all, delete-orphan")
+    evidencias = relationship("NuevaOrdenEvidencia", back_populates="orden", cascade="all, delete-orphan")
+    historial = relationship("OrdenHistorial", back_populates="orden", cascade="all, delete-orphan")
+
+
+class NuevaOrdenActividad(Base):
+    """Actividades / subtareas para completar una orden de trabajo"""
+    __tablename__ = "ordenes_actividades"
+
+    id = Column(Integer, primary_key=True, index=True)
+    orden_id = Column(Integer, ForeignKey("ordenes_trabajo.id"), nullable=False)
+    responsable_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    titulo = Column(String(255), nullable=False)
+    descripcion = Column(Text, nullable=True)
+    estado = Column(String(30), nullable=False, default="pendiente")  # pendiente, en_progreso, completada, cancelada
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    fecha_inicio = Column(DateTime, nullable=True)
+    fecha_fin = Column(DateTime, nullable=True)
+
+    orden = relationship("OrdenTrabajo", back_populates="actividades")
+    responsable = relationship("Usuario", foreign_keys=[responsable_id])
+    evidencias = relationship("NuevaOrdenEvidencia", back_populates="actividad", cascade="all, delete-orphan")
+
+
+class NuevaOrdenCosto(Base):
+    """Registro de gastos asociados a una orden de trabajo"""
+    __tablename__ = "ordenes_costos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    orden_id = Column(Integer, ForeignKey("ordenes_trabajo.id"), nullable=False)
+    tipo_gasto = Column(String(30), nullable=False, default="otro")  # repuesto, mano_obra, herramienta, consumible, otro
+    proveedor = Column(String(255), nullable=True)
+    numero_factura = Column(String(100), nullable=True)
+    descripcion = Column(Text, nullable=False)
+    cantidad = Column(Integer, nullable=False, default=1)
+    valor_unitario = Column(Integer, nullable=False, default=0)
+    valor_total = Column(Integer, nullable=False, default=0)
+    fecha = Column(DateTime, default=datetime.utcnow)
+
+    orden = relationship("OrdenTrabajo", back_populates="costos")
+
+
+class NuevaOrdenEvidencia(Base):
+    """Archivos asociados a órdenes de trabajo o actividades"""
+    __tablename__ = "ordenes_evidencias"
+
+    id = Column(Integer, primary_key=True, index=True)
+    orden_id = Column(Integer, ForeignKey("ordenes_trabajo.id"), nullable=True)
+    actividad_id = Column(Integer, ForeignKey("ordenes_actividades.id"), nullable=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    tipo = Column(String(20), nullable=False, default="foto")  # foto, documento, video, nota
+    ruta_archivo = Column(Text, nullable=True)
+    nombre_original = Column(String(255), nullable=True)
+    descripcion = Column(Text, nullable=True)
+    fecha_subida = Column(DateTime, default=datetime.utcnow)
+
+    orden = relationship("OrdenTrabajo", back_populates="evidencias")
+    actividad = relationship("NuevaOrdenActividad", back_populates="evidencias")
+    usuario = relationship("Usuario", foreign_keys=[usuario_id])
+
+
+class OrdenHistorial(Base):
+    """Auditoría completa e inmutable de órdenes de trabajo"""
+    __tablename__ = "ordenes_historial"
+
+    id = Column(Integer, primary_key=True, index=True)
+    orden_id = Column(Integer, ForeignKey("ordenes_trabajo.id"), nullable=False)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    accion = Column(String(50), nullable=False)
+    tabla = Column(String(50), nullable=True)
+    campo = Column(String(50), nullable=True)
+    valor_anterior = Column(Text, nullable=True)
+    valor_nuevo = Column(Text, nullable=True)
+    fecha_hora = Column(DateTime, default=datetime.utcnow)
+    ip_usuario = Column(String(50), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+
+    orden = relationship("OrdenTrabajo", back_populates="historial")
+    usuario = relationship("Usuario", foreign_keys=[usuario_id])
