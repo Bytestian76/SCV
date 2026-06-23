@@ -9,7 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import Base, engine, apply_schema_updates
 from app.models import models
-from app.api.endpoints import auth, vehiculos, conductores, usuarios, selectores, movimientos, chequeos, dashboard, mantenimientos, notificaciones, push, fallas
+from app.api.endpoints import auth, vehiculos, conductores, usuarios, mecanicos, selectores, movimientos, chequeos, dashboard, notificaciones, push
+from app.api.endpoints import hallazgos, ordenes_trabajo, ordenes_actividades, ordenes_costos, ordenes_evidencias, ordenes_historial
 from app.core.config import settings
 
 
@@ -50,14 +51,19 @@ app.include_router(auth.router, prefix=API_V1)
 app.include_router(vehiculos.router, prefix=API_V1)
 app.include_router(conductores.router, prefix=API_V1)
 app.include_router(usuarios.router, prefix=API_V1)
+app.include_router(mecanicos.router, prefix=API_V1)
 app.include_router(selectores.router, prefix=API_V1)
 app.include_router(movimientos.router, prefix=API_V1)
 app.include_router(chequeos.router, prefix=API_V1)
-app.include_router(mantenimientos.router, prefix=API_V1)
 app.include_router(notificaciones.router, prefix=API_V1)
 app.include_router(push.router, prefix=API_V1)
-app.include_router(fallas.router, prefix=API_V1)
 app.include_router(dashboard.router, prefix=API_V1)
+app.include_router(hallazgos.router, prefix=API_V1)
+app.include_router(ordenes_trabajo.router, prefix=API_V1)
+app.include_router(ordenes_actividades.router, prefix=API_V1)
+app.include_router(ordenes_costos.router, prefix=API_V1)
+app.include_router(ordenes_evidencias.router, prefix=API_V1)
+app.include_router(ordenes_historial.router, prefix=API_V1)
 
 # CORS - Permite que el frontend acceda desde cualquier origen
 # En producción, restrictingías los orígenes permitidos

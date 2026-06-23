@@ -18,7 +18,8 @@ const CONFIG = {
         ADMIN: 'admin',
         OPERARIO_MOVIMIENTOS: 'operario_movimientos',
         OPERARIO_CHEQUEO: 'operario_chequeo',
-        MECANICO: 'mecanico'
+        MECANICO: 'mecanico',
+        JEFE_MECANICOS: 'jefe_mecanicos'
     },
     
     // Rutas por rol
@@ -26,7 +27,8 @@ const CONFIG = {
         'admin': 'dashboard-admin',
         'operario_movimientos': 'dashboard-movimientos',
         'operario_chequeo': 'dashboard-chequeo',
-        'mecanico': 'dashboard-mecanico'
+        'mecanico': 'dashboard-mecanico',
+        'jefe_mecanicos': 'dashboard-jefe-mecanicos'
     },
 
     // Web Push (VAPID public key — es pública, segura para el frontend)

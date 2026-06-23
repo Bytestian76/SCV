@@ -90,4 +90,4 @@ def get_password_hash(password: str) -> str:
 
 
 # Roles válidos en el sistema
-ROLES_VALIDOS = ["admin", "operario_movimientos", "operario_chequeo"]
+ROLES_VALIDOS = ["admin", "operario_movimientos", "operario_chequeo", "mecanico", "jefe_mecanicos"]
