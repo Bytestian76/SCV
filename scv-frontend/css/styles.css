@@ -663,6 +663,20 @@ body {
     gap: 8px;
 }
 
+.item-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.item-actions .btn-sm {
+    padding: 0px 6px;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
 .btn-item {
     min-height: 34px;
     font-size: 0.82rem;
@@ -748,6 +762,8 @@ body {
 .management-modal {
     width: min(740px, 100%);
     padding: var(--space-2);
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .chequeo-modal-window {
@@ -2561,53 +2577,28 @@ body {
     }
 }
 
-/* Status badges for fallas */
-.status-badge.is-baja {
-    background: #27ae6020;
-    color: #1e8449;
-    border-color: #27ae6040;
+.detalle-header {
+    display: grid;
+    gap: 12px;
 }
 
-.status-badge.is-media {
-    background: #f39c1220;
-    color: #d68910;
-    border-color: #f39c1240;
+.detalle-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.status-badge.is-alta {
-    background: #e67e2220;
-    color: #ca6f1e;
-    border-color: #e67e2240;
+.detalle-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6a7f8a;
 }
 
-.status-badge.is-critica {
-    background: #e74c3c20;
-    color: #c0392b;
-    border-color: #e74c3c40;
-}
-
-.status-badge.is-evaluada {
-    background: #3498db20;
-    color: #2471a3;
-    border-color: #3498db40;
-}
-
-.status-badge.is-aprobada {
-    background: #27ae6020;
-    color: #1e8449;
-    border-color: #27ae6040;
-}
-
-.status-badge.is-rechazada {
-    background: #95a5a620;
-    color: #717d7e;
-    border-color: #95a5a640;
-}
-
-.status-badge.is-convertida_a_orden {
-    background: #8e44ad20;
-    color: #6c3483;
-    border-color: #8e44ad40;
+.detalle-value {
+    font-size: 0.9rem;
+    color: #1a2b36;
 }
 
 .detalle-desc {
@@ -2955,6 +2946,13 @@ body {
     line-height: 1.4;
 }
 
+.item-actions .btn-sm {
+    padding: 0px 6px;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
 .btn-sm.btn-primary {
     background: #1f6a43;
     color: #fff;
@@ -2974,6 +2972,17 @@ body {
 .btn-sm.btn-ghost:hover {
     background: #edf2f2;
     border-color: #9caab6;
+}
+
+.btn-sm.btn-danger {
+    background: linear-gradient(135deg, #b5392e, #942f27);
+    color: #fff8f7;
+    border-color: #9e352d;
+}
+
+.btn-sm.btn-danger:hover {
+    background: linear-gradient(135deg, #9e3026, #802a23);
+    border-color: #802a23;
 }
 
 /* ============ Costos ============ */
@@ -3046,6 +3055,98 @@ body {
 .auditoria-fecha {
     font-size: 0.72rem;
     color: var(--muted);
+}
+
+/* ============ HALLAZGOS & ORDENES ============ */
+
+.item-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.item-badge.estado-pendiente { background: #fff3cd; color: #856404; }
+.item-badge.estado-evaluado { background: #cce5ff; color: #004085; }
+.item-badge.estado-convertido_a_orden { background: #d4edda; color: #155724; }
+.item-badge.estado-desestimado { background: #f8d7da; color: #721c24; }
+.item-badge.estado-asignada { background: #cce5ff; color: #004085; }
+.item-badge.estado-en_curso { background: #fff3cd; color: #856404; }
+.item-badge.estado-completada { background: #d4edda; color: #155724; }
+.item-badge.estado-cerrada { background: #e2e3e5; color: #383d41; }
+
+.item-badge.prioridad-baja { background: #d4edda; color: #155724; }
+.item-badge.prioridad-media { background: #fff3cd; color: #856404; }
+.item-badge.prioridad-alta { background: #f8d7da; color: #721c24; }
+.item-badge.prioridad-critica { background: #dc3545; color: #fff; }
+.item-badge.prioridad-urgente { background: #dc3545; color: #fff; }
+
+.item-badge.categoria-motor { background: #e8d4f0; color: #6c3483; }
+.item-badge.categoria-transmision { background: #d4e6f1; color: #1a5276; }
+.item-badge.categoria-frenos { background: #fadbd8; color: #922b21; }
+.item-badge.categoria-suspension { background: #d5f5e3; color: #1e8449; }
+.item-badge.categoria-electrico { background: #fdebd0; color: #935116; }
+.item-badge.categoria-carroceria { background: #e8e8e8; color: #515a5a; }
+.item-badge.categoria-neumaticos { background: #d6eaf8; color: #1f618d; }
+.item-badge.categoria-neumatica { background: #e8daef; color: #7d3c98; }
+.item-badge.categoria-varias { background: #f2d7d5; color: #7b241c; }
+.item-badge.categoria-otro { background: #f0f0f0; color: #616a6b; }
+
+/* Orden detalle tabs */
+.orden-detalle-window {
+    max-width: 700px;
+    width: 95%;
+}
+
+.orden-detalle-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 16px 0;
+    border-bottom: 1px solid #dee2e6;
+    background: #f8f9fa;
+}
+
+.orden-tab-btn {
+    padding: 8px 16px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #6c757d;
+    transition: all 0.15s;
+}
+
+.orden-tab-btn:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.orden-tab-btn.active {
+    background: #fff;
+    border-color: #dee2e6;
+    color: #1d2f38;
+    margin-bottom: -1px;
+}
+
+.orden-tab-content {
+    display: none;
+    padding: 12px 0;
+}
+
+.orden-tab-content.active {
+    display: block;
+}
+
+/* Button small */
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 0.78rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
