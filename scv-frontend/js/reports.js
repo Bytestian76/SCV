@@ -735,3 +735,150 @@ async function exportMovimientosPdfReport() {
 
     setMovimientosFeedback(`${movimientos.length} movimientos exportados a PDF.`);
 }
+
+async function exportHallazgosReport() {
+    if (!APP.admin.hallazgosFilters) APP.admin.hallazgosFilters = { query: '', estado: 'todas', prioridad: 'todas', categoria: 'todas' };
+    const hallazgos = APP.admin.hallazgos || [];
+    const exported = exportExcelReport({
+        prefix: 'reporte_hallazgos',
+        sheetName: 'Hallazgos',
+        title: 'SCV - Reporte de Hallazgos',
+        filters: [
+            { label: 'Busqueda', value: APP.admin.hallazgosFilters.query },
+            { label: 'Estado', value: APP.admin.hallazgosFilters.estado !== 'todas' ? APP.admin.hallazgosFilters.estado : '' },
+            { label: 'Prioridad', value: APP.admin.hallazgosFilters.prioridad !== 'todas' ? APP.admin.hallazgosFilters.prioridad : '' },
+            { label: 'Categoria', value: APP.admin.hallazgosFilters.categoria !== 'todas' ? APP.admin.hallazgosFilters.categoria : '' }
+        ],
+        headers: ['ID', 'Fecha', 'Vehículo', 'Tipo', 'Categoría', 'Prioridad', 'Estado', 'Descripción', 'Reportado por'],
+        rows: hallazgos.map((h) => [
+            h.id || '',
+            h.fecha_creacion ? formatApiDateTime(h.fecha_creacion) : '',
+            h.vehiculo?.placa || '',
+            h.tipo || '',
+            h.categoria || '',
+            h.criticidad || '',
+            h.estado || '',
+            h.descripcion || '',
+            h.usuario_reporta?.nombre || ''
+        ])
+    });
+
+    if (!exported) {
+        await showAppAlert('Sin datos para exportar', 'No hay hallazgos en pantalla con los filtros actuales.');
+        return;
+    }
+
+    setHallazgosFeedback(`${hallazgos.length} hallazgos exportados a Excel.`);
+}
+
+async function exportOrdenesReport() {
+    if (!APP.admin.ordenesFilters) APP.admin.ordenesFilters = { query: '', estado: 'todas', prioridad: 'todas' };
+    const ordenes = APP.admin.ordenes || [];
+    const exported = exportExcelReport({
+        prefix: 'reporte_ordenes',
+        sheetName: 'Ordenes',
+        title: 'SCV - Reporte de Ordenes de Trabajo',
+        filters: [
+            { label: 'Busqueda', value: APP.admin.ordenesFilters.query },
+            { label: 'Estado', value: APP.admin.ordenesFilters.estado !== 'todas' ? APP.admin.ordenesFilters.estado : '' },
+            { label: 'Prioridad', value: APP.admin.ordenesFilters.prioridad !== 'todas' ? APP.admin.ordenesFilters.prioridad : '' }
+        ],
+        headers: ['ID', 'Fecha', 'Vehículo', 'Descripción', 'Prioridad', 'Estado', 'Mecánico Asignado'],
+        rows: ordenes.map((o) => [
+            o.id || '',
+            o.fecha_creacion ? formatApiDateTime(o.fecha_creacion) : '',
+            o.vehiculo?.placa || '',
+            (o.descripcion || '').split('\n')[0] || '',
+            o.prioridad || '',
+            o.estado || '',
+            o.responsable?.nombre || ''
+        ])
+    });
+
+    if (!exported) {
+        await showAppAlert('Sin datos para exportar', 'No hay órdenes en pantalla con los filtros actuales.');
+        return;
+    }
+
+    setOrdenesFeedback(`${ordenes.length} órdenes exportadas a Excel.`);
+}
+
+async function exportHallazgosPdfReport() {
+    const isPdfReady = await ensurePdfLibrariesLoaded();
+    if (!isPdfReady) {
+        await showAppAlert('Exportacion PDF no disponible', 'No se pudo cargar la libreria PDF en esta sesion. Intenta nuevamente.');
+        return;
+    }
+
+    if (!APP.admin.hallazgosFilters) APP.admin.hallazgosFilters = { query: '', estado: 'todas', prioridad: 'todas', categoria: 'todas' };
+    const hallazgos = APP.admin.hallazgos || [];
+    const exported = exportPdfReport({
+        prefix: 'reporte_hallazgos',
+        title: 'SCV - Reporte de Hallazgos',
+        filters: [
+            { label: 'Busqueda', value: APP.admin.hallazgosFilters.query },
+            { label: 'Estado', value: APP.admin.hallazgosFilters.estado !== 'todas' ? APP.admin.hallazgosFilters.estado : '' },
+            { label: 'Prioridad', value: APP.admin.hallazgosFilters.prioridad !== 'todas' ? APP.admin.hallazgosFilters.prioridad : '' },
+            { label: 'Categoria', value: APP.admin.hallazgosFilters.categoria !== 'todas' ? APP.admin.hallazgosFilters.categoria : '' }
+        ],
+        summary: `Total hallazgos: ${hallazgos.length}`,
+        headers: ['ID', 'Fecha', 'Vehículo', 'Tipo', 'Categoría', 'Prioridad', 'Estado', 'Descripción'],
+        rows: hallazgos.map((h) => [
+            h.id || '',
+            h.fecha_creacion ? formatApiDateTime(h.fecha_creacion) : '',
+            h.vehiculo?.placa || '',
+            h.tipo || '',
+            h.categoria || '',
+            h.criticidad || '',
+            h.estado || '',
+            h.descripcion || ''
+        ]),
+        orientation: 'landscape'
+    });
+
+    if (!exported) {
+        await showAppAlert('Sin datos para exportar', 'No hay hallazgos en pantalla con los filtros actuales.');
+        return;
+    }
+
+    setHallazgosFeedback(`${hallazgos.length} hallazgos exportados a PDF.`);
+}
+
+async function exportOrdenesPdfReport() {
+    const isPdfReady = await ensurePdfLibrariesLoaded();
+    if (!isPdfReady) {
+        await showAppAlert('Exportacion PDF no disponible', 'No se pudo cargar la libreria PDF en esta sesion. Intenta nuevamente.');
+        return;
+    }
+
+    if (!APP.admin.ordenesFilters) APP.admin.ordenesFilters = { query: '', estado: 'todas', prioridad: 'todas' };
+    const ordenes = APP.admin.ordenes || [];
+    const exported = exportPdfReport({
+        prefix: 'reporte_ordenes',
+        title: 'SCV - Reporte de Ordenes de Trabajo',
+        filters: [
+            { label: 'Busqueda', value: APP.admin.ordenesFilters.query },
+            { label: 'Estado', value: APP.admin.ordenesFilters.estado !== 'todas' ? APP.admin.ordenesFilters.estado : '' },
+            { label: 'Prioridad', value: APP.admin.ordenesFilters.prioridad !== 'todas' ? APP.admin.ordenesFilters.prioridad : '' }
+        ],
+        summary: `Total órdenes: ${ordenes.length}`,
+        headers: ['ID', 'Fecha', 'Vehículo', 'Descripción', 'Prioridad', 'Estado', 'Mecánico'],
+        rows: ordenes.map((o) => [
+            o.id || '',
+            o.fecha_creacion ? formatApiDateTime(o.fecha_creacion) : '',
+            o.vehiculo?.placa || '',
+            (o.descripcion || '').split('\n')[0] || '',
+            o.prioridad || '',
+            o.estado || '',
+            o.responsable?.nombre || ''
+        ]),
+        orientation: 'landscape'
+    });
+
+    if (!exported) {
+        await showAppAlert('Sin datos para exportar', 'No hay órdenes en pantalla con los filtros actuales.');
+        return;
+    }
+
+    setOrdenesFeedback(`${ordenes.length} órdenes exportadas a PDF.`);
+}

@@ -6,7 +6,6 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
-from app.schemas.falla import CATEGORIAS_FALLA
 
 # URL de base de datos desde configuracion (.env)
 DATABASE_URL = settings.DATABASE_URL
@@ -81,27 +80,6 @@ def apply_schema_updates():
         columnas_mant = {column["name"] for column in inspector.get_columns("mantenimientos")}
         if "prioridad" not in columnas_mant:
             alter_statements.append("ALTER TABLE mantenimientos ADD COLUMN prioridad VARCHAR(20)")
-        if "falla_origen_id" not in columnas_mant:
-            alter_statements.append("ALTER TABLE mantenimientos ADD COLUMN falla_origen_id INTEGER REFERENCES fallas_reportadas(id)")
-
-    if "fallas_reportadas" not in tablas:
-        alter_statements.append("""
-            CREATE TABLE fallas_reportadas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                vehiculo_id INTEGER NOT NULL REFERENCES vehiculos(id),
-                conductor_id INTEGER REFERENCES conductores(id),
-                usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
-                categoria VARCHAR(50) NOT NULL,
-                descripcion TEXT NOT NULL,
-                prioridad VARCHAR(20) NOT NULL DEFAULT 'media',
-                estado VARCHAR(30) NOT NULL DEFAULT 'pendiente',
-                fotos TEXT,
-                fecha_reporte DATETIME DEFAULT CURRENT_TIMESTAMP,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME
-            )
-        """)
-
     if "orden_actividades" not in tablas:
         alter_statements.append("""
             CREATE TABLE orden_actividades (
@@ -126,6 +104,110 @@ def apply_schema_updates():
                 archivo_url TEXT,
                 descripcion TEXT,
                 uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    if "hallazgos" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE hallazgos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vehiculo_id INTEGER NOT NULL REFERENCES vehiculos(id),
+                chequeo_id INTEGER REFERENCES chequeos(id),
+                usuario_reporta_id INTEGER NOT NULL REFERENCES usuarios(id),
+                origen VARCHAR(20) NOT NULL DEFAULT 'manual',
+                descripcion TEXT NOT NULL,
+                criticidad VARCHAR(20) NOT NULL DEFAULT 'media',
+                tipo VARCHAR(20) NOT NULL DEFAULT 'operacion',
+                categoria VARCHAR(50),
+                estado VARCHAR(30) NOT NULL DEFAULT 'abierto',
+                observaciones TEXT,
+                fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    if "hallazgos" in tablas:
+        columnas_hallazgos = {column["name"] for column in inspector.get_columns("hallazgos")}
+        if "tipo" not in columnas_hallazgos:
+            alter_statements.append("ALTER TABLE hallazgos ADD COLUMN tipo VARCHAR(20) NOT NULL DEFAULT 'operacion'")
+        if "categoria" not in columnas_hallazgos:
+            alter_statements.append("ALTER TABLE hallazgos ADD COLUMN categoria VARCHAR(50)")
+
+    if "ordenes_trabajo" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE ordenes_trabajo (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                hallazgo_id INTEGER NOT NULL UNIQUE REFERENCES hallazgos(id),
+                vehiculo_id INTEGER NOT NULL REFERENCES vehiculos(id),
+                responsable_id INTEGER REFERENCES usuarios(id),
+                prioridad VARCHAR(20) NOT NULL DEFAULT 'media',
+                estado VARCHAR(30) NOT NULL DEFAULT 'pendiente',
+                descripcion TEXT,
+                fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+                fecha_inicio DATETIME,
+                fecha_cierre DATETIME
+            )
+        """)
+
+    if "ordenes_actividades" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE ordenes_actividades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                orden_id INTEGER NOT NULL REFERENCES ordenes_trabajo(id),
+                responsable_id INTEGER REFERENCES usuarios(id),
+                titulo VARCHAR(255) NOT NULL,
+                descripcion TEXT,
+                estado VARCHAR(30) NOT NULL DEFAULT 'pendiente',
+                fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+                fecha_inicio DATETIME,
+                fecha_fin DATETIME
+            )
+        """)
+
+    if "ordenes_costos" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE ordenes_costos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                orden_id INTEGER NOT NULL REFERENCES ordenes_trabajo(id),
+                tipo_gasto VARCHAR(30) NOT NULL DEFAULT 'otro',
+                proveedor VARCHAR(255),
+                numero_factura VARCHAR(100),
+                descripcion TEXT NOT NULL,
+                cantidad INTEGER NOT NULL DEFAULT 1,
+                valor_unitario INTEGER NOT NULL DEFAULT 0,
+                valor_total INTEGER NOT NULL DEFAULT 0,
+                fecha DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    if "ordenes_evidencias" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE ordenes_evidencias (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                orden_id INTEGER REFERENCES ordenes_trabajo(id),
+                actividad_id INTEGER REFERENCES ordenes_actividades(id),
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+                tipo VARCHAR(20) NOT NULL DEFAULT 'foto',
+                ruta_archivo TEXT,
+                nombre_original VARCHAR(255),
+                descripcion TEXT,
+                fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    if "ordenes_historial" not in tablas:
+        alter_statements.append("""
+            CREATE TABLE ordenes_historial (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                orden_id INTEGER NOT NULL REFERENCES ordenes_trabajo(id),
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+                accion VARCHAR(50) NOT NULL,
+                tabla VARCHAR(50),
+                campo VARCHAR(50),
+                valor_anterior TEXT,
+                valor_nuevo TEXT,
+                fecha_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
+                ip_usuario VARCHAR(50),
+                user_agent VARCHAR(255)
             )
         """)
 
