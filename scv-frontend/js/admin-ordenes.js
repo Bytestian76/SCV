@@ -71,7 +71,7 @@ async function renderOrdenesList() {
                         '<p>' + escapeHtml((item.descripcion || '').split('\n')[0]) + '</p>' +
                     '</div>' +
                     '<div class="item-footer">' +
-                        '<span>' + escapeHtml(item.responsable?.nombre || 'Sin asignar') + '</span>' +
+                        '<span>' + escapeHtml(item.responsable?.nombre || item.responsable_externo || 'Sin asignar') + '</span>' +
                         '<div class="item-actions">' +
                             '<button type="button" class="btn-ghost btn-sm" onclick="handleOrdenesBtnClick(' + item.id + ', \'view\')">Ver</button>' +
                             (isAdmin ? '<button type="button" class="btn-ghost btn-sm" onclick="handleOrdenesBtnClick(' + item.id + ', \'edit\')">Editar</button>' : '') +
@@ -175,6 +175,35 @@ function openOrdenForm(ordenId) {
     document.getElementById('orden-mecanico-results').innerHTML = '';
     document.getElementById('orden-mecanico-results').classList.remove('is-open');
 
+    // Inicializar responsable externo/tercero
+    const esTerceroCheckbox = document.getElementById('orden-es-tercero');
+    const respExternoGroup = document.getElementById('orden-responsable-externo-group');
+    const respExternoInput = document.getElementById('orden-responsable-externo');
+    const mecanicoSearch = document.getElementById('orden-mecanico-search');
+
+    if (esTerceroCheckbox) {
+        esTerceroCheckbox.checked = false;
+        esTerceroCheckbox.onchange = function() {
+            if (this.checked) {
+                if (respExternoGroup) respExternoGroup.style.display = 'block';
+                if (mecanicoSearch) {
+                    mecanicoSearch.disabled = true;
+                    mecanicoSearch.value = '';
+                }
+                document.getElementById('orden-mecanico-id').value = '';
+                document.getElementById('orden-mecanico-selected').textContent = 'Se asignará a responsable externo.';
+            } else {
+                if (respExternoGroup) respExternoGroup.style.display = 'none';
+                if (respExternoInput) respExternoInput.value = '';
+                if (mecanicoSearch) mecanicoSearch.disabled = false;
+                document.getElementById('orden-mecanico-selected').textContent = 'Sin mecánico seleccionado.';
+            }
+        };
+    }
+    if (respExternoGroup) respExternoGroup.style.display = 'none';
+    if (respExternoInput) respExternoInput.value = '';
+    if (mecanicoSearch) mecanicoSearch.disabled = false;
+
     const prioridadSel = document.getElementById('orden-prioridad');
     if (prioridadSel) prioridadSel.value = 'media';
 
@@ -227,13 +256,43 @@ async function loadOrdenForEdit(id) {
             if (selected) selected.textContent = `Seleccionado: ${o.vehiculo.placa} · ${o.vehiculo.marca || ''} ${o.vehiculo.modelo || ''}`;
         }
 
-        if (o.responsable) {
-            const searchInput = document.getElementById('orden-mecanico-search');
+        const esTerceroCheckbox = document.getElementById('orden-es-tercero');
+        const respExternoGroup = document.getElementById('orden-responsable-externo-group');
+        const respExternoInput = document.getElementById('orden-responsable-externo');
+        const mecanicoSearch = document.getElementById('orden-mecanico-search');
+
+        if (o.responsable_externo) {
+            if (esTerceroCheckbox) esTerceroCheckbox.checked = true;
+            if (respExternoGroup) respExternoGroup.style.display = 'block';
+            if (respExternoInput) respExternoInput.value = o.responsable_externo;
+            if (mecanicoSearch) {
+                mecanicoSearch.disabled = true;
+                mecanicoSearch.value = '';
+            }
+            document.getElementById('orden-mecanico-id').value = '';
+            document.getElementById('orden-mecanico-selected').textContent = `Externo: ${o.responsable_externo}`;
+        } else if (o.responsable) {
+            if (esTerceroCheckbox) esTerceroCheckbox.checked = false;
+            if (respExternoGroup) respExternoGroup.style.display = 'none';
+            if (respExternoInput) respExternoInput.value = '';
+            if (mecanicoSearch) {
+                mecanicoSearch.disabled = false;
+                mecanicoSearch.value = o.responsable.nombre;
+            }
             const hidden = document.getElementById('orden-mecanico-id');
             const selected = document.getElementById('orden-mecanico-selected');
-            if (searchInput) searchInput.value = o.responsable.nombre;
             if (hidden) hidden.value = o.responsable_id;
             if (selected) selected.textContent = `Seleccionado: ${o.responsable.nombre}`;
+        } else {
+            if (esTerceroCheckbox) esTerceroCheckbox.checked = false;
+            if (respExternoGroup) respExternoGroup.style.display = 'none';
+            if (respExternoInput) respExternoInput.value = '';
+            if (mecanicoSearch) {
+                mecanicoSearch.disabled = false;
+                mecanicoSearch.value = '';
+            }
+            document.getElementById('orden-mecanico-id').value = '';
+            document.getElementById('orden-mecanico-selected').textContent = 'Sin mecánico seleccionado.';
         }
 
         if (o.hallazgo) {
@@ -460,9 +519,18 @@ async function handleOrdenSubmit(e) {
         return;
     }
 
+    const esTercero = document.getElementById('orden-es-tercero')?.checked || false;
+    const respExternoVal = document.getElementById('orden-responsable-externo')?.value.trim() || null;
+
+    if (esTercero && !respExternoVal) {
+        showAppAlert('Error', 'Debes ingresar el nombre del responsable externo.');
+        return;
+    }
+
     const data = {
         vehiculo_id: vehiculoId,
-        responsable_id: mecanicoId,
+        responsable_id: esTercero ? null : mecanicoId,
+        responsable_externo: esTercero ? respExternoVal : null,
         descripcion: titulo + (descripcion ? '\n\n' + descripcion : ''),
         prioridad,
         hora_inicio: horaInicio || null,
@@ -476,7 +544,8 @@ async function handleOrdenSubmit(e) {
     try {
         if (ordenId) {
             await API.updateOrdenTrabajo(parseInt(ordenId), { 
-                responsable_id: mecanicoId, 
+                responsable_id: data.responsable_id, 
+                responsable_externo: data.responsable_externo,
                 prioridad, 
                 descripcion: data.descripcion,
                 hora_inicio: data.hora_inicio,
@@ -535,7 +604,7 @@ async function openOrdenDetalleModal(ordenId) {
                     </div>
                     <div class="detalle-field">
                         <span class="detalle-label">Mecánico</span>
-                        <span class="detalle-value">${orden.responsable ? escapeHtml(orden.responsable.nombre) : 'Sin asignar'}</span>
+                        <span class="detalle-value">${orden.responsable ? escapeHtml(orden.responsable.nombre) : (orden.responsable_externo ? `${escapeHtml(orden.responsable_externo)} (Externo)` : 'Sin asignar')}</span>
                     </div>
                     <div class="detalle-field">
                         <span class="detalle-label">Fecha</span>
