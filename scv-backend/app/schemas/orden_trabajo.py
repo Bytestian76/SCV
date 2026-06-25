@@ -12,6 +12,8 @@ class OrdenTrabajoBase(BaseModel):
     responsable_id: Optional[int] = None
     prioridad: str = "media"
     descripcion: Optional[str] = None
+    hora_inicio: Optional[str] = None
+    hora_fin: Optional[str] = None
 
     @field_validator("prioridad")
     @classmethod
@@ -31,6 +33,8 @@ class OrdenTrabajoUpdate(BaseModel):
     estado: Optional[str] = None
     descripcion: Optional[str] = None
     fecha_inicio: Optional[datetime] = None
+    hora_inicio: Optional[str] = None
+    hora_fin: Optional[str] = None
 
     @field_validator("prioridad")
     @classmethod
@@ -53,6 +57,8 @@ class OrdenTrabajoResponse(OrdenTrabajoBase):
     fecha_creacion: Optional[datetime] = None
     fecha_inicio: Optional[datetime] = None
     fecha_cierre: Optional[datetime] = None
+    hora_inicio: Optional[str] = None
+    hora_fin: Optional[str] = None
     hallazgo: Optional[dict] = None
     vehiculo: Optional[dict] = None
     responsable: Optional[dict] = None

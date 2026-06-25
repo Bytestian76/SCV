@@ -3110,6 +3110,9 @@ body {
 }
 
 .orden-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     padding: 8px 16px;
     border: 1px solid transparent;
     border-bottom: none;
@@ -3155,4 +3158,72 @@ body {
         transition: none !important;
         scroll-behavior: auto !important;
     }
+}
+
+/* Estilos Premium para botones de exportación individual */
+.btn-export-pdf {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    background: #e6f4ea !important;
+    color: #137333 !important;
+    border: 1px solid #137333 !important;
+}
+.btn-export-pdf:hover {
+    background: #d2e9d6 !important;
+    transform: translateY(-1px);
+}
+
+.btn-export-excel {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    background: #eaf1fb !important;
+    color: #1a73e8 !important;
+    border: 1px solid #1a73e8 !important;
+}
+.btn-export-excel:hover {
+    background: #d9e7fd !important;
+    transform: translateY(-1px);
+}
+
+/* Estilos de Bitácora / Historial de Cambios */
+.historial-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.historial-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.historial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.historial-item p {
+    margin: 6px 0;
+    font-size: 0.92rem;
+    color: #495057;
+    line-height: 1.4;
+}
+
+.historial-usuario {
+    display: block;
+    font-size: 0.82rem;
+    color: #6c757d;
+    font-weight: 500;
+    margin-top: 4px;
+    text-align: right;
 }

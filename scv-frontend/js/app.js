@@ -842,6 +842,11 @@ function setupEventListeners() {
     const costoCloseBtn = document.getElementById('costo-close-btn');
     const costoForm = document.getElementById('costo-form');
 
+    const hallazgoExportPdfSingleBtn = document.getElementById('hallazgo-export-pdf-single-btn');
+    const hallazgoExportExcelSingleBtn = document.getElementById('hallazgo-export-excel-single-btn');
+    const ordenExportPdfSingleBtn = document.getElementById('orden-export-pdf-single-btn');
+    const ordenExportExcelSingleBtn = document.getElementById('orden-export-excel-single-btn');
+
     if (hallazgoNuevoBtn) hallazgoNuevoBtn.addEventListener('click', () => openHallazgoForm(null));
     if (hallazgoCancelBtn) hallazgoCancelBtn.addEventListener('click', closeHallazgoForm);
     if (hallazgoCloseBtn) hallazgoCloseBtn.addEventListener('click', closeHallazgoForm);
@@ -863,6 +868,31 @@ function setupEventListeners() {
     if (costoCancelBtn) costoCancelBtn.addEventListener('click', closeCostoForm);
     if (costoCloseBtn) costoCloseBtn.addEventListener('click', closeCostoForm);
     if (costoForm) costoForm.addEventListener('submit', handleCostoSubmit);
+
+    if (hallazgoExportPdfSingleBtn) {
+        hallazgoExportPdfSingleBtn.addEventListener('click', () => {
+            const id = parseInt(document.getElementById('hallazgo-id').value, 10);
+            if (id && typeof exportSingleHallazgoPdf === 'function') exportSingleHallazgoPdf(id);
+        });
+    }
+    if (hallazgoExportExcelSingleBtn) {
+        hallazgoExportExcelSingleBtn.addEventListener('click', () => {
+            const id = parseInt(document.getElementById('hallazgo-id').value, 10);
+            if (id && typeof exportSingleHallazgoExcel === 'function') exportSingleHallazgoExcel(id);
+        });
+    }
+    if (ordenExportPdfSingleBtn) {
+        ordenExportPdfSingleBtn.addEventListener('click', () => {
+            const id = APP.admin.ordenDetalleId;
+            if (id && typeof exportSingleOrdenPdf === 'function') exportSingleOrdenPdf(id);
+        });
+    }
+    if (ordenExportExcelSingleBtn) {
+        ordenExportExcelSingleBtn.addEventListener('click', () => {
+            const id = APP.admin.ordenDetalleId;
+            if (id && typeof exportSingleOrdenExcel === 'function') exportSingleOrdenExcel(id);
+        });
+    }
 
     const hallazgoModal = document.getElementById('hallazgo-modal');
     const hallazgoEvaluarModal = document.getElementById('hallazgo-evaluar-modal');
