@@ -552,10 +552,6 @@ async function handleOrdenSubmit(e) {
                 hora_fin: data.hora_fin
             });
         } else {
-            if (!hallazgoId) {
-                showAppAlert('Error', 'Debes seleccionar un hallazgo relacionado o crear la orden desde un hallazgo.');
-                return;
-            }
             await API.createOrdenTrabajo(data);
         }
         closeOrdenForm();
