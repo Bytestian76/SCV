@@ -10,6 +10,7 @@ class OrdenTrabajoBase(BaseModel):
     hallazgo_id: int
     vehiculo_id: int
     responsable_id: Optional[int] = None
+    responsable_externo: Optional[str] = None
     prioridad: str = "media"
     descripcion: Optional[str] = None
     hora_inicio: Optional[str] = None
@@ -29,6 +30,7 @@ class OrdenTrabajoCreate(OrdenTrabajoBase):
 
 class OrdenTrabajoUpdate(BaseModel):
     responsable_id: Optional[int] = None
+    responsable_externo: Optional[str] = None
     prioridad: Optional[str] = None
     estado: Optional[str] = None
     descripcion: Optional[str] = None
