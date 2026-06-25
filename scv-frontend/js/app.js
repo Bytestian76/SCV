@@ -1368,7 +1368,20 @@ function navigate(section) {
         return;
     }
 
+    if (section === 'admin-estadisticas') {
+        if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.JEFE_MECANICOS].includes(APP.user?.rol)) {
+            showAppAlert('Acceso denegado', 'No tienes permisos para ver estadísticas.');
+            return;
+        }
+        showScreen('admin-estadisticas');
+        if (typeof loadMantenimientoStats === 'function') {
+            loadMantenimientoStats();
+        }
+        return;
+    }
+
     showAppAlert('Módulo en construcción', `El módulo ${section} se habilitará en la siguiente iteración.`);
+
 }
 
 function openChequeosPanel() {

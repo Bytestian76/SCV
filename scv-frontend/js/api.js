@@ -284,6 +284,11 @@ const API = {
         return await this.request('GET', `/dashboard/mecanico?_ts=${Date.now()}`);
     },
 
+    async getEstadisticasMantenimiento() {
+        return await this.request('GET', `/dashboard/estadisticas-mantenimiento?_ts=${Date.now()}`);
+    },
+
+
     // ============ WEB PUSH ============
 
     async pushSubscribe(subscription) {
