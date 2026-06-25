@@ -63,6 +63,9 @@ def apply_schema_updates():
         if "fecha_venc_rtm" not in columnas_vehiculos:
             alter_statements.append("ALTER TABLE vehiculos ADD COLUMN fecha_venc_rtm DATE")
 
+        if "especificaciones" not in columnas_vehiculos:
+            alter_statements.append("ALTER TABLE vehiculos ADD COLUMN especificaciones TEXT")
+
     if "conductores" in tablas:
         columnas_conductores = {column["name"] for column in inspector.get_columns("conductores")}
 
@@ -144,9 +147,17 @@ def apply_schema_updates():
                 descripcion TEXT,
                 fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
                 fecha_inicio DATETIME,
-                fecha_cierre DATETIME
+                fecha_cierre DATETIME,
+                hora_inicio VARCHAR(10),
+                hora_fin VARCHAR(10)
             )
         """)
+    else:
+        columnas_ot = {column["name"] for column in inspector.get_columns("ordenes_trabajo")}
+        if "hora_inicio" not in columnas_ot:
+            alter_statements.append("ALTER TABLE ordenes_trabajo ADD COLUMN hora_inicio VARCHAR(10)")
+        if "hora_fin" not in columnas_ot:
+            alter_statements.append("ALTER TABLE ordenes_trabajo ADD COLUMN hora_fin VARCHAR(10)")
 
     if "ordenes_actividades" not in tablas:
         alter_statements.append("""
