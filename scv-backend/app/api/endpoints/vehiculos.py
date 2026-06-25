@@ -125,6 +125,71 @@ def actualizar_vehiculo(
     return vehiculo
 
 
+@router.get("/{vehiculo_id}/historial-mantenimientos")
+def obtener_historial_mantenimientos(
+    vehiculo_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"]))
+):
+    """Obtener historial unificado de mantenimientos y actividades realizadas para un vehículo"""
+    from app.models.models import NuevaOrdenActividad, OrdenTrabajo
+    from datetime import datetime
+
+    # 1. Buscar actividades completadas asociadas al vehículo
+    actividades = (
+        db.query(NuevaOrdenActividad)
+        .join(OrdenTrabajo)
+        .filter(
+            OrdenTrabajo.vehiculo_id == vehiculo_id,
+            NuevaOrdenActividad.estado == "completada"
+        )
+        .order_by(NuevaOrdenActividad.fecha_fin.desc())
+        .all()
+    )
+    
+    # 2. Buscar órdenes completadas para el vehículo
+    ordenes = (
+        db.query(OrdenTrabajo)
+        .filter(
+            OrdenTrabajo.vehiculo_id == vehiculo_id,
+            OrdenTrabajo.estado == "completada"
+        )
+        .order_by(OrdenTrabajo.fecha_cierre.desc())
+        .all()
+    )
+
+    eventos = []
+    for act in actividades:
+        eventos.append({
+            "tipo": "actividad",
+            "titulo": act.titulo,
+            "descripcion": act.descripcion or "",
+            "fecha": act.fecha_fin,
+            "orden_id": act.orden_id,
+            "responsable": act.responsable.nombre if act.responsable else "No asignado"
+        })
+
+    for ord in ordenes:
+        eventos.append({
+            "tipo": "orden",
+            "titulo": f"Orden #{ord.id} Finalizada",
+            "descripcion": ord.descripcion or "Mantenimiento general",
+            "fecha": ord.fecha_cierre,
+            "orden_id": ord.id,
+            "responsable": ord.responsable.nombre if ord.responsable else "No asignado"
+        })
+
+    # Ordenar cronológicamente descendente
+    eventos.sort(key=lambda x: x["fecha"] if x["fecha"] else datetime.min, reverse=True)
+
+    # Formatear fechas para la respuesta JSON
+    for ev in eventos:
+        if ev["fecha"]:
+            ev["fecha"] = ev["fecha"].strftime("%Y-%m-%d %H:%M:%S")
+
+    return eventos
+
+
 @router.delete("/{vehiculo_id}")
 def eliminar_vehiculo(
     vehiculo_id: int,

@@ -3,6 +3,14 @@ SCV - Sistema de Control Vehicular
 Backend API REST con FastAPI
 """
 
+import logging
+
+# Configuración básica de logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -65,6 +73,8 @@ app.include_router(ordenes_costos.router, prefix=API_V1)
 app.include_router(ordenes_evidencias.router, prefix=API_V1)
 app.include_router(ordenes_historial.router, prefix=API_V1)
 
+from app.core.waf import WAFMiddleware
+
 # CORS - Permite que el frontend acceda desde cualquier origen
 # En producción, restrictingías los orígenes permitidos
 app.add_middleware(
@@ -74,6 +84,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Registrar Firewall a Nivel de Aplicación (WAF)
+app.add_middleware(WAFMiddleware)
 
 
 @app.get("/")

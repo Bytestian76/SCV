@@ -187,6 +187,12 @@ function openOrdenForm(ordenId) {
     const descripcionField = document.getElementById('orden-descripcion');
     if (descripcionField) descripcionField.value = '';
 
+    const horaInicioField = document.getElementById('orden-hora-inicio');
+    if (horaInicioField) horaInicioField.value = '';
+
+    const horaFinField = document.getElementById('orden-hora-fin');
+    if (horaFinField) horaFinField.value = '';
+
     if (ordenId) {
         title.textContent = 'Editar Orden de Trabajo';
         loadOrdenForEdit(ordenId);
@@ -205,6 +211,12 @@ async function loadOrdenForEdit(id) {
         document.getElementById('orden-titulo').value = descParts[0] || '';
         document.getElementById('orden-descripcion').value = descParts.slice(1).join('\n\n') || '';
         document.getElementById('orden-prioridad').value = o.prioridad || 'media';
+        
+        const horaInicioField = document.getElementById('orden-hora-inicio');
+        if (horaInicioField) horaInicioField.value = o.hora_inicio || '';
+
+        const horaFinField = document.getElementById('orden-hora-fin');
+        if (horaFinField) horaFinField.value = o.hora_fin || '';
 
         if (o.vehiculo) {
             const searchInput = document.getElementById('orden-vehiculo-search');
@@ -436,6 +448,9 @@ async function handleOrdenSubmit(e) {
     const hallazgoHidden = document.getElementById('orden-hallazgo-id');
     const hallazgoId = hallazgoHidden ? parseInt(hallazgoHidden.value) || null : null;
 
+    const horaInicio = document.getElementById('orden-hora-inicio').value;
+    const horaFin = document.getElementById('orden-hora-fin').value;
+
     if (!vehiculoId) {
         showAppAlert('Error', 'Debes seleccionar un vehículo.');
         return;
@@ -450,6 +465,8 @@ async function handleOrdenSubmit(e) {
         responsable_id: mecanicoId,
         descripcion: titulo + (descripcion ? '\n\n' + descripcion : ''),
         prioridad,
+        hora_inicio: horaInicio || null,
+        hora_fin: horaFin || null,
     };
 
     if (hallazgoId) {
@@ -458,7 +475,13 @@ async function handleOrdenSubmit(e) {
 
     try {
         if (ordenId) {
-            await API.updateOrdenTrabajo(parseInt(ordenId), { responsable_id: mecanicoId, prioridad, descripcion: data.descripcion });
+            await API.updateOrdenTrabajo(parseInt(ordenId), { 
+                responsable_id: mecanicoId, 
+                prioridad, 
+                descripcion: data.descripcion,
+                hora_inicio: data.hora_inicio,
+                hora_fin: data.hora_fin
+            });
         } else {
             if (!hallazgoId) {
                 showAppAlert('Error', 'Debes seleccionar un hallazgo relacionado o crear la orden desde un hallazgo.');
@@ -480,9 +503,9 @@ async function openOrdenDetalleModal(ordenId) {
     APP.admin.ordenDetalleId = ordenId;
 
     const title = document.getElementById('orden-detalle-title');
-    const content = document.getElementById('orden-detalle-content');
+    const infoContainer = document.getElementById('orden-detalle-info');
     if (title) title.textContent = 'Detalle de Orden de Trabajo';
-    if (content) content.innerHTML = '<p class="helper-text">Cargando...</p>';
+    if (infoContainer) infoContainer.innerHTML = '<p class="helper-text">Cargando...</p>';
 
     try {
         const orden = await API.getOrdenTrabajo(ordenId);
@@ -491,8 +514,8 @@ async function openOrdenDetalleModal(ordenId) {
         const userRole = APP.user?.rol;
         const isAdmin = userRole === CONFIG.ROLES.ADMIN || userRole === CONFIG.ROLES.JEFE_MECANICOS;
 
-        if (content) {
-            content.innerHTML = `
+        if (infoContainer) {
+            infoContainer.innerHTML = `
                 <div class="detalle-header">
                     <div class="detalle-field">
                         <span class="detalle-label"># Orden</span>
@@ -517,6 +540,10 @@ async function openOrdenDetalleModal(ordenId) {
                     <div class="detalle-field">
                         <span class="detalle-label">Fecha</span>
                         <span class="detalle-value">${formatApiDateTime(orden.fecha_creacion)}</span>
+                    </div>
+                    <div class="detalle-field">
+                        <span class="detalle-label">Horario</span>
+                        <span class="detalle-value">${orden.hora_inicio && orden.hora_fin ? `${orden.hora_inicio} - ${orden.hora_fin}` : 'No programado'}</span>
                     </div>
                     <div class="detalle-field">
                         <span class="detalle-label">Prioridad</span>
@@ -544,52 +571,31 @@ async function openOrdenDetalleModal(ordenId) {
             `;
         }
 
-        const actividadesBtn = document.getElementById('orden-tab-actividades-btn');
-        const costosBtn = document.getElementById('orden-tab-costos-btn');
-        const evidenciasBtn = document.getElementById('orden-tab-evidencias-btn');
-        const historialBtn = document.getElementById('orden-tab-historial-btn');
+        const tabsContainer = document.querySelector('.orden-detalle-tabs');
+        if (tabsContainer) {
+            tabsContainer.querySelectorAll('.orden-tab-btn').forEach(btn => {
+                btn.removeEventListener('click', btn._handler);
+                const tabName = btn.dataset.tab;
+                btn._handler = () => {
+                    // Set active tab button
+                    tabsContainer.querySelectorAll('.orden-tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
 
-        const setActiveTab = (tab) => {
-            document.querySelectorAll('.orden-tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.orden-tab-panel').forEach(p => p.classList.remove('active'));
+                    // Set active tab panel
+                    document.querySelectorAll('.orden-tab-content').forEach(p => p.classList.remove('active'));
+                    const panel = document.getElementById(`orden-detalle-${tabName}`);
+                    if (panel) panel.classList.add('active');
 
-            const btn = document.getElementById(`orden-tab-${tab}-btn`);
-            const panel = document.getElementById(`orden-tab-${tab}-panel`);
-            if (btn) btn.classList.add('active');
-            if (panel) panel.classList.add('active');
-        };
-
-        const tabHandler = (tab) => {
-            return () => {
-                setActiveTab(tab);
-                switch (tab) {
-                    case 'actividades': loadOrdenActividades(ordenId); break;
-                    case 'costos': loadOrdenCostos(ordenId); break;
-                    case 'evidencias': loadOrdenEvidencias(ordenId); break;
-                    case 'historial': loadOrdenHistorial(ordenId); break;
-                }
-            };
-        };
-
-        if (actividadesBtn) {
-            actividadesBtn.removeEventListener('click', actividadesBtn._handler);
-            actividadesBtn._handler = tabHandler('actividades');
-            actividadesBtn.addEventListener('click', actividadesBtn._handler);
-        }
-        if (costosBtn) {
-            costosBtn.removeEventListener('click', costosBtn._handler);
-            costosBtn._handler = tabHandler('costos');
-            costosBtn.addEventListener('click', costosBtn._handler);
-        }
-        if (evidenciasBtn) {
-            evidenciasBtn.removeEventListener('click', evidenciasBtn._handler);
-            evidenciasBtn._handler = tabHandler('evidencias');
-            evidenciasBtn.addEventListener('click', evidenciasBtn._handler);
-        }
-        if (historialBtn) {
-            historialBtn.removeEventListener('click', historialBtn._handler);
-            historialBtn._handler = tabHandler('historial');
-            historialBtn.addEventListener('click', historialBtn._handler);
+                    // Load tab content
+                    switch (tabName) {
+                        case 'actividades': loadOrdenActividades(ordenId); break;
+                        case 'costos': loadOrdenCostos(ordenId); break;
+                        case 'evidencias': loadOrdenEvidencias(ordenId); break;
+                        case 'historial': loadOrdenHistorial(ordenId); break;
+                    }
+                };
+                btn.addEventListener('click', btn._handler);
+            });
         }
 
         const actividadNuevoBtn = document.getElementById('actividad-nuevo-btn');
@@ -598,8 +604,13 @@ async function openOrdenDetalleModal(ordenId) {
         const costoNuevoBtn = document.getElementById('costo-nuevo-btn');
         if (costoNuevoBtn) costoNuevoBtn.style.display = isAdmin ? '' : 'none';
 
-        setActiveTab('actividades');
-        loadOrdenActividades(ordenId);
+        // Open default tab (Actividades)
+        const defaultBtn = tabsContainer ? tabsContainer.querySelector('[data-tab="actividades"]') : null;
+        if (defaultBtn) {
+            defaultBtn.click();
+        } else {
+            loadOrdenActividades(ordenId);
+        }
 
         if (orden.estado) {
             const estadoSelect = document.getElementById('orden-detalle-estado');
@@ -620,7 +631,8 @@ async function openOrdenDetalleModal(ordenId) {
         }
     } catch (err) {
         console.error('Error cargando detalle de orden:', err);
-        if (content) content.innerHTML = '<p class="helper-text">Error al cargar detalle.</p>';
+        const infoContainer = document.getElementById('orden-detalle-info');
+        if (infoContainer) infoContainer.innerHTML = '<p class="helper-text">Error al cargar detalle.</p>';
     }
 }
 
@@ -649,11 +661,11 @@ async function loadOrdenActividades(ordenId) {
                     <span class="item-date">${formatApiDateTime(a.fecha_creacion)}</span>
                 </div>
                 <div class="item-body">
-                    <strong>${escapeHtml(a.nombre)}</strong>
+                    <strong>${escapeHtml(a.titulo || 'Actividad')}</strong>
                     <p>${escapeHtml(a.descripcion || '')}</p>
                 </div>
                 <div class="item-footer">
-                    <span>${a.completada ? 'Completada' : 'Pendiente'}</span>
+                    <span class="item-badge estado-${a.estado}">${a.estado === 'en_progreso' ? 'En curso' : (a.estado === 'completada' ? 'Completada' : 'Pendiente')}</span>
                     <div class="item-actions">
                         <button class="btn-ghost btn-sm" data-action="edit" data-id="${a.id}">Editar</button>
                         <button class="btn-danger btn-sm" data-action="delete" data-id="${a.id}">Eliminar</button>
@@ -708,9 +720,9 @@ function openActividadForm(actividadId) {
     if (form) form.reset();
 
     document.getElementById('actividad-id').value = '';
-    document.getElementById('actividad-nombre').value = '';
     document.getElementById('actividad-descripcion').value = '';
-    document.getElementById('actividad-completada').checked = false;
+    document.getElementById('actividad-estado').value = 'pendiente';
+    document.getElementById('actividad-observaciones').value = '';
 
     if (actividadId) {
         title.textContent = 'Editar Actividad';
@@ -730,9 +742,9 @@ async function loadActividadForEdit(id) {
         if (!a) return;
 
         document.getElementById('actividad-id').value = a.id;
-        document.getElementById('actividad-nombre').value = a.nombre || '';
-        document.getElementById('actividad-descripcion').value = a.descripcion || '';
-        document.getElementById('actividad-completada').checked = !!a.completada;
+        document.getElementById('actividad-descripcion').value = a.titulo || '';
+        document.getElementById('actividad-estado').value = a.estado === 'en_progreso' ? 'en_curso' : (a.estado || 'pendiente');
+        document.getElementById('actividad-observaciones').value = a.descripcion || '';
     } catch (err) {
         console.error('Error cargando actividad:', err);
     }
@@ -749,16 +761,17 @@ async function handleActividadSubmit(e) {
     if (!ordenId) return;
 
     const actividadId = document.getElementById('actividad-id').value;
-    const nombre = document.getElementById('actividad-nombre').value.trim();
-    const descripcion = document.getElementById('actividad-descripcion').value.trim();
-    const completada = document.getElementById('actividad-completada').checked;
+    const titulo = document.getElementById('actividad-descripcion').value.trim();
+    const estadoSel = document.getElementById('actividad-estado').value;
+    const estado = estadoSel === 'en_curso' ? 'en_progreso' : estadoSel;
+    const descripcion = document.getElementById('actividad-observaciones').value.trim();
 
-    if (!nombre) {
-        showAppAlert('Error', 'Debes ingresar un nombre para la actividad.');
+    if (!titulo) {
+        showAppAlert('Error', 'Debes ingresar una descripción de la actividad.');
         return;
     }
 
-    const data = { nombre, descripcion, completada };
+    const data = { titulo, estado, descripcion };
 
     try {
         if (actividadId) {
@@ -793,19 +806,20 @@ async function loadOrdenCostos(ordenId) {
             return;
         }
 
-        const total = costos.reduce((sum, c) => sum + Number(c.valor || 0), 0);
+        const total = costos.reduce((sum, c) => sum + Number(c.valor_total || c.valor || 0), 0);
 
         container.innerHTML = `<div class="management-list">${costos.map(c => `
             <div class="management-item">
                 <div class="item-header">
-                    <span class="item-date">${formatApiDateTime(c.fecha_creacion)}</span>
+                    <span class="item-date">${formatApiDateTime(c.fecha || c.fecha_creacion)}</span>
+                    <span class="item-badge tipo-${c.tipo_gasto || 'otro'}">${c.tipo_gasto || 'otro'}</span>
                 </div>
                 <div class="item-body">
-                    <strong>${escapeHtml(c.descripcion || c.nombre || 'Costo')}</strong>
-                    <p class="costo-valor">${formatCurrency(c.valor)}</p>
+                    <strong>${escapeHtml(c.descripcion || 'Costo')}</strong>
+                    <p class="costo-valor">${formatCurrency(c.valor_total || c.valor)}</p>
                 </div>
                 <div class="item-footer">
-                    <span></span>
+                    <span>${c.proveedor ? `Proveedor: ${escapeHtml(c.proveedor)}` : ''}</span>
                     <div class="item-actions">
                         <button class="btn-ghost btn-sm" data-action="edit" data-id="${c.id}">Editar</button>
                         <button class="btn-danger btn-sm" data-action="delete" data-id="${c.id}">Eliminar</button>
@@ -861,8 +875,10 @@ function openCostoForm(costoId) {
     if (form) form.reset();
 
     document.getElementById('costo-id').value = '';
-    document.getElementById('costo-descripcion').value = '';
-    document.getElementById('costo-valor').value = '';
+    document.getElementById('costo-concepto').value = '';
+    document.getElementById('costo-tipo').value = 'repuesto';
+    document.getElementById('costo-monto').value = '';
+    document.getElementById('costo-observaciones').value = '';
 
     if (costoId) {
         title.textContent = 'Editar Costo';
@@ -881,9 +897,20 @@ async function loadCostoForEdit(id) {
         const c = (costos || []).find(co => co.id === id);
         if (!c) return;
 
+        // Parse descripcion to split concept and observations if formatted as "Concept (Observations)"
+        let concepto = c.descripcion || '';
+        let observaciones = '';
+        const match = concepto.match(/^(.*?)\s*\((.*?)\)$/);
+        if (match) {
+            concepto = match[1];
+            observaciones = match[2];
+        }
+
         document.getElementById('costo-id').value = c.id;
-        document.getElementById('costo-descripcion').value = c.descripcion || c.nombre || '';
-        document.getElementById('costo-valor').value = c.valor || '';
+        document.getElementById('costo-concepto').value = concepto;
+        document.getElementById('costo-tipo').value = c.tipo_gasto === 'mano_obra' ? 'mano_de_obra' : (c.tipo_gasto || 'otro');
+        document.getElementById('costo-monto').value = c.valor_unitario || c.valor_total || 0;
+        document.getElementById('costo-observaciones').value = observaciones || c.numero_factura || c.proveedor || '';
     } catch (err) {
         console.error('Error cargando costo:', err);
     }
@@ -900,19 +927,30 @@ async function handleCostoSubmit(e) {
     if (!ordenId) return;
 
     const costoId = document.getElementById('costo-id').value;
-    const descripcion = document.getElementById('costo-descripcion').value.trim();
-    const valor = parseFloat(document.getElementById('costo-valor').value);
+    const concepto = document.getElementById('costo-concepto').value.trim();
+    const tipoSel = document.getElementById('costo-tipo').value;
+    const tipo_gasto = tipoSel === 'mano_de_obra' ? 'mano_obra' : tipoSel;
+    const monto = parseFloat(document.getElementById('costo-monto').value);
+    const observaciones = document.getElementById('costo-observaciones').value.trim();
 
-    if (!descripcion) {
-        showAppAlert('Error', 'Debes ingresar una descripción.');
+    if (!concepto) {
+        showAppAlert('Error', 'Debes ingresar un concepto.');
         return;
     }
-    if (isNaN(valor) || valor < 0) {
-        showAppAlert('Error', 'Debes ingresar un valor válido.');
+    if (isNaN(monto) || monto < 0) {
+        showAppAlert('Error', 'Debes ingresar un monto válido.');
         return;
     }
 
-    const data = { descripcion, valor };
+    const descripcion = observaciones ? `${concepto} (${observaciones})` : concepto;
+
+    const data = {
+        tipo_gasto,
+        descripcion,
+        cantidad: 1,
+        valor_unitario: Math.round(monto),
+        valor_total: Math.round(monto)
+    };
 
     try {
         if (costoId) {
@@ -960,12 +998,71 @@ async function loadOrdenEvidencias(ordenId) {
 
 async function loadOrdenHistorial(ordenId) {
     const container = document.getElementById('orden-historial-list');
-    if (!container) return;
+    const specsContainer = document.getElementById('orden-vehiculo-especificaciones-resumen');
+    const specsText = document.getElementById('orden-vh-especificaciones-texto');
+    const timelineContainer = document.getElementById('orden-vehiculo-historial-timeline');
 
-    container.innerHTML = '<p class="helper-text">Cargando...</p>';
+    if (container) container.innerHTML = '<p class="helper-text">Cargando...</p>';
+    if (timelineContainer) timelineContainer.innerHTML = '<p class="helper-text">Cargando...</p>';
+
+    // Load vehicle details and maintenance history
+    try {
+        const orden = await API.getOrdenTrabajo(ordenId);
+        if (orden && orden.vehiculo) {
+            const vh = orden.vehiculo;
+            if (specsContainer && specsText) {
+                specsText.textContent = vh.especificaciones || 'Sin especificaciones registradas.';
+                specsContainer.style.display = 'block';
+            }
+            if (timelineContainer) {
+                try {
+                    const history = await API.getVehiculoHistorial(vh.id);
+                    if (!history || history.length === 0) {
+                        timelineContainer.innerHTML = '<p class="helper-text">No se registran mantenimientos finalizados para este vehículo.</p>';
+                    } else {
+                        // formatTimeAgo helper is defined in admin-vehiculos.js, which is loaded globally in the frontend
+                        const formatTimeAgoFn = typeof formatTimeAgo === 'function' ? formatTimeAgo : (dateString) => {
+                            if (!dateString) return '';
+                            const formattedDate = dateString.replace(' ', 'T');
+                            const date = new Date(formattedDate);
+                            const now = new Date();
+                            const diffMs = now - date;
+                            const diffMins = Math.floor(diffMs / 60000);
+                            const diffHours = Math.floor(diffMins / 60);
+                            const diffDays = Math.floor(diffHours / 24);
+                            if (diffMins < 1) return 'Hace un momento';
+                            if (diffMins < 60) return `Hace ${diffMins} min`;
+                            if (diffHours < 24) return `Hace ${diffHours} hora(s)`;
+                            return `Hace ${diffDays} día(s)`;
+                        };
+
+                        timelineContainer.innerHTML = history.map(ev => {
+                            const timeAgo = formatTimeAgoFn(ev.fecha);
+                            return `
+                                <div class="timeline-item" style="margin-bottom: 15px; border-left: 3px solid #1f6a43; padding-left: 10px; margin-left: 5px;">
+                                    <div class="timeline-item-header" style="display: flex; justify-content: space-between; font-size: 0.9em; color: #666; font-weight: bold;">
+                                        <span>${escapeHtml(ev.titulo)}</span>
+                                        <span style="font-weight: normal; color: #888;">${timeAgo} (${ev.fecha})</span>
+                                    </div>
+                                    <p style="margin: 5px 0 0 0; font-size: 0.95em; color: #333;">${escapeHtml(ev.descripcion)}</p>
+                                    <div style="font-size: 0.85em; color: #777; margin-top: 3px;">Responsable: ${escapeHtml(ev.responsable)}</div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                } catch (errHistory) {
+                    console.error('Error cargando historial de vehículo:', errHistory);
+                    timelineContainer.innerHTML = '<div class="empty-state"><p class="helper-text" style="color: #b82318;">Error al cargar el historial del vehículo.</p></div>';
+                }
+            }
+        }
+    } catch (errOrden) {
+        console.error('Error cargando detalles del vehículo para el historial:', errOrden);
+    }
 
     try {
         const historial = await API.getOrdenHistorial(ordenId);
+        if (!container) return;
         if (!historial || historial.length === 0) {
             container.innerHTML = '<div class="empty-state"><p class="helper-text">No hay historial disponible.</p></div>';
             return;
@@ -973,7 +1070,7 @@ async function loadOrdenHistorial(ordenId) {
         container.innerHTML = `<div class="historial-list">${historial.map(h => `
             <div class="historial-item">
                 <div class="historial-header">
-                    <span class="item-date">${formatApiDateTime(h.fecha)}</span>
+                    <span class="item-date">${formatApiDateTime(h.fecha_hora)}</span>
                     <span class="item-badge estado-${h.estado_nuevo || ''}">${LABEL_ESTADO_O[h.estado_nuevo] || h.estado_nuevo || ''}</span>
                 </div>
                 <p>${escapeHtml(h.accion || h.descripcion || '')}</p>
@@ -981,8 +1078,8 @@ async function loadOrdenHistorial(ordenId) {
             </div>
         `).join('')}</div>`;
     } catch (err) {
-        console.error('Error cargando historial:', err);
-        container.innerHTML = '<p class="helper-text">Error al cargar historial.</p>';
+        console.error('Error cargando historial de la orden:', err);
+        if (container) container.innerHTML = '<div class="empty-state"><p class="helper-text" style="color: #b82318;">Error al cargar el historial de cambios de la orden.</p></div>';
     }
 }
 
