@@ -120,3 +120,17 @@ def actualizar_actividad(
         joinedload(NuevaOrdenActividad.evidencias),
     ).filter(NuevaOrdenActividad.id == a.id).first()
     return a
+
+
+@router.delete("/{actividad_id}")
+def eliminar_actividad(
+    actividad_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos"])),
+):
+    a = db.query(NuevaOrdenActividad).filter(NuevaOrdenActividad.id == actividad_id).first()
+    if not a:
+        raise HTTPException(status_code=404, detail="Actividad no encontrada")
+    db.delete(a)
+    db.commit()
+    return {"message": "Actividad eliminada"}

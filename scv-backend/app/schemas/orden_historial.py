@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from app.schemas.usuario import UsuarioResponse
 
 
 class OrdenHistorialResponse(BaseModel):
@@ -15,7 +16,7 @@ class OrdenHistorialResponse(BaseModel):
     fecha_hora: Optional[datetime] = None
     ip_usuario: Optional[str] = None
     user_agent: Optional[str] = None
-    usuario: Optional[dict] = None
+    usuario: Optional[UsuarioResponse] = None
 
     class Config:
         from_attributes = True

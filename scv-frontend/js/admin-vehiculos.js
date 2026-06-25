@@ -138,6 +138,7 @@ function renderVehiculosList() {
             </div>
             <div class="management-item-actions">
                 <span class="status-badge ${vehiculo.activo ? 'is-active' : 'is-inactive'}">${vehiculo.activo ? 'Activo' : 'Inactivo'}</span>
+                <button type="button" class="btn-ghost btn-item" data-action="historial" data-id="${vehiculo.id}">Historial</button>
                 <button type="button" class="btn-ghost btn-item" data-action="edit" data-id="${vehiculo.id}">Editar</button>
                 <button type="button" class="${vehiculo.activo ? 'btn-danger' : 'btn-ghost'} btn-item" data-action="${vehiculo.activo ? 'deactivate' : 'activate'}" data-id="${vehiculo.id}">${vehiculo.activo ? 'Desactivar' : 'Reactivar'}</button>
             </div>
@@ -163,6 +164,9 @@ function openVehiculoForm(vehiculo = null) {
         form.empresa.value = vehiculo.empresa || '';
         form.fecha_venc_soat.value = vehiculo.fecha_venc_soat || '';
         form.fecha_venc_rtm.value = vehiculo.fecha_venc_rtm || '';
+        if (form.especificaciones) {
+            form.especificaciones.value = vehiculo.especificaciones || '';
+        }
     }
 
     toggleModal('vehiculo-modal', true);
@@ -214,6 +218,11 @@ async function handleVehiculosListClick(e) {
 
     if (!vehiculo) return;
 
+    if (button.dataset.action === 'historial') {
+        openVehiculoHistorial(vehiculo);
+        return;
+    }
+
     if (button.dataset.action === 'edit') {
         openVehiculoForm(vehiculo);
         return;
@@ -250,4 +259,64 @@ async function handleVehiculosListClick(e) {
             setVehiculosFeedback(error.message || 'No se pudo reactivar el vehículo.', true);
         }
     }
+}
+
+async function openVehiculoHistorial(vehiculo) {
+    const title = document.getElementById('vehiculo-historial-title');
+    const specsText = document.getElementById('vh-especificaciones-texto');
+    const timeline = document.getElementById('vehiculo-historial-timeline');
+    const closeBtn = document.getElementById('vehiculo-historial-close-btn');
+
+    if (title) title.textContent = `Historial de Mantenimientos - ${vehiculo.placa}`;
+    if (specsText) specsText.textContent = vehiculo.especificaciones || 'Sin especificaciones registradas.';
+    
+    if (timeline) timeline.innerHTML = '<p class="helper-text">Cargando historial...</p>';
+    
+    if (closeBtn) {
+        closeBtn.onclick = () => toggleModal('vehiculo-historial-modal', false);
+    }
+
+    toggleModal('vehiculo-historial-modal', true);
+
+    try {
+        const history = await API.getVehiculoHistorial(vehiculo.id);
+        if (!timeline) return;
+
+        if (!history || history.length === 0) {
+            timeline.innerHTML = '<p class="helper-text">No se registran mantenimientos finalizados para este vehículo.</p>';
+            return;
+        }
+
+        timeline.innerHTML = history.map(ev => {
+            const timeAgo = formatTimeAgo(ev.fecha);
+            return `
+                <div class="timeline-item" style="margin-bottom: 15px; border-left: 3px solid #1f6a43; padding-left: 10px; margin-left: 5px;">
+                    <div class="timeline-item-header" style="display: flex; justify-content: space-between; font-size: 0.9em; color: #666; font-weight: bold;">
+                        <span>${ev.titulo}</span>
+                        <span style="font-weight: normal; color: #888;">${timeAgo} (${ev.fecha})</span>
+                    </div>
+                    <p style="margin: 5px 0 0 0; font-size: 0.95em; color: #333;">${ev.descripcion}</p>
+                    <div style="font-size: 0.85em; color: #777; margin-top: 3px;">Responsable: ${ev.responsable}</div>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        if (timeline) timeline.innerHTML = '<p class="helper-text">Error al cargar el historial.</p>';
+    }
+}
+
+function formatTimeAgo(dateString) {
+    if (!dateString) return '';
+    const formattedDate = dateString.replace(' ', 'T');
+    const date = new Date(formattedDate);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Hace un momento';
+    if (diffMins < 60) return `Hace ${diffMins} min`;
+    if (diffHours < 24) return `Hace ${diffHours} hora(s)`;
+    return `Hace ${diffDays} día(s)`;
 }

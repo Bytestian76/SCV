@@ -400,16 +400,39 @@ def crear_chequeo_items(
 
     if items_con_mantenimiento:
         vehiculo = chequeo.vehiculo
-        descripcion = f"Desde chequeo #{chequeo_id}: "
-        descripcion += "; ".join(
-            f"{i.seccion}/{i.item}: {i.observacion or 'Sin observación'}"
-            for i in items_con_mantenimiento
-        )
+        
+        # Mapear nombres de secciones para que sean legibles y limpias
+        SECCIONES_MAP = {
+            "frenos_direccion": "Frenos y Dirección",
+            "luces_cabina": "Luces y Cabina",
+            "niveles_estado_general": "Niveles y Estado General",
+            "equipo_carreteras_extintor": "Equipo de Carreteras y Extintor",
+            "kit_herramientas_verificaciones": "Kit de Herramientas y Verificaciones"
+        }
+        
+        # Agrupar fallos por sección para una lectura limpia
+        secciones_fallidas = {}
+        for ci in items_con_mantenimiento:
+            sec_nombre = SECCIONES_MAP.get(ci.seccion, ci.seccion.replace("_", " ").title())
+            if sec_nombre not in secciones_fallidas:
+                secciones_fallidas[sec_nombre] = []
+            
+            detalles_item = ci.item.replace("_", " ").capitalize()
+            if ci.observacion and ci.observacion.strip().lower() != "sin observacion" and ci.observacion.strip().lower() != "sin observación":
+                detalles_item += f": {ci.observacion}"
+            secciones_fallidas[sec_nombre].append(detalles_item)
+        
+        # Construir descripción legible y concisa
+        partes_desc = []
+        for sec, items_list in secciones_fallidas.items():
+            partes_desc.append(f"Fallo en {sec} ({', '.join(items_list)})")
+        
+        descripcion_limpia = f"Chequeo {chequeo_id}: " + "; ".join(partes_desc)
 
         db_mante = Mantenimiento(
             vehiculo_id=chequeo.vehiculo_id,
             tipo="correctivo",
-            descripcion=descripcion[:500],
+            descripcion=descripcion_limpia[:500],
             kilometraje=chequeo.kilometraje,
             estado="pendiente",
             creado_por=current_user.id,
@@ -433,16 +456,12 @@ def crear_chequeo_items(
         if any(ci.valor in valores_criticos for ci in items_con_mantenimiento):
             criticidad = "alta"
 
-        items_desc = "; ".join(
-            f"{i.seccion}/{i.item}: {i.observacion or 'Sin observación'}"
-            for i in items_con_mantenimiento
-        )
         hallazgo = Hallazgo(
             vehiculo_id=chequeo.vehiculo_id,
             chequeo_id=chequeo_id,
             usuario_reporta_id=current_user.id,
             origen="chequeo",
-            descripcion=f"Desde chequeo #{chequeo_id}: {items_desc}"[:500],
+            descripcion=descripcion_limpia[:500],
             criticidad=criticidad,
         )
         db.add(hallazgo)
