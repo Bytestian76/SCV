@@ -1,7 +1,8 @@
 """Endpoints de Notificaciones"""
 
 from datetime import datetime
-from fastapi import APIRouter, Depends
+import time
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -12,12 +13,24 @@ from app.schemas.notificacion import NotificacionListResponse, NotificacionRespo
 
 router = APIRouter(prefix="/notificaciones", tags=["Notificaciones"])
 
+# Diccionario en memoria para rastrear peticiones y aplicar throttling (1 req / 5s)
+_LAST_REQUESTS: dict[int, float] = {}
+
 
 @router.get("/", response_model=NotificacionListResponse)
 def listar_notificaciones(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
+    now = time.time()
+    last_req = _LAST_REQUESTS.get(current_user.id, 0.0)
+    if now - last_req < 5.0:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Peticiones demasiado frecuentes. Límite: 1 petición cada 5 segundos.",
+        )
+    _LAST_REQUESTS[current_user.id] = now
+
     notificaciones = (
         db.query(Notificacion)
         .filter(Notificacion.usuario_id == current_user.id)

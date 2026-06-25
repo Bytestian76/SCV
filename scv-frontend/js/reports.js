@@ -882,3 +882,300 @@ async function exportOrdenesPdfReport() {
 
     setOrdenesFeedback(`${ordenes.length} órdenes exportadas a PDF.`);
 }
+
+// ============ EXPORTACIONES INDIVIDUALES (COMPROBANTES) ============
+
+async function exportSingleHallazgoPdf(hallazgoId) {
+    const isPdfReady = await ensurePdfLibrariesLoaded();
+    if (!isPdfReady) {
+        await showAppAlert('Exportación PDF no disponible', 'No se pudo cargar la librería PDF. Intenta de nuevo.');
+        return;
+    }
+
+    try {
+        const h = await API.getHallazgo(hallazgoId);
+        if (!h) throw new Error('Hallazgo no encontrado');
+
+        const JsPdf = getJsPdfConstructor();
+        const doc = new JsPdf({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+
+        const margin = 36;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const contentWidth = pageWidth - (margin * 2);
+
+        // Header
+        doc.setFillColor(31, 45, 57);
+        doc.roundedRect(margin, margin - 10, contentWidth, 32, 4, 4, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text(`COMPROBANTE DE HALLAZGO #${h.id}`, margin + 10, margin + 11);
+
+        let cursorY = margin + 35;
+        doc.setTextColor(31, 45, 57);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.text(`Fecha Impresión: ${new Date().toLocaleString()}`, margin, cursorY);
+        cursorY += 15;
+
+        const rows = [
+            ['ID de Hallazgo', h.id || ''],
+            ['Fecha de Registro', h.fecha_creacion ? formatApiDateTime(h.fecha_creacion) : ''],
+            ['Vehículo', h.vehiculo ? `${h.vehiculo.placa} - ${h.vehiculo.marca} ${h.vehiculo.modelo}` : 'Sin vehículo'],
+            ['Tipo', h.tipo || 'operacion'],
+            ['Categoría', h.categoria || ''],
+            ['Prioridad / Criticidad', h.criticidad ? h.criticidad.toUpperCase() : ''],
+            ['Estado', h.estado ? h.estado.toUpperCase() : ''],
+            ['Reportado por', h.usuario_reporta?.nombre || ''],
+            ['Descripción', h.descripcion || '']
+        ];
+
+        doc.autoTable({
+            startY: cursorY,
+            head: [['Campo', 'Detalle']],
+            body: rows,
+            theme: 'grid',
+            margin: { left: margin, right: margin },
+            styles: { fontSize: 9, font: 'helvetica' },
+            headStyles: { fillColor: [44, 122, 75], textColor: 255 }
+        });
+
+        doc.save(`comprobante_hallazgo_${h.id}.pdf`);
+        return true;
+    } catch (err) {
+        console.error('Error exportando hallazgo PDF:', err);
+        showAppAlert('Error', 'No se pudo generar el comprobante PDF.');
+        return false;
+    }
+}
+
+async function exportSingleHallazgoExcel(hallazgoId) {
+    try {
+        const h = await API.getHallazgo(hallazgoId);
+        if (!h) throw new Error('Hallazgo no encontrado');
+
+        const rows = [
+            ['ID de Hallazgo', h.id || ''],
+            ['Fecha de Registro', h.fecha_creacion ? formatApiDateTime(h.fecha_creacion) : ''],
+            ['Vehículo', h.vehiculo ? `${h.vehiculo.placa} - ${h.vehiculo.marca} ${h.vehiculo.modelo}` : ''],
+            ['Tipo', h.tipo || ''],
+            ['Categoría', h.categoria || ''],
+            ['Prioridad / Criticidad', h.criticidad || ''],
+            ['Estado', h.estado || ''],
+            ['Reportado por', h.usuario_reporta?.nombre || ''],
+            ['Descripción', h.descripcion || '']
+        ];
+
+        const exported = exportExcelReport({
+            prefix: `comprobante_hallazgo_${h.id}`,
+            sheetName: 'Hallazgo',
+            title: `SCV - Comprobante de Hallazgo #${h.id}`,
+            headers: ['Campo', 'Detalle'],
+            rows: rows
+        });
+
+        return exported;
+    } catch (err) {
+        console.error('Error exportando hallazgo Excel:', err);
+        showAppAlert('Error', 'No se pudo generar el archivo Excel.');
+        return false;
+    }
+}
+
+async function exportSingleOrdenPdf(ordenId) {
+    const isPdfReady = await ensurePdfLibrariesLoaded();
+    if (!isPdfReady) {
+        await showAppAlert('Exportación PDF no disponible', 'No se pudo cargar la librería PDF. Intenta de nuevo.');
+        return;
+    }
+
+    try {
+        const o = await API.getOrdenTrabajo(ordenId);
+        if (!o) throw new Error('Orden no encontrada');
+
+        const actividades = await API.getOrdenActividades(ordenId) || [];
+        const costos = await API.getOrdenCostos(ordenId) || [];
+
+        const JsPdf = getJsPdfConstructor();
+        const doc = new JsPdf({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+
+        const margin = 36;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const contentWidth = pageWidth - (margin * 2);
+
+        // Header
+        doc.setFillColor(31, 45, 57);
+        doc.roundedRect(margin, margin - 10, contentWidth, 32, 4, 4, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text(`COMPROBANTE DE ORDEN DE TRABAJO #${o.id}`, margin + 10, margin + 11);
+
+        let cursorY = margin + 35;
+        doc.setTextColor(31, 45, 57);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.text(`Fecha Impresión: ${new Date().toLocaleString()}`, margin, cursorY);
+        cursorY += 15;
+
+        // General Info Table
+        const infoRows = [
+            ['ID de Orden', o.id || '', 'Prioridad', o.prioridad ? o.prioridad.toUpperCase() : ''],
+            ['Vehículo', o.vehiculo ? `${o.vehiculo.placa} (${o.vehiculo.marca} ${o.vehiculo.modelo})` : '', 'Estado', o.estado ? o.estado.toUpperCase() : ''],
+            ['Mecánico', o.responsable?.nombre || 'Sin asignar', 'Horario', o.hora_inicio && o.hora_fin ? `${o.hora_inicio} - ${o.hora_fin}` : 'No programado'],
+            ['Fecha Creación', o.fecha_creacion ? formatApiDateTime(o.fecha_creacion) : '', 'Hallazgo Asociado', o.hallazgo ? `#${o.hallazgo.id}` : 'Ninguno'],
+            ['Descripción', o.descripcion || '', '', '']
+        ];
+
+        doc.autoTable({
+            startY: cursorY,
+            head: [['Detalles Generales', '', '', '']],
+            body: infoRows,
+            theme: 'striped',
+            margin: { left: margin, right: margin },
+            styles: { fontSize: 8.5, font: 'helvetica' },
+            headStyles: { fillColor: [44, 122, 75], textColor: 255 },
+            didParseCell: function(data) {
+                if (data.row.index === 4 && data.cell.colSpan === 1) {
+                    data.cell.colSpan = 4;
+                }
+            }
+        });
+
+        cursorY = doc.lastAutoTable.finalY + 20;
+
+        // Activities Table
+        const actHeaders = ['Título', 'Descripción', 'Estado'];
+        const actRows = actividades.map(a => [
+            a.titulo || 'Actividad',
+            a.descripcion || '',
+            a.estado ? a.estado.toUpperCase() : 'PENDIENTE'
+        ]);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text('Actividades Realizadas / Programadas', margin, cursorY);
+        cursorY += 8;
+
+        if (actRows.length === 0) {
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(9);
+            doc.text('No hay actividades registradas en esta orden.', margin, cursorY);
+            cursorY += 15;
+        } else {
+            doc.autoTable({
+                startY: cursorY,
+                head: [actHeaders],
+                body: actRows,
+                theme: 'grid',
+                margin: { left: margin, right: margin },
+                styles: { fontSize: 8, font: 'helvetica' },
+                headStyles: { fillColor: [70, 80, 95] }
+            });
+            cursorY = doc.lastAutoTable.finalY + 20;
+        }
+
+        // Costs Table
+        const costHeaders = ['Concepto / Descripción', 'Tipo', 'Monto'];
+        const costRows = costos.map(c => [
+            c.descripcion || 'Costo',
+            c.tipo_gasto || 'otro',
+            formatCurrency(c.valor_total || c.valor)
+        ]);
+
+        const totalCost = costos.reduce((sum, c) => sum + Number(c.valor_total || c.valor || 0), 0);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text('Costos Asociados', margin, cursorY);
+        cursorY += 8;
+
+        if (costRows.length === 0) {
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(9);
+            doc.text('No hay costos registrados en esta orden.', margin, cursorY);
+        } else {
+            doc.autoTable({
+                startY: cursorY,
+                head: [costHeaders],
+                body: [...costRows, ['', 'TOTAL', formatCurrency(totalCost)]],
+                theme: 'grid',
+                margin: { left: margin, right: margin },
+                styles: { fontSize: 8, font: 'helvetica' },
+                headStyles: { fillColor: [70, 80, 95] },
+                didParseCell: function(data) {
+                    if (data.row.index === costRows.length) {
+                        data.cell.fontStyle = 'bold';
+                    }
+                }
+            });
+        }
+
+        doc.save(`comprobante_orden_${o.id}.pdf`);
+        return true;
+    } catch (err) {
+        console.error('Error exportando orden PDF:', err);
+        showAppAlert('Error', 'No se pudo generar el comprobante PDF.');
+        return false;
+    }
+}
+
+async function exportSingleOrdenExcel(ordenId) {
+    try {
+        const o = await API.getOrdenTrabajo(ordenId);
+        if (!o) throw new Error('Orden no encontrada');
+
+        const actividades = await API.getOrdenActividades(ordenId) || [];
+        const costos = await API.getOrdenCostos(ordenId) || [];
+
+        const rows = [];
+        
+        rows.push(['COMPROBANTE DE ORDEN DE TRABAJO #' + o.id]);
+        rows.push([]);
+        
+        rows.push(['Detalles Generales']);
+        rows.push(['ID Orden', o.id, 'Prioridad', o.prioridad]);
+        rows.push(['Vehículo', o.vehiculo ? `${o.vehiculo.placa} (${o.vehiculo.marca} ${o.vehiculo.modelo})` : '', 'Estado', o.estado]);
+        rows.push(['Mecánico', o.responsable?.nombre || 'Sin asignar', 'Horario', o.hora_inicio && o.hora_fin ? `${o.hora_inicio} - ${o.hora_fin}` : 'No programado']);
+        rows.push(['Fecha Creación', o.fecha_creacion ? formatApiDateTime(o.fecha_creacion) : '']);
+        rows.push(['Descripción', o.descripcion || '']);
+        rows.push([]);
+
+        rows.push(['Actividades']);
+        rows.push(['Título', 'Descripción', 'Estado']);
+        if (actividades.length === 0) {
+            rows.push(['Sin actividades registradas']);
+        } else {
+            actividades.forEach(a => {
+                rows.push([a.titulo || '', a.descripcion || '', a.estado || '']);
+            });
+        }
+        rows.push([]);
+
+        rows.push(['Costos']);
+        rows.push(['Concepto', 'Tipo', 'Monto']);
+        if (costos.length === 0) {
+            rows.push(['Sin costos registrados']);
+        } else {
+            costos.forEach(c => {
+                rows.push([c.descripcion || '', c.tipo_gasto || '', c.valor_total || c.valor || 0]);
+            });
+            const totalCost = costos.reduce((sum, c) => sum + Number(c.valor_total || c.valor || 0), 0);
+            rows.push(['', 'TOTAL', totalCost]);
+        }
+
+        const exported = exportExcelReport({
+            prefix: `comprobante_orden_${o.id}`,
+            sheetName: `Orden ${o.id}`,
+            title: `SCV - Comprobante de Orden #${o.id}`,
+            headers: ['SCV - Detalle de Orden'],
+            rows: rows
+        });
+
+        return exported;
+    } catch (err) {
+        console.error('Error exportando orden Excel:', err);
+        showAppAlert('Error', 'No se pudo generar el archivo Excel.');
+        return false;
+    }
+}

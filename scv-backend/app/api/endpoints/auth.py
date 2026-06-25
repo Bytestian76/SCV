@@ -2,6 +2,7 @@
 Endpoints de Autenticación
 """
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi import Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -29,6 +30,8 @@ from app.core.dependencies import is_token_revoked
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 security = HTTPBearer()
+
+logger = logging.getLogger("scv.auth")
 
 _FAILED_LOGIN_ATTEMPTS: dict[str, list[float]] = {}
 
@@ -60,6 +63,7 @@ def _assert_not_rate_limited(key: str) -> None:
     now = time.time()
     attempts = _cleanup_attempts(key, now)
     if len(attempts) >= settings.LOGIN_RATE_LIMIT_MAX_ATTEMPTS:
+        logger.warning(f"Inicio de sesión bloqueado por exceso de intentos (Rate Limit): Clave '{key}'")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Demasiados intentos de login. Intenta nuevamente en un minuto.",
@@ -76,6 +80,7 @@ def login(request: LoginRequest, http_request: Request, db: Session = Depends(ge
     login_id = request.email.strip()
     key = _rate_limit_key(http_request, login_id)
     _assert_not_rate_limited(key)
+    client_ip = http_request.client.host if http_request.client else "unknown"
 
     # Buscar usuario por email
     usuario = db.query(Usuario).filter(Usuario.email == login_id).first()
@@ -83,6 +88,7 @@ def login(request: LoginRequest, http_request: Request, db: Session = Depends(ge
     # Verificar que existe y está activo
     if not usuario:
         _register_failed_attempt(key)
+        logger.warning(f"Intento de inicio de sesión fallido: Usuario '{login_id}' no encontrado desde la IP {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas"
@@ -90,6 +96,7 @@ def login(request: LoginRequest, http_request: Request, db: Session = Depends(ge
     
     if not usuario.activo:
         _register_failed_attempt(key)
+        logger.warning(f"Intento de inicio de sesión rechazado: Usuario '{login_id}' inactivo desde la IP {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario inactivo"
@@ -98,12 +105,14 @@ def login(request: LoginRequest, http_request: Request, db: Session = Depends(ge
     # Verificar contraseña
     if not verify_password(request.password, usuario.password_hash):
         _register_failed_attempt(key)
+        logger.warning(f"Intento de inicio de sesión fallido: Contraseña incorrecta para el usuario '{login_id}' desde la IP {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas"
         )
 
     _clear_failed_attempts(key)
+    logger.info(f"Inicio de sesión exitoso: Usuario '{login_id}' (Rol: {usuario.rol}) desde la IP {client_ip}")
     
     # Crear token JWT
     token_data = {
@@ -253,4 +262,5 @@ def logout(
         )
         db.commit()
 
+    logger.info(f"Cierre de sesión exitoso: Usuario ID '{current_user.id}' (Email: '{current_user.email}')")
     return LogoutResponse(message="Sesión cerrada correctamente")

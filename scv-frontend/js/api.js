@@ -69,7 +69,7 @@ const API = {
                 result = {};
             }
 
-            if (response.status === 401 && !isAuthLoginEndpoint && !isAuthLogoutEndpoint) {
+            if ((response.status === 401 || response.status === 403) && !isAuthLoginEndpoint && !isAuthLogoutEndpoint) {
                 if (typeof window.forceLogoutByExpiredSession === 'function') {
                     window.forceLogoutByExpiredSession();
                 } else {
@@ -138,6 +138,10 @@ const API = {
 
     async activateVehiculo(id) {
         return await this.request('PUT', `/vehiculos/${id}`, { activo: true });
+    },
+
+    async getVehiculoHistorial(id) {
+        return await this.request('GET', `/vehiculos/${id}/historial-mantenimientos`);
     },
 
     // ============ CONDUCTORES ============
@@ -354,64 +358,99 @@ const API = {
     // ============ ORDENES - ACTIVIDADES ============
 
     async getOrdenActividades(ordenId, filters = {}) {
-        const params = new URLSearchParams(filters).toString();
-        const endpoint = params ? `/ordenes-trabajo/${ordenId}/actividades/?${params}` : `/ordenes-trabajo/${ordenId}/actividades/`;
-        return await this.request('GET', endpoint);
+        const params = new URLSearchParams({ orden_id: ordenId, ...filters }).toString();
+        return await this.request('GET', `/ordenes-actividades/?${params}`);
     },
 
     async createOrdenActividad(ordenId, data) {
-        return await this.request('POST', `/ordenes-trabajo/${ordenId}/actividades/`, data);
+        const payload = {
+            orden_id: ordenId,
+            titulo: data.titulo || data.nombre || data.descripcion || '',
+            descripcion: data.descripcion || '',
+            responsable_id: data.responsable_id || null
+        };
+        return await this.request('POST', `/ordenes-actividades/`, payload);
     },
 
     async updateOrdenActividad(ordenId, actividadId, data) {
-        return await this.request('PUT', `/ordenes-trabajo/${ordenId}/actividades/${actividadId}`, data);
+        const payload = {
+            titulo: data.titulo || data.nombre || undefined,
+            descripcion: data.descripcion !== undefined ? data.descripcion : undefined,
+            estado: data.estado || (data.completada ? 'completada' : 'pendiente'),
+            responsable_id: data.responsable_id || undefined
+        };
+        return await this.request('PUT', `/ordenes-actividades/${actividadId}`, payload);
     },
 
     async deleteOrdenActividad(ordenId, actividadId) {
-        return await this.request('DELETE', `/ordenes-trabajo/${ordenId}/actividades/${actividadId}`);
+        return await this.request('DELETE', `/ordenes-actividades/${actividadId}`);
     },
 
     // ============ ORDENES - COSTOS ============
 
     async getOrdenCostos(ordenId, filters = {}) {
-        const params = new URLSearchParams(filters).toString();
-        const endpoint = params ? `/ordenes-trabajo/${ordenId}/costos/?${params}` : `/ordenes-trabajo/${ordenId}/costos/`;
-        return await this.request('GET', endpoint);
+        const params = new URLSearchParams({ orden_id: ordenId, ...filters }).toString();
+        return await this.request('GET', `/ordenes-costos/?${params}`);
     },
 
     async createOrdenCosto(ordenId, data) {
-        return await this.request('POST', `/ordenes-trabajo/${ordenId}/costos/`, data);
+        const payload = {
+            orden_id: ordenId,
+            tipo_gasto: data.tipo_gasto || data.tipo || 'otro',
+            proveedor: data.proveedor || null,
+            numero_factura: data.numero_factura || null,
+            descripcion: data.descripcion || data.concepto || '',
+            cantidad: data.cantidad || 1,
+            valor_unitario: data.valor_unitario !== undefined ? data.valor_unitario : (data.valor || 0),
+            valor_total: data.valor_total !== undefined ? data.valor_total : (data.valor || 0)
+        };
+        return await this.request('POST', `/ordenes-costos/`, payload);
     },
 
     async updateOrdenCosto(ordenId, costoId, data) {
-        return await this.request('PUT', `/ordenes-trabajo/${ordenId}/costos/${costoId}`, data);
+        const payload = {
+            tipo_gasto: data.tipo_gasto || data.tipo || undefined,
+            proveedor: data.proveedor !== undefined ? data.proveedor : undefined,
+            numero_factura: data.numero_factura !== undefined ? data.numero_factura : undefined,
+            descripcion: data.descripcion || data.concepto || undefined,
+            cantidad: data.cantidad !== undefined ? data.cantidad : undefined,
+            valor_unitario: data.valor_unitario !== undefined ? data.valor_unitario : (data.valor !== undefined ? data.valor : undefined),
+            valor_total: data.valor_total !== undefined ? data.valor_total : (data.valor !== undefined ? data.valor : undefined)
+        };
+        return await this.request('PUT', `/ordenes-costos/${costoId}`, payload);
     },
 
     async deleteOrdenCosto(ordenId, costoId) {
-        return await this.request('DELETE', `/ordenes-trabajo/${ordenId}/costos/${costoId}`);
+        return await this.request('DELETE', `/ordenes-costos/${costoId}`);
     },
 
     // ============ ORDENES - EVIDENCIAS ============
 
     async getOrdenEvidencias(ordenId, filters = {}) {
-        const params = new URLSearchParams(filters).toString();
-        const endpoint = params ? `/ordenes-trabajo/${ordenId}/evidencias/?${params}` : `/ordenes-trabajo/${ordenId}/evidencias/`;
-        return await this.request('GET', endpoint);
+        const params = new URLSearchParams({ orden_id: ordenId, ...filters }).toString();
+        return await this.request('GET', `/ordenes-evidencias/?${params}`);
     },
 
     async createOrdenEvidencia(ordenId, data) {
-        return await this.request('POST', `/ordenes-trabajo/${ordenId}/evidencias/`, data);
+        const payload = {
+            orden_id: ordenId,
+            actividad_id: data.actividad_id || null,
+            tipo: data.tipo || 'foto',
+            ruta_archivo: data.ruta_archivo || data.archivo_url || '',
+            nombre_original: data.nombre_original || '',
+            descripcion: data.descripcion || ''
+        };
+        return await this.request('POST', `/ordenes-evidencias/`, payload);
     },
 
     async deleteOrdenEvidencia(ordenId, evidenciaId) {
-        return await this.request('DELETE', `/ordenes-trabajo/${ordenId}/evidencias/${evidenciaId}`);
+        return await this.request('DELETE', `/ordenes-evidencias/${evidenciaId}`);
     },
 
     // ============ ORDENES - HISTORIAL ============
 
     async getOrdenHistorial(ordenId, filters = {}) {
-        const params = new URLSearchParams(filters).toString();
-        const endpoint = params ? `/ordenes-trabajo/${ordenId}/historial/?${params}` : `/ordenes-trabajo/${ordenId}/historial/`;
-        return await this.request('GET', endpoint);
+        const params = new URLSearchParams({ orden_id: ordenId, ...filters }).toString();
+        return await this.request('GET', `/ordenes-historial/?${params}`);
     },
 };

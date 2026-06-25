@@ -118,6 +118,12 @@ function openHallazgoView(id) {
     toggleModal('hallazgo-modal', true);
     document.getElementById('hallazgo-form-title').textContent = 'Detalle del Hallazgo';
     resetHallazgoForm();
+    
+    const pdfBtn = document.getElementById('hallazgo-export-pdf-single-btn');
+    const excelBtn = document.getElementById('hallazgo-export-excel-single-btn');
+    if (pdfBtn) pdfBtn.style.display = '';
+    if (excelBtn) excelBtn.style.display = '';
+
     loadHallazgoData(id, true);
 }
 
@@ -128,6 +134,7 @@ function openHallazgoEdit(id) {
     loadHallazgoData(id, false);
 }
 
+// Global click handler to close selector results when clicking outside
 function openHallazgoForm(data) {
     if (data && data.id) {
         openHallazgoEdit(data.id);
@@ -147,6 +154,11 @@ function resetHallazgoForm() {
     document.getElementById('hallazgo-vehiculo-selected').textContent = 'Sin vehículo seleccionado.';
     document.getElementById('hallazgo-vehiculo-results').innerHTML = '';
     document.getElementById('hallazgo-vehiculo-results').classList.remove('is-open');
+
+    const pdfBtn = document.getElementById('hallazgo-export-pdf-single-btn');
+    const excelBtn = document.getElementById('hallazgo-export-excel-single-btn');
+    if (pdfBtn) pdfBtn.style.display = 'none';
+    if (excelBtn) excelBtn.style.display = 'none';
 
     const tipoInput = document.getElementById('hallazgo-tipo');
     if (tipoInput) tipoInput.value = 'operacion';
