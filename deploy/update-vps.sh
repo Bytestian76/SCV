@@ -10,6 +10,10 @@ BRANCH="${1:-main}"
 
 echo "=== Iniciando actualización de SCV (Rama/Tag: $BRANCH) ==="
 
+# Definir nombre del proyecto Docker Compose fijo para evitar volúmenes duplicados
+export COMPOSE_PROJECT_NAME=scv
+
+
 # Obtener ruta absoluta del repositorio
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_DIR"
