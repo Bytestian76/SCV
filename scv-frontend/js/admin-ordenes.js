@@ -576,8 +576,12 @@ async function openOrdenDetalleModal(ordenId) {
         const orden = await API.getOrdenTrabajo(ordenId);
         if (!orden) return;
 
+        APP.admin.activeOrden = orden;
+
         const userRole = APP.user?.rol;
         const isAdmin = userRole === CONFIG.ROLES.ADMIN || userRole === CONFIG.ROLES.JEFE_MECANICOS;
+        const isMecanicoResponsable = userRole === CONFIG.ROLES.MECANICO && orden.responsable_id === APP.user?.id;
+        const canManage = isAdmin || isMecanicoResponsable;
 
         if (infoContainer) {
             infoContainer.innerHTML = `
@@ -664,10 +668,11 @@ async function openOrdenDetalleModal(ordenId) {
         }
 
         const actividadNuevoBtn = document.getElementById('actividad-nuevo-btn');
-        if (actividadNuevoBtn) actividadNuevoBtn.style.display = isAdmin ? '' : 'none';
+        if (actividadNuevoBtn) actividadNuevoBtn.style.display = canManage ? '' : 'none';
 
         const costoNuevoBtn = document.getElementById('costo-nuevo-btn');
-        if (costoNuevoBtn) costoNuevoBtn.style.display = isAdmin ? '' : 'none';
+        if (costoNuevoBtn) costoNuevoBtn.style.display = canManage ? '' : 'none';
+
 
         // Open default tab (Actividades)
         const defaultBtn = tabsContainer ? tabsContainer.querySelector('[data-tab="actividades"]') : null;
@@ -720,6 +725,13 @@ async function loadOrdenActividades(ordenId) {
             container.innerHTML = '<div class="empty-state"><p class="helper-text">No hay actividades registradas.</p></div>';
             return;
         }
+
+        const orden = APP.admin.activeOrden;
+        const userRole = APP.user?.rol;
+        const isAdmin = userRole === CONFIG.ROLES.ADMIN || userRole === CONFIG.ROLES.JEFE_MECANICOS;
+        const isMecanicoResponsable = userRole === CONFIG.ROLES.MECANICO && orden && orden.responsable_id === APP.user?.id;
+        const canManage = isAdmin || isMecanicoResponsable;
+
         container.innerHTML = `<div class="management-list">${actividades.map(a => `
             <div class="management-item">
                 <div class="item-header">
@@ -731,13 +743,16 @@ async function loadOrdenActividades(ordenId) {
                 </div>
                 <div class="item-footer">
                     <span class="item-badge estado-${a.estado}">${a.estado === 'en_progreso' ? 'En curso' : (a.estado === 'completada' ? 'Completada' : 'Pendiente')}</span>
+                    ${canManage ? `
                     <div class="item-actions">
                         <button class="btn-ghost btn-sm" data-action="edit" data-id="${a.id}">Editar</button>
                         <button class="btn-danger btn-sm" data-action="delete" data-id="${a.id}">Eliminar</button>
                     </div>
+                    ` : ''}
                 </div>
             </div>
         `).join('')}</div>`;
+
     } catch (err) {
         console.error('Error cargando actividades:', err);
         container.innerHTML = '<p class="helper-text">Error al cargar actividades.</p>';
@@ -871,6 +886,12 @@ async function loadOrdenCostos(ordenId) {
             return;
         }
 
+        const orden = APP.admin.activeOrden;
+        const userRole = APP.user?.rol;
+        const isAdmin = userRole === CONFIG.ROLES.ADMIN || userRole === CONFIG.ROLES.JEFE_MECANICOS;
+        const isMecanicoResponsable = userRole === CONFIG.ROLES.MECANICO && orden && orden.responsable_id === APP.user?.id;
+        const canManage = isAdmin || isMecanicoResponsable;
+
         const total = costos.reduce((sum, c) => sum + Number(c.valor_total || c.valor || 0), 0);
 
         container.innerHTML = `<div class="management-list">${costos.map(c => `
@@ -885,14 +906,17 @@ async function loadOrdenCostos(ordenId) {
                 </div>
                 <div class="item-footer">
                     <span>${c.proveedor ? `Proveedor: ${escapeHtml(c.proveedor)}` : ''}</span>
+                    ${canManage ? `
                     <div class="item-actions">
                         <button class="btn-ghost btn-sm" data-action="edit" data-id="${c.id}">Editar</button>
                         <button class="btn-danger btn-sm" data-action="delete" data-id="${c.id}">Eliminar</button>
                     </div>
+                    ` : ''}
                 </div>
             </div>
         `).join('')}</div>
         <div class="costos-total"><strong>Total: ${formatCurrency(total)}</strong></div>`;
+
     } catch (err) {
         console.error('Error cargando costos:', err);
         container.innerHTML = '<p class="helper-text">Error al cargar costos.</p>';
