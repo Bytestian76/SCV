@@ -1338,6 +1338,15 @@
                         <div id="orden-mecanico-results" class="selector-results" role="listbox" aria-label="Resultados de mecanicos"></div>
                         <p id="orden-mecanico-selected" class="selector-selected">Sin mecánico asignado.</p>
                     </div>
+                    <div class="form-group" style="margin-top: -10px; margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="orden-es-tercero" style="width: auto; margin: 0;"> Es responsable externo / tercero (Otro)
+                        </label>
+                    </div>
+                    <div class="form-group" id="orden-responsable-externo-group" style="display: none;">
+                        <label for="orden-responsable-externo">Nombre del Responsable Externo</label>
+                        <input type="text" id="orden-responsable-externo" placeholder="Ej: Taller Mecánico Externo, Juan Pérez, etc.">
+                    </div>
                     <div class="form-group">
                         <label for="orden-hallazgo-id">Hallazgo relacionado</label>
                         <input type="hidden" id="orden-hallazgo-id" name="hallazgo_id">
