@@ -193,3 +193,135 @@ def obtener_dashboard_mecanico(
             for m in pendientes_lista
         ],
     }
+
+
+@router.get("/estadisticas-mantenimiento")
+def obtener_estadisticas_mantenimiento(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role(["admin", "jefe_mecanicos"])),
+):
+    """Estadísticas avanzadas de mantenimiento para gráficos y analíticas"""
+    from app.models.models import OrdenTrabajo, NuevaOrdenCosto, Vehiculo
+    from collections import defaultdict
+
+    # 1. Costo Total Acumulado
+    costo_total = db.query(func.coalesce(func.sum(NuevaOrdenCosto.valor_total), 0)).scalar() or 0
+
+    # 2. Costos por Vehículo
+    costos_vehiculo_raw = (
+        db.query(
+            Vehiculo.placa,
+            Vehiculo.marca,
+            Vehiculo.modelo,
+            func.sum(NuevaOrdenCosto.valor_total).label("total_gasto")
+        )
+        .join(OrdenTrabajo, OrdenTrabajo.vehiculo_id == Vehiculo.id)
+        .join(NuevaOrdenCosto, NuevaOrdenCosto.orden_id == OrdenTrabajo.id)
+        .group_by(Vehiculo.id)
+        .order_by(func.sum(NuevaOrdenCosto.valor_total).desc())
+        .all()
+    )
+    costos_por_vehiculo = [
+        {
+            "placa": row.placa,
+            "marca": row.marca,
+            "modelo": row.modelo,
+            "total_gasto": int(row.total_gasto)
+        }
+        for row in costos_vehiculo_raw
+    ]
+
+    # 3. Costos Mensuales (Últimos 12 meses)
+    costos_mes_raw = (
+        db.query(
+            func.strftime("%Y-%m", NuevaOrdenCosto.fecha).label("mes"),
+            func.sum(NuevaOrdenCosto.valor_total).label("total_gasto")
+        )
+        .group_by(func.strftime("%Y-%m", NuevaOrdenCosto.fecha))
+        .order_by(func.strftime("%Y-%m", NuevaOrdenCosto.fecha).asc())
+        .limit(12)
+        .all()
+    )
+    costos_por_mes = [
+        {
+            "mes": row.mes,
+            "total_gasto": int(row.total_gasto)
+        }
+        for row in costos_mes_raw
+    ]
+
+    # 4. Órdenes por Estado
+    estado_raw = (
+        db.query(OrdenTrabajo.estado, func.count(OrdenTrabajo.id))
+        .group_by(OrdenTrabajo.estado)
+        .all()
+    )
+    ordenes_por_estado = {str(row[0]): int(row[1]) for row in estado_raw}
+
+    # 5. Órdenes por Prioridad
+    prioridad_raw = (
+        db.query(OrdenTrabajo.prioridad, func.count(OrdenTrabajo.id))
+        .group_by(OrdenTrabajo.prioridad)
+        .all()
+    )
+    ordenes_por_prioridad = {str(row[0]): int(row[1]) for row in prioridad_raw}
+
+    # 6. Tiempo promedio entre mantenimientos (MTBM)
+    orders = (
+        db.query(OrdenTrabajo.vehiculo_id, OrdenTrabajo.fecha_creacion, OrdenTrabajo.fecha_cierre)
+        .filter(OrdenTrabajo.estado == "completada")
+        .order_by(OrdenTrabajo.vehiculo_id, OrdenTrabajo.fecha_creacion.asc())
+        .all()
+    )
+
+    vehicle_orders = defaultdict(list)
+    for o in orders:
+        if o.fecha_creacion and o.fecha_cierre:
+            vehicle_orders[o.vehiculo_id].append(o)
+
+    intervals = []
+    vehicle_intervals = {}
+    for veh_id, ords in vehicle_orders.items():
+        veh_intervals = []
+        ords_sorted = sorted(ords, key=lambda x: x.fecha_cierre)
+        for i in range(len(ords_sorted) - 1):
+            closure = ords_sorted[i].fecha_cierre
+            next_creation = ords_sorted[i+1].fecha_creacion
+            if next_creation > closure:
+                diff_hours = (next_creation - closure).total_seconds() / 3600.0
+                intervals.append(diff_hours)
+                veh_intervals.append(diff_hours)
+        if veh_intervals:
+            vehicle_intervals[veh_id] = sum(veh_intervals) / len(veh_intervals)
+
+    vehiculos_info = {}
+    if vehicle_intervals:
+        vehiculos_db = db.query(Vehiculo).filter(Vehiculo.id.in_(list(vehicle_intervals.keys()))).all()
+        for v in vehiculos_db:
+            avg_hours = vehicle_intervals[v.id]
+            vehiculos_info[v.id] = {
+                "placa": v.placa,
+                "marca": v.marca,
+                "modelo": v.modelo,
+                "promedio_horas": round(avg_hours, 1),
+                "promedio_dias": round(avg_hours / 24.0, 1)
+            }
+
+    promedio_global_horas = sum(intervals) / len(intervals) if intervals else 0.0
+    promedio_global_dias = promedio_global_horas / 24.0
+
+    tiempo_entre_mantenimiento = {
+        "promedio_global_dias": round(promedio_global_dias, 1),
+        "promedio_global_horas": round(promedio_global_horas, 1),
+        "vehiculos": sorted(list(vehiculos_info.values()), key=lambda x: x["promedio_dias"])
+    }
+
+    return {
+        "costo_total": int(costo_total),
+        "costos_por_vehiculo": costos_por_vehiculo,
+        "costos_por_mes": costos_por_mes,
+        "ordenes_por_estado": ordenes_por_estado,
+        "ordenes_por_prioridad": ordenes_por_prioridad,
+        "tiempo_entre_mantenimiento": tiempo_entre_mantenimiento
+    }
+
