@@ -20,9 +20,13 @@ cd "$REPO_DIR"
 
 # 1. Obtener cambios de GitLab
 echo "[1/5] Actualizando repositorio local desde GitLab..."
-git fetch origin
+git fetch origin --tags
 git checkout "$BRANCH"
-git reset --hard "origin/$BRANCH"
+if git show-ref --tags "$BRANCH" >/dev/null 2>&1; then
+    git reset --hard "$BRANCH"
+else
+    git reset --hard "origin/$BRANCH"
+fi
 
 # 2. Asegurar redes compartidas de Docker
 echo "[2/5] Verificando redes de Docker..."
@@ -31,6 +35,8 @@ docker network create scv-network 2>/dev/null || true
 
 # 3. Levantar/actualizar Gateway
 echo "[3/5] Desplegando e iniciando Gateway centralizada..."
+# Evitar conflictos eliminando el contenedor si ya existe
+docker rm -f vps-gateway 2>/dev/null || true
 docker compose -f docker-compose.gateway.vps.yml up -d
 
 # 4. Construir y levantar aplicación SCV
@@ -39,7 +45,10 @@ if [ ! -f scv-backend/.env ]; then
     echo "Creando archivo .env desde plantilla..."
     cp scv-backend/.env.example scv-backend/.env
 fi
+# Evitar conflictos eliminando los contenedores viejos
+docker rm -f scv-backend scv-frontend 2>/dev/null || true
 docker compose -f docker-compose.app.yml up -d --build
+
 
 # 5. Probar y Recargar Nginx + Limpiar imágenes huérfanas
 echo "[5/5] Verificando Nginx y liberando espacio..."
