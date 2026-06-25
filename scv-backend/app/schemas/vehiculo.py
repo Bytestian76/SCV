@@ -14,6 +14,7 @@ class VehiculoBase(BaseModel):
     kilometraje: int = 0
     fecha_venc_soat: Optional[date] = None
     fecha_venc_rtm: Optional[date] = None
+    especificaciones: Optional[str] = None
 
 
 class VehiculoCreate(VehiculoBase):

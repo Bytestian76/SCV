@@ -45,6 +45,7 @@ def listar_hallazgos(
     criticidad: Optional[str] = None,
     vehiculo_id: Optional[int] = None,
     origen: Optional[str] = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"])),
 ):
@@ -61,6 +62,14 @@ def listar_hallazgos(
         query = query.filter(Hallazgo.vehiculo_id == vehiculo_id)
     if origen:
         query = query.filter(Hallazgo.origen == origen)
+    if search:
+        from app.models.models import Vehiculo
+        search_term = f"%{search}%"
+        query = query.join(Hallazgo.vehiculo).filter(
+            (Hallazgo.descripcion.ilike(search_term)) |
+            (Hallazgo.observaciones.ilike(search_term)) |
+            (Vehiculo.placa.ilike(search_term))
+        )
     query = query.order_by(Hallazgo.fecha_creacion.desc())
     query = query.offset(skip).limit(limit)
     return [_build_hallazgo_response(h) for h in query.all()]

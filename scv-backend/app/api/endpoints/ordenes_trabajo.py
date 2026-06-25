@@ -26,6 +26,8 @@ def _build_orden_response(o: OrdenTrabajo) -> dict:
         "fecha_creacion": o.fecha_creacion,
         "fecha_inicio": o.fecha_inicio,
         "fecha_cierre": o.fecha_cierre,
+        "hora_inicio": o.hora_inicio,
+        "hora_fin": o.hora_fin,
         "hallazgo": {"id": o.hallazgo.id, "descripcion": o.hallazgo.descripcion} if o.hallazgo else None,
         "vehiculo": {"id": o.vehiculo.id, "placa": o.vehiculo.placa} if o.vehiculo else None,
         "responsable": {"id": o.responsable.id, "nombre": o.responsable.nombre} if o.responsable else None,
@@ -43,6 +45,7 @@ def listar_ordenes(
     prioridad: Optional[str] = None,
     vehiculo_id: Optional[int] = None,
     responsable_id: Optional[int] = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"])),
 ):
@@ -64,6 +67,13 @@ def listar_ordenes(
         query = query.filter(OrdenTrabajo.responsable_id == responsable_id)
     if current_user.rol == "mecanico":
         query = query.filter(OrdenTrabajo.responsable_id == current_user.id)
+    if search:
+        from app.models.models import Vehiculo
+        search_term = f"%{search}%"
+        query = query.join(OrdenTrabajo.vehiculo).filter(
+            (OrdenTrabajo.descripcion.ilike(search_term)) |
+            (Vehiculo.placa.ilike(search_term))
+        )
     query = query.order_by(OrdenTrabajo.fecha_creacion.desc())
     query = query.offset(skip).limit(limit)
     return [_build_orden_response(o) for o in query.all()]
@@ -108,11 +118,27 @@ def crear_orden(
         responsable_id=data.responsable_id,
         prioridad=data.prioridad,
         descripcion=data.descripcion,
+        hora_inicio=data.hora_inicio,
+        hora_fin=data.hora_fin,
     )
     hallazgo.estado = "convertido_orden"
     db.add(o)
     db.commit()
     db.refresh(o)
+
+    # Log creation in order history
+    from app.models.models import OrdenHistorial
+    hist = OrdenHistorial(
+        orden_id=o.id,
+        usuario_id=current_user.id,
+        accion="Creación de la orden de trabajo",
+        tabla="ordenes_trabajo",
+        campo="id",
+        valor_anterior=None,
+        valor_nuevo=str(o.id)
+    )
+    db.add(hist)
+    db.commit()
     o = db.query(OrdenTrabajo).options(
         joinedload(OrdenTrabajo.hallazgo),
         joinedload(OrdenTrabajo.vehiculo),
@@ -148,8 +174,60 @@ def actualizar_orden(
         o.descripcion = data.descripcion
     if data.fecha_inicio is not None:
         o.fecha_inicio = data.fecha_inicio
+    if data.hora_inicio is not None:
+        o.hora_inicio = data.hora_inicio
+    if data.hora_fin is not None:
+        o.hora_fin = data.hora_fin
     db.commit()
     db.refresh(o)
+    o = db.query(OrdenTrabajo).options(
+        joinedload(OrdenTrabajo.hallazgo),
+        joinedload(OrdenTrabajo.vehiculo),
+        joinedload(OrdenTrabajo.responsable),
+        joinedload(OrdenTrabajo.actividades),
+        joinedload(OrdenTrabajo.costos),
+        joinedload(OrdenTrabajo.evidencias),
+    ).filter(OrdenTrabajo.id == o.id).first()
+    return _build_orden_response(o)
+@router.put("/{orden_id}/estado", response_model=OrdenTrabajoResponse)
+def cambiar_estado_orden(
+    orden_id: int,
+    data: OrdenTrabajoUpdate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"])),
+):
+    o = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == orden_id).first()
+    if not o:
+        raise HTTPException(status_code=404, detail="Orden de trabajo no encontrada")
+    
+    # Mecanicos can only change state of their assigned orders
+    if current_user.rol == "mecanico" and o.responsable_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No tienes permiso para modificar esta orden")
+
+    if data.estado is not None:
+        estado_anterior = o.estado
+        o.estado = data.estado
+        if data.estado == "completada" and not o.fecha_cierre:
+            o.fecha_cierre = datetime.utcnow()
+        elif data.estado == "en_progreso" and not o.fecha_inicio:
+            o.fecha_inicio = datetime.utcnow()
+
+        # Log change in order history
+        from app.models.models import OrdenHistorial
+        hist = OrdenHistorial(
+            orden_id=orden_id,
+            usuario_id=current_user.id,
+            accion=f"Cambió el estado de '{estado_anterior}' a '{data.estado}'",
+            tabla="ordenes_trabajo",
+            campo="estado",
+            valor_anterior=estado_anterior,
+            valor_nuevo=data.estado
+        )
+        db.add(hist)
+
+    db.commit()
+    db.refresh(o)
+    
     o = db.query(OrdenTrabajo).options(
         joinedload(OrdenTrabajo.hallazgo),
         joinedload(OrdenTrabajo.vehiculo),

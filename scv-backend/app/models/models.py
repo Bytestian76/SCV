@@ -46,6 +46,7 @@ class Vehiculo(Base):
     kilometraje = Column(Integer, nullable=False, default=0)
     fecha_venc_soat = Column(Date, nullable=True)
     fecha_venc_rtm = Column(Date, nullable=True)
+    especificaciones = Column(Text, nullable=True) # JSON string: {"tipo_aceite": "...", "medida_llantas": "...", "bateria": "..."}
     activo = Column(Boolean, default=True)
 
     # Relaciones
@@ -323,6 +324,8 @@ class OrdenTrabajo(Base):
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     fecha_inicio = Column(DateTime, nullable=True)
     fecha_cierre = Column(DateTime, nullable=True)
+    hora_inicio = Column(String(10), nullable=True)
+    hora_fin = Column(String(10), nullable=True)
 
     hallazgo = relationship("Hallazgo", back_populates="orden_trabajo")
     vehiculo = relationship("Vehiculo")
