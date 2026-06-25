@@ -107,11 +107,13 @@ def crear_orden(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos"])),
 ):
-    hallazgo = db.query(Hallazgo).filter(Hallazgo.id == data.hallazgo_id).first()
-    if not hallazgo:
-        raise HTTPException(status_code=404, detail="Hallazgo no encontrado")
-    if hallazgo.estado != "evaluado":
-        raise HTTPException(status_code=400, detail="El hallazgo debe estar evaluado antes de crear una orden")
+    hallazgo = None
+    if data.hallazgo_id is not None:
+        hallazgo = db.query(Hallazgo).filter(Hallazgo.id == data.hallazgo_id).first()
+        if not hallazgo:
+            raise HTTPException(status_code=404, detail="Hallazgo no encontrado")
+        if hallazgo.estado != "evaluado":
+            raise HTTPException(status_code=400, detail="El hallazgo debe estar evaluado antes de crear una orden")
 
     o = OrdenTrabajo(
         hallazgo_id=data.hallazgo_id,
@@ -123,7 +125,8 @@ def crear_orden(
         hora_inicio=data.hora_inicio,
         hora_fin=data.hora_fin,
     )
-    hallazgo.estado = "convertido_orden"
+    if hallazgo:
+        hallazgo.estado = "convertido_orden"
     db.add(o)
     db.commit()
     db.refresh(o)

@@ -7,7 +7,7 @@ ESTADOS_ORDEN = ["pendiente", "asignada", "en_progreso", "pausada", "completada"
 
 
 class OrdenTrabajoBase(BaseModel):
-    hallazgo_id: int
+    hallazgo_id: Optional[int] = None
     vehiculo_id: int
     responsable_id: Optional[int] = None
     responsable_externo: Optional[str] = None
