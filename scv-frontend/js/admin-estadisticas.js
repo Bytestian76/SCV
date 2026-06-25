@@ -7,12 +7,15 @@ let chartCostosMensuales = null;
 let chartCostosVehiculo = null;
 let chartOrdenesEstado = null;
 let chartOrdenesPrioridad = null;
+let chartCostosTipo = null;
+let chartMecanicosProductividad = null;
 
 async function loadMantenimientoStats() {
     const tableBody = document.getElementById('stats-mtbm-table-body');
     const costoTotalCard = document.getElementById('stats-costo-total');
     const mtbmGlobalCard = document.getElementById('stats-mtbm-global');
     const totalOrdenesCard = document.getElementById('stats-total-ordenes');
+    const resolucionPromedioCard = document.getElementById('stats-resolucion-promedio');
 
     if (tableBody) tableBody.innerHTML = '<tr><td colspan="4" class="helper-text" style="text-align:center; padding: 20px;">Cargando datos...</td></tr>';
     
@@ -30,6 +33,12 @@ async function loadMantenimientoStats() {
         // Sumar total de órdenes completadas
         const totalCompletadas = stats.ordenes_por_estado?.completada || 0;
         if (totalOrdenesCard) totalOrdenesCard.textContent = totalCompletadas;
+
+        // Tiempo promedio de resolución
+        const resolucionHoras = stats.resolucion_promedio_horas || 0;
+        if (resolucionPromedioCard) {
+            resolucionPromedioCard.textContent = resolucionHoras > 0 ? `${resolucionHoras} hrs` : '0 hrs';
+        }
 
         // 2. Renderizar Tabla de MTBM por Vehículo
         if (tableBody) {
@@ -53,6 +62,8 @@ async function loadMantenimientoStats() {
         renderChartCostosVehiculo(stats.costos_por_vehiculo || []);
         renderChartOrdenesEstado(stats.ordenes_por_estado || {});
         renderChartOrdenesPrioridad(stats.ordenes_por_prioridad || {});
+        renderChartCostosTipo(stats.costos_por_tipo || {});
+        renderChartMecanicosProductividad(stats.ordenes_por_mecanico || []);
 
     } catch (error) {
         console.error('Error cargando estadísticas de mantenimiento:', error);
@@ -114,7 +125,6 @@ function renderChartCostosVehiculo(datos) {
         chartCostosVehiculo.destroy();
     }
 
-    // Mostrar los top 10 vehículos con mayor costo
     const topDatos = datos.slice(0, 10);
     const labels = topDatos.map(d => d.placa);
     const valores = topDatos.map(d => d.total_gasto);
@@ -246,6 +256,97 @@ function renderChartOrdenesPrioridad(datos) {
                 legend: {
                     position: 'right',
                     labels: { boxWidth: 15 }
+                }
+            }
+        }
+    });
+}
+
+function renderChartCostosTipo(datos) {
+    const ctx = document.getElementById('chart-costos-tipo');
+    if (!ctx) return;
+
+    if (chartCostosTipo) {
+        chartCostosTipo.destroy();
+    }
+
+    const labelsMap = {
+        'repuesto': 'Repuestos',
+        'mano_obra': 'Mano de Obra',
+        'herramienta': 'Herramientas',
+        'consumible': 'Consumibles',
+        'otro': 'Otros'
+    };
+
+    const colorsMap = {
+        'repuesto': '#17a2b8',
+        'mano_obra': '#6f42c1',
+        'herramienta': '#e83e8c',
+        'consumible': '#fd7e14',
+        'otro': '#6c757d'
+    };
+
+    const labels = Object.keys(datos).map(key => labelsMap[key] || key);
+    const valores = Object.values(datos);
+    const colores = Object.keys(datos).map(key => colorsMap[key] || '#cccccc');
+
+    chartCostosTipo = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: valores,
+                backgroundColor: colores,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { boxWidth: 15 }
+                }
+            }
+        }
+    });
+}
+
+function renderChartMecanicosProductividad(datos) {
+    const ctx = document.getElementById('chart-mecanicos-productividad');
+    if (!ctx) return;
+
+    if (chartMecanicosProductividad) {
+        chartMecanicosProductividad.destroy();
+    }
+
+    const labels = datos.map(d => d.nombre);
+    const valores = datos.map(d => d.total_completadas);
+
+    chartMecanicosProductividad = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Órdenes Completadas',
+                data: valores,
+                backgroundColor: 'rgba(40, 167, 69, 0.85)',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
                 }
             }
         }
