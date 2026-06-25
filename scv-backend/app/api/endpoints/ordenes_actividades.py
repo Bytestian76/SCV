@@ -59,11 +59,14 @@ def obtener_actividad(
 def crear_actividad(
     data: OrdenActividadCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos"])),
+    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"])),
 ):
     orden = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == data.orden_id).first()
     if not orden:
         raise HTTPException(status_code=404, detail="Orden de trabajo no encontrada")
+
+    if current_user.rol == "mecanico" and orden.responsable_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No tienes acceso a esta orden de trabajo")
 
     a = NuevaOrdenActividad(
         orden_id=data.orden_id,
@@ -93,8 +96,13 @@ def actualizar_actividad(
     a = db.query(NuevaOrdenActividad).filter(NuevaOrdenActividad.id == actividad_id).first()
     if not a:
         raise HTTPException(status_code=404, detail="Actividad no encontrada")
-    if current_user.rol == "mecanico" and a.responsable_id != current_user.id:
-        raise HTTPException(status_code=403, detail="No tienes acceso a esta actividad")
+
+    if current_user.rol == "mecanico":
+        orden = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == a.orden_id).first()
+        is_order_responsible = orden and orden.responsable_id == current_user.id
+        is_activity_responsible = a.responsable_id == current_user.id
+        if not (is_order_responsible or is_activity_responsible):
+            raise HTTPException(status_code=403, detail="No tienes acceso a esta actividad")
 
     if data.titulo is not None:
         a.titulo = data.titulo
@@ -126,11 +134,20 @@ def actualizar_actividad(
 def eliminar_actividad(
     actividad_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos"])),
+    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"])),
 ):
     a = db.query(NuevaOrdenActividad).filter(NuevaOrdenActividad.id == actividad_id).first()
     if not a:
         raise HTTPException(status_code=404, detail="Actividad no encontrada")
+
+    if current_user.rol == "mecanico":
+        orden = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == a.orden_id).first()
+        is_order_responsible = orden and orden.responsable_id == current_user.id
+        is_activity_responsible = a.responsable_id == current_user.id
+        if not (is_order_responsible or is_activity_responsible):
+            raise HTTPException(status_code=403, detail="No tienes acceso a esta actividad")
+
     db.delete(a)
     db.commit()
     return {"message": "Actividad eliminada"}
+
