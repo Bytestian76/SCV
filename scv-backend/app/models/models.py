@@ -318,6 +318,7 @@ class OrdenTrabajo(Base):
     hallazgo_id = Column(Integer, ForeignKey("hallazgos.id"), nullable=False, unique=True)
     vehiculo_id = Column(Integer, ForeignKey("vehiculos.id"), nullable=False)
     responsable_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    responsable_externo = Column(String(255), nullable=True)
     prioridad = Column(String(20), nullable=False, default="media")  # urgente, alta, media, baja
     estado = Column(String(30), nullable=False, default="pendiente")  # pendiente, asignada, en_progreso, pausada, completada, cancelada
     descripcion = Column(Text, nullable=True)
