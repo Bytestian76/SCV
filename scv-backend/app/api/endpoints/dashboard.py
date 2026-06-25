@@ -316,12 +316,59 @@ def obtener_estadisticas_mantenimiento(
         "vehiculos": sorted(list(vehiculos_info.values()), key=lambda x: x["promedio_dias"])
     }
 
+    # 7. Costos por Tipo de Gasto
+    costos_tipo_raw = (
+        db.query(
+            NuevaOrdenCosto.tipo_gasto,
+            func.sum(NuevaOrdenCosto.valor_total).label("total_gasto")
+        )
+        .group_by(NuevaOrdenCosto.tipo_gasto)
+        .all()
+    )
+    costos_por_tipo = {str(row.tipo_gasto): int(row.total_gasto) for row in costos_tipo_raw}
+
+    # 8. Tiempo promedio de resolución de órdenes (en horas)
+    resolucion_raw = (
+        db.query(OrdenTrabajo.fecha_creacion, OrdenTrabajo.fecha_cierre)
+        .filter(OrdenTrabajo.estado == "completada")
+        .all()
+    )
+    tiempos_resolucion = []
+    for o in resolucion_raw:
+        if o.fecha_creacion and o.fecha_cierre and o.fecha_cierre > o.fecha_creacion:
+            tiempos_resolucion.append((o.fecha_cierre - o.fecha_creacion).total_seconds() / 3600.0)
+    avg_resolucion_horas = sum(tiempos_resolucion) / len(tiempos_resolucion) if tiempos_resolucion else 0.0
+
+    # 9. Órdenes completadas por mecánico
+    from app.models.models import Usuario
+    mecanicos_raw = (
+        db.query(
+            Usuario.nombre,
+            func.count(OrdenTrabajo.id).label("total_completadas")
+        )
+        .join(OrdenTrabajo, OrdenTrabajo.responsable_id == Usuario.id)
+        .filter(OrdenTrabajo.estado == "completada")
+        .group_by(Usuario.id)
+        .all()
+    )
+    ordenes_por_mecanico = [
+        {
+            "nombre": row.nombre,
+            "total_completadas": int(row.total_completadas)
+        }
+        for row in mecanicos_raw
+    ]
+
     return {
         "costo_total": int(costo_total),
         "costos_por_vehiculo": costos_por_vehiculo,
         "costos_por_mes": costos_por_mes,
         "ordenes_por_estado": ordenes_por_estado,
         "ordenes_por_prioridad": ordenes_por_prioridad,
-        "tiempo_entre_mantenimiento": tiempo_entre_mantenimiento
+        "tiempo_entre_mantenimiento": tiempo_entre_mantenimiento,
+        "costos_por_tipo": costos_por_tipo,
+        "resolucion_promedio_horas": round(avg_resolucion_horas, 1),
+        "ordenes_por_mecanico": ordenes_por_mecanico
     }
+
 
