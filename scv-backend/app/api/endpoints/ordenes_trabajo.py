@@ -246,3 +246,22 @@ def cambiar_estado_orden(
         joinedload(OrdenTrabajo.evidencias),
     ).filter(OrdenTrabajo.id == o.id).first()
     return _build_orden_response(o)
+
+
+@router.delete("/{orden_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_orden(
+    orden_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(require_role(["admin"])),
+):
+    o = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == orden_id).first()
+    if not o:
+        raise HTTPException(status_code=404, detail="Orden de trabajo no encontrada")
+    
+    # Si la orden estaba vinculada a un hallazgo, revertimos el estado del hallazgo a 'evaluado'
+    if o.hallazgo:
+        o.hallazgo.estado = "evaluado"
+        
+    db.delete(o)
+    db.commit()
+
