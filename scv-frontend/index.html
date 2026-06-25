@@ -970,7 +970,7 @@
                     </button>
                 </div>
             </header>
-            <div class="dashboard-content stats-dashboard-layout" style="overflow-y: auto; max-height: calc(100vh - 70px); padding: 20px;">
+            <div class="dashboard-content stats-dashboard-layout" style="overflow-y: auto; max-height: calc(100vh - 70px); padding: 20px; max-width: 100% !important; width: 100% !important;">
                 <!-- Rack de KPIs -->
                 <div class="ops-kpi-rack" style="display: flex; gap: 15px; margin-bottom: 20px;">
                     <div class="stat-card" style="flex: 1; background: var(--bg-card, #ffffff); border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #1f6a43;">
@@ -979,16 +979,20 @@
                     </div>
                     <div class="stat-card" style="flex: 1; background: var(--bg-card, #ffffff); border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #0056b3;">
                         <span class="stat-number" id="stats-mtbm-global" style="font-size: 28px; font-weight: bold; display: block; color: #0056b3;">0 días</span>
-                        <span class="stat-label" style="font-size: 13px; color: var(--color-text-muted, #666);">Frecuencia de Mantenimiento Promedio (MTBM)</span>
+                        <span class="stat-label" style="font-size: 13px; color: var(--color-text-muted, #666);">Intervalo MTBM Promedio</span>
                     </div>
                     <div class="stat-card" style="flex: 1; background: var(--bg-card, #ffffff); border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #d39e00;">
                         <span class="stat-number" id="stats-total-ordenes" style="font-size: 28px; font-weight: bold; display: block; color: #d39e00;">0</span>
                         <span class="stat-label" style="font-size: 13px; color: var(--color-text-muted, #666);">Órdenes Completadas</span>
                     </div>
+                    <div class="stat-card" style="flex: 1; background: var(--bg-card, #ffffff); border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #28a745;">
+                        <span class="stat-number" id="stats-resolucion-promedio" style="font-size: 28px; font-weight: bold; display: block; color: #28a745;">0 hrs</span>
+                        <span class="stat-label" style="font-size: 13px; color: var(--color-text-muted, #666);">Resolución Promedio</span>
+                    </div>
                 </div>
 
                 <!-- Paneles de Gráficos -->
-                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 25px;">
                     <!-- Gráfico 1: Tendencia Mensual de Costos -->
                     <div class="chart-panel" style="background: var(--bg-card, #ffffff); border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                         <div class="chart-panel-head" style="font-weight: bold; font-size: 15px; margin-bottom: 15px; color: var(--color-text, #333);">Tendencia Mensual de Costos</div>
@@ -1020,7 +1024,24 @@
                             <canvas id="chart-ordenes-prioridad"></canvas>
                         </div>
                     </div>
+
+                    <!-- Gráfico 5: Distribución de Costos por Tipo de Gasto -->
+                    <div class="chart-panel" style="background: var(--bg-card, #ffffff); border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <div class="chart-panel-head" style="font-weight: bold; font-size: 15px; margin-bottom: 15px; color: var(--color-text, #333);">Distribución de Gastos por Categoría</div>
+                        <div class="chart-holder" style="position: relative; height: 260px; width: 100%;">
+                            <canvas id="chart-costos-tipo"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico 6: Órdenes Completadas por Mecánico -->
+                    <div class="chart-panel" style="background: var(--bg-card, #ffffff); border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <div class="chart-panel-head" style="font-weight: bold; font-size: 15px; margin-bottom: 15px; color: var(--color-text, #333);">Productividad: Órdenes Completadas por Mecánico</div>
+                        <div class="chart-holder" style="position: relative; height: 260px; width: 100%;">
+                            <canvas id="chart-mecanicos-productividad"></canvas>
+                        </div>
+                    </div>
                 </div>
+
 
                 <!-- Tabla de MTBM por Vehículo -->
                 <div class="table-panel" style="background: var(--bg-card, #ffffff); border-radius: 8px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;">
