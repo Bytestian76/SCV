@@ -20,6 +20,7 @@ def _build_orden_response(o: OrdenTrabajo) -> dict:
         "hallazgo_id": o.hallazgo_id,
         "vehiculo_id": o.vehiculo_id,
         "responsable_id": o.responsable_id,
+        "responsable_externo": o.responsable_externo,
         "prioridad": o.prioridad,
         "estado": o.estado,
         "descripcion": o.descripcion,
@@ -116,6 +117,7 @@ def crear_orden(
         hallazgo_id=data.hallazgo_id,
         vehiculo_id=data.vehiculo_id,
         responsable_id=data.responsable_id,
+        responsable_externo=data.responsable_externo,
         prioridad=data.prioridad,
         descripcion=data.descripcion,
         hora_inicio=data.hora_inicio,
@@ -162,7 +164,11 @@ def actualizar_orden(
         raise HTTPException(status_code=404, detail="Orden de trabajo no encontrada")
     if data.responsable_id is not None:
         o.responsable_id = data.responsable_id
-        if o.estado == "pendiente":
+        if data.responsable_id is not None and o.estado == "pendiente":
+            o.estado = "asignada"
+    if data.responsable_externo is not None:
+        o.responsable_externo = data.responsable_externo
+        if data.responsable_externo != "" and o.estado == "pendiente":
             o.estado = "asignada"
     if data.prioridad is not None:
         o.prioridad = data.prioridad
