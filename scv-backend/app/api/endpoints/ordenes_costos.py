@@ -84,11 +84,16 @@ def actualizar_costo(
     costo_id: int,
     data: OrdenCostoUpdate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos"])),
+    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"])),
 ):
     c = db.query(NuevaOrdenCosto).filter(NuevaOrdenCosto.id == costo_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Costo no encontrado")
+
+    if current_user.rol == "mecanico":
+        orden = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == c.orden_id).first()
+        if not orden or orden.responsable_id != current_user.id:
+            raise HTTPException(status_code=403, detail="No tienes acceso a este costo")
 
     if data.tipo_gasto is not None:
         c.tipo_gasto = data.tipo_gasto
@@ -116,11 +121,18 @@ def actualizar_costo(
 def eliminar_costo(
     costo_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos"])),
+    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"])),
 ):
     c = db.query(NuevaOrdenCosto).filter(NuevaOrdenCosto.id == costo_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Costo no encontrado")
+
+    if current_user.rol == "mecanico":
+        orden = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == c.orden_id).first()
+        if not orden or orden.responsable_id != current_user.id:
+            raise HTTPException(status_code=403, detail="No tienes acceso a este costo")
+
     db.delete(c)
     db.commit()
     return {"message": "Costo eliminado"}
+
