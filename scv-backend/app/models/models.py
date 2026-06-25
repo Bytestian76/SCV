@@ -315,7 +315,7 @@ class OrdenTrabajo(Base):
     __tablename__ = "ordenes_trabajo"
 
     id = Column(Integer, primary_key=True, index=True)
-    hallazgo_id = Column(Integer, ForeignKey("hallazgos.id"), nullable=False, unique=True)
+    hallazgo_id = Column(Integer, ForeignKey("hallazgos.id"), nullable=True, unique=True)
     vehiculo_id = Column(Integer, ForeignKey("vehiculos.id"), nullable=False)
     responsable_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     responsable_externo = Column(String(255), nullable=True)

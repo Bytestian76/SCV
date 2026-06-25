@@ -139,7 +139,7 @@ def apply_schema_updates():
         alter_statements.append("""
             CREATE TABLE ordenes_trabajo (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                hallazgo_id INTEGER NOT NULL UNIQUE REFERENCES hallazgos(id),
+                hallazgo_id INTEGER UNIQUE REFERENCES hallazgos(id),
                 vehiculo_id INTEGER NOT NULL REFERENCES vehiculos(id),
                 responsable_id INTEGER REFERENCES usuarios(id),
                 prioridad VARCHAR(20) NOT NULL DEFAULT 'media',
