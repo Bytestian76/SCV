@@ -158,6 +158,8 @@ def apply_schema_updates():
             alter_statements.append("ALTER TABLE ordenes_trabajo ADD COLUMN hora_inicio VARCHAR(10)")
         if "hora_fin" not in columnas_ot:
             alter_statements.append("ALTER TABLE ordenes_trabajo ADD COLUMN hora_fin VARCHAR(10)")
+        if "responsable_externo" not in columnas_ot:
+            alter_statements.append("ALTER TABLE ordenes_trabajo ADD COLUMN responsable_externo VARCHAR(255)")
 
     if "ordenes_actividades" not in tablas:
         alter_statements.append("""
