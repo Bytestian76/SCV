@@ -1055,11 +1055,34 @@
                             <input id="vh-rtm" name="fecha_venc_rtm" type="date">
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label for="vh-especificaciones">Especificaciones del Vehículo (Aceite, Llantas, etc.)</label>
+                        <textarea id="vh-especificaciones" name="especificaciones" placeholder="Ej: Aceite: Mobil Delvac 15W-40, Llantas: Bridgestone 215/75R17.5" rows="3" style="width: 100%; resize: vertical;"></textarea>
+                    </div>
                     <div class="form-actions">
                         <button type="submit" class="btn-primary btn-form-action">Guardar</button>
                         <button id="vehiculo-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Modal Historial de Mantenimientos del Vehículo -->
+        <div id="vehiculo-historial-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="vehiculo-historial-title">
+                <div class="modal-header">
+                    <h3 id="vehiculo-historial-title">Historial de Mantenimientos</h3>
+                    <button id="vehiculo-historial-close-btn" type="button" class="modal-close" aria-label="Cerrar">×</button>
+                </div>
+                <div class="modal-body" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+                    <div id="vehiculo-especificaciones-resumen" style="margin-bottom: 20px; padding: 15px; background: #eaf3ed; border-left: 4px solid #1f6a43; border-radius: 4px;">
+                        <strong>Especificaciones del carro:</strong>
+                        <p id="vh-especificaciones-texto" style="margin: 5px 0 0 0; color: #333; font-style: italic; white-space: pre-line;"></p>
+                    </div>
+                    <div id="vehiculo-historial-timeline" class="timeline-container">
+                        <!-- Carga dinámica del historial -->
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1236,6 +1259,8 @@
                     </div>
                     <input type="hidden" id="hallazgo-id" name="hallazgo_id">
                     <div class="form-actions">
+                        <button id="hallazgo-export-pdf-single-btn" type="button" class="btn-sm btn-export-pdf" style="display: none; margin-right: auto;">Exportar PDF</button>
+                        <button id="hallazgo-export-excel-single-btn" type="button" class="btn-sm btn-export-excel" style="display: none; margin-right: 10px;">Exportar Excel</button>
                         <button type="submit" class="btn-primary btn-form-action">Guardar</button>
                         <button id="hallazgo-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
                     </div>
@@ -1322,6 +1347,16 @@
                         <label for="orden-fecha-estimada">Fecha estimada de finalización</label>
                         <input type="date" id="orden-fecha-estimada" name="fecha_estimada">
                     </div>
+                    <div style="display: flex; gap: 15px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="orden-hora-inicio">Hora inicio estim. (e.g. 08:00)</label>
+                            <input type="time" id="orden-hora-inicio" name="hora_inicio">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="orden-hora-fin">Hora fin estim. (e.g. 17:00)</label>
+                            <input type="time" id="orden-hora-fin" name="hora_fin">
+                        </div>
+                    </div>
                     <input type="hidden" id="orden-id" name="orden_id">
                     <div class="form-actions">
                         <button type="submit" class="btn-primary btn-form-action">Guardar</button>
@@ -1338,6 +1373,8 @@
                     <h3 id="orden-detalle-title">Detalle de Orden</h3>
                     <button id="orden-detalle-close" type="button" class="modal-close" aria-label="Cerrar detalle">×</button>
                 </div>
+                <!-- Información general de la orden -->
+                <div id="orden-detalle-info" style="padding: 15px 20px 5px 20px;"></div>
                 <div class="orden-detalle-tabs">
                     <button class="orden-tab-btn active" data-tab="actividades">Actividades</button>
                     <button class="orden-tab-btn" data-tab="costos">Costos</button>
@@ -1348,14 +1385,14 @@
                     <div id="orden-detalle-actividades" class="orden-tab-content active">
                         <div class="management-toolbar">
                             <h4>Actividades</h4>
-                            <button id="actividad-nuevo-btn" type="button" class="btn-secondary btn-sm">Agregar</button>
+                            <button id="actividad-nuevo-btn" type="button" class="btn-primary btn-sm">Agregar</button>
                         </div>
                         <div id="orden-actividades-list" class="list-container"></div>
                     </div>
                     <div id="orden-detalle-costos" class="orden-tab-content">
                         <div class="management-toolbar">
                             <h4>Costos</h4>
-                            <button id="costo-nuevo-btn" type="button" class="btn-secondary btn-sm">Agregar</button>
+                            <button id="costo-nuevo-btn" type="button" class="btn-primary btn-sm">Agregar</button>
                         </div>
                         <div id="orden-costos-list" class="list-container"></div>
                     </div>
@@ -1363,10 +1400,21 @@
                         <div id="orden-evidencias-list" class="list-container"></div>
                     </div>
                     <div id="orden-detalle-historial" class="orden-tab-content">
+                        <div id="orden-vehiculo-especificaciones-resumen" style="margin-bottom: 15px; padding: 12px; background: #eaf3ed; border-left: 4px solid #1f6a43; border-radius: 4px; display: none;">
+                            <strong>Especificaciones del Vehículo:</strong>
+                            <p id="orden-vh-especificaciones-texto" style="margin: 5px 0 0 0; color: #333; font-style: italic; white-space: pre-line; font-size: 0.95em;"></p>
+                        </div>
+                        <h4 style="margin: 15px 0 10px 0; font-size: 1.05em; font-weight: bold;">Historial de Mantenimientos del Vehículo</h4>
+                        <div id="orden-vehiculo-historial-timeline" class="timeline-container" style="margin-bottom: 20px; max-height: 250px; overflow-y: auto;">
+                            <!-- Carga dinámica del historial del carro -->
+                        </div>
+                        <h4 style="margin: 15px 0 10px 0; font-size: 1.05em; font-weight: bold;">Historial de Cambios de esta Orden</h4>
                         <div id="orden-historial-list" class="list-container"></div>
                     </div>
                 </div>
                 <div class="form-actions">
+                    <button id="orden-export-pdf-single-btn" type="button" class="btn-sm btn-export-pdf" style="margin-right: auto;">Exportar PDF</button>
+                    <button id="orden-export-excel-single-btn" type="button" class="btn-sm btn-export-excel" style="margin-right: 10px;">Exportar Excel</button>
                     <button id="orden-detalle-accept" type="button" class="btn-ghost btn-form-action">Cerrar</button>
                 </div>
             </div>
@@ -1454,7 +1502,7 @@
 
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/app.js?v=20260624"></script>
     <script src="js/admin-vehiculos.js"></script>
     <script src="js/admin-conductores.js"></script>
     <script src="js/admin-usuarios.js"></script>
@@ -1462,10 +1510,10 @@
     <script src="js/admin-chequeos.js"></script>
     <script src="js/selectors.js"></script>
     <script src="js/operations.js"></script>
-    <script src="js/reports.js"></script>
+    <script src="js/reports.js?v=20260624"></script>
     <script src="js/notificaciones.js"></script>
     <script src="js/admin-hallazgos.js"></script>
-    <script src="js/admin-ordenes.js?v=20260610"></script>
+    <script src="js/admin-ordenes.js?v=20260624"></script>
     <script src="js/admin-dashboard-mecanico.js"></script>
 </body>
 </html>

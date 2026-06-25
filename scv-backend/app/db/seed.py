@@ -18,11 +18,34 @@ MAIN_USERS = [
         "password": "********",
         "rol": "mecanico",
     },
+    {
+        "nombre": "Jefe de Mantenimiento",
+        "email": "jefe",
+        "password": "********",
+        "rol": "jefe_mecanicos",
+    },
+    {
+        "nombre": "Administrador",
+        "email": "admin",
+        "password": "********",
+        "rol": "admin",
+    },
+    {
+        "nombre": "Operario Movimientos",
+        "email": "movimientos",
+        "password": "********",
+        "rol": "operario_movimientos",
+    },
+    {
+        "nombre": "Operario Chequeo",
+        "email": "chequeo",
+        "password": "********",
+        "rol": "operario_chequeo",
+    },
 ]
 
 
 def _ensure_main_users(db):
-    preserved_ids = [row.id for row in db.query(Usuario.id).all()]
     for user_data in MAIN_USERS:
         user = db.query(Usuario).filter(Usuario.email == user_data["email"]).first()
         if not user:
@@ -36,6 +59,7 @@ def _ensure_main_users(db):
             db.add(user)
             db.flush()
 
+    preserved_ids = [row.id for row in db.query(Usuario.id).all()]
     return preserved_ids
 
 

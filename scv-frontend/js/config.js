@@ -1,9 +1,17 @@
-// Configuración de la aplicación
 const API_HOST = window.location.hostname || 'localhost';
 const API_PROTOCOL = window.location.protocol === 'https:' ? 'https:' : 'http:';
 
+let api_port_str = '';
+if (window.location.port) {
+    if (window.location.port === '8082') {
+        api_port_str = ':9000'; // Desarrollo local sin Docker (scripts)
+    } else {
+        api_port_str = ':' + window.location.port; // Vía Gateway (Docker local/prod)
+    }
+}
+
 const CONFIG = {
-    API_URL: `${API_PROTOCOL}//${API_HOST}`,
+    API_URL: `${API_PROTOCOL}//${API_HOST}${api_port_str}`,
     API_VERSION: '/api/v1',
     
     // Tiempos
@@ -11,7 +19,7 @@ const CONFIG = {
     USER_KEY: 'scv_user',
     REMEMBER_KEY: 'scv_remember',
     DASHBOARD_SYNC_KEY: 'scv_dashboard_sync_tick',
-    ADMIN_REFRESH_INTERVAL_MS: 5000,
+    ADMIN_REFRESH_INTERVAL_MS: 30000,
     
     // Roles
     ROLES: {
