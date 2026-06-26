@@ -57,9 +57,9 @@ def obtener_vehiculo(
 def crear_vehiculo(
     vehiculo: VehiculoCreate,
     db: Session = Depends(get_db),
-    current_user = Depends(require_role(["admin"]))
+    current_user = Depends(require_role(["admin", "jefe_mecanicos"]))
 ):
-    """Crear nuevo vehículo (solo admin)"""
+    """Crear nuevo vehículo (admin o jefe_mecanicos)"""
     if vehiculo.kilometraje < 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -87,9 +87,9 @@ def actualizar_vehiculo(
     vehiculo_id: int,
     vehiculo_update: VehiculoUpdate,
     db: Session = Depends(get_db),
-    current_user = Depends(require_role(["admin"]))
+    current_user = Depends(require_role(["admin", "jefe_mecanicos"]))
 ):
-    """Actualizar vehículo (solo admin)"""
+    """Actualizar vehículo (admin o jefe_mecanicos)"""
     vehiculo = db.query(Vehiculo).filter(Vehiculo.id == vehiculo_id).first()
     
     if not vehiculo:
