@@ -1468,7 +1468,7 @@ function goBack() {
         return;
     }
 
-    if (current === 'admin-hallazgos' || current === 'admin-ordenes') {
+    if (current === 'admin-hallazgos' || current === 'admin-ordenes' || current === 'admin-estadisticas') {
         showDashboard(APP.user?.rol);
         return;
     }
