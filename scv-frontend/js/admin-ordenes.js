@@ -120,6 +120,11 @@ function handleOrdenesBtnClick(ordenId, action) {
 async function handleCambiarEstadoOrden(ordenId) {
     const orden = APP.admin.ordenes.find(o => o.id === ordenId);
     if (!orden) return;
+    
+    if (orden.estado === "completada") {
+        showAppAlert('Acción no permitida', 'No puedes cambiar el estado de una orden completada.');
+        return;
+    }
 
     const currentIndex = ESTADOS_ORDEN.indexOf(orden.estado);
     if (currentIndex === -1 || currentIndex >= ESTADOS_ORDEN.length - 1) {
