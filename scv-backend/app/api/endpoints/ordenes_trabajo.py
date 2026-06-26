@@ -209,6 +209,9 @@ def cambiar_estado_orden(
     if not o:
         raise HTTPException(status_code=404, detail="Orden de trabajo no encontrada")
     
+    if o.estado == "completada":
+        raise HTTPException(status_code=400, detail="No puedes cambiar el estado de una orden completada")
+    
     # Mecanicos can only change state of their assigned orders
     if current_user.rol == "mecanico" and o.responsable_id != current_user.id:
         raise HTTPException(status_code=403, detail="No tienes permiso para modificar esta orden")
@@ -257,6 +260,9 @@ def eliminar_orden(
     o = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == orden_id).first()
     if not o:
         raise HTTPException(status_code=404, detail="Orden de trabajo no encontrada")
+    
+    if o.estado == "completada":
+        raise HTTPException(status_code=400, detail="No puedes eliminar una orden completada")
     
     # Si la orden estaba vinculada a un hallazgo, revertimos el estado del hallazgo a 'evaluado'
     if o.hallazgo:

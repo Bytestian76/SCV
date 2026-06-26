@@ -75,8 +75,8 @@ async function renderOrdenesList() {
                         '<div class="item-actions">' +
                             '<button type="button" class="btn-ghost btn-sm" onclick="handleOrdenesBtnClick(' + item.id + ', \'view\')">Ver</button>' +
                             (isAdmin ? '<button type="button" class="btn-ghost btn-sm" onclick="handleOrdenesBtnClick(' + item.id + ', \'edit\')">Editar</button>' : '') +
-                            '<button type="button" class="btn-ghost btn-sm" onclick="handleOrdenesBtnClick(' + item.id + ', \'cambiar-estado\')">Cambiar Estado</button>' +
-                            (isAdmin ? '<button type="button" class="btn-danger btn-sm" onclick="handleOrdenesBtnClick(' + item.id + ', \'delete\')">Eliminar</button>' : '') +
+                            (item.estado === "completada" ? '<button type="button" class="btn-ghost btn-sm" disabled title="No puedes cambiar el estado de una orden completada">Cambiar Estado</button>' : '<button type="button" class="btn-ghost btn-sm" onclick="handleOrdenesBtnClick(' + item.id + ', \'cambiar-estado\')">Cambiar Estado</button>') +
+                            (isAdmin && item.estado !== "completada" ? '<button type="button" class="btn-danger btn-sm" onclick="handleOrdenesBtnClick(' + item.id + ', \'delete\')">Eliminar</button>' : '') +
                         '</div>' +
                     '</div>' +
                 '</div>'
@@ -622,7 +622,7 @@ async function openOrdenDetalleModal(ordenId) {
                         <span class="detalle-label">Estado</span>
                         <span class="detalle-value">
                             <span class="item-badge estado-${orden.estado}">${LABEL_ESTADO_O[orden.estado] || orden.estado}</span>
-                            ${isAdmin ? `<select id="orden-detalle-estado" class="estado-select">
+                            ${isAdmin ? `<select id="orden-detalle-estado" class="estado-select" ${orden.estado === 'completada' ? 'disabled title="No puedes cambiar el estado de una orden completada"' : ''}>
                                 <option value="pendiente" ${orden.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
                                 <option value="asignada" ${orden.estado === 'asignada' ? 'selected' : ''}>Asignada</option>
                                 <option value="en_progreso" ${orden.estado === 'en_progreso' ? 'selected' : ''}>En progreso</option>
