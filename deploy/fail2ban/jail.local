@@ -1,0 +1,12 @@
+[scv-auth]
+enabled = true
+port = http,https
+filter = scv-auth
+# Asegúrate de ajustar esta ruta según dónde guarde Docker sus logs JSON en tu sistema VPS
+logpath = /var/lib/docker/containers/*/*.log
+maxretry = 5
+# Tiempo de penalización: 10 minutos (600s), luego 1 hora (3600s), o según lo desees
+findtime = 600
+bantime = 3600
+# Ignorar IPs internas locales o del propio administrador si aplica
+ignoreip = 127.0.0.1/8 ::1
