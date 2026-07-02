@@ -1250,19 +1250,19 @@ function configureAdminAutoRefresh(rol) {
             if (!document.hidden && APP.currentScreen === 'dashboard-admin') {
                 loadDashboardData(CONFIG.ROLES.ADMIN);
             }
-        }, CONFIG.ADMIN_REFRESH_INTERVAL_MS || 5000);
+        }, CONFIG.ADMIN_REFRESH_INTERVAL_MS || 30000);
     } else if (rol === CONFIG.ROLES.JEFE_MECANICOS) {
         APP.ui.adminChartsInterval = setInterval(() => {
             if (!document.hidden && APP.currentScreen === 'dashboard-jefe-mecanicos') {
                 loadDashboardData(CONFIG.ROLES.JEFE_MECANICOS, true);
             }
-        }, 10000);
+        }, 30000);
     } else if (rol === CONFIG.ROLES.MECANICO) {
         APP.ui.adminChartsInterval = setInterval(() => {
             if (!document.hidden && APP.currentScreen === 'dashboard-mecanico') {
                 loadDashboardData(CONFIG.ROLES.MECANICO, true);
             }
-        }, 10000);
+        }, 30000);
     }
 }
 
