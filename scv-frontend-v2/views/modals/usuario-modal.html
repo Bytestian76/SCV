@@ -1,0 +1,82 @@
+<!-- Modal Usuario (Nuevo/Editar) -->
+<div id="usuario-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="usuario-form-title">
+        <div class="modal-header">
+            <h2 id="usuario-form-title">Nuevo usuario</h2>
+            <button id="usuario-close-btn" type="button" class="btn-close" aria-label="Cerrar formulario">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <form id="usuario-form" class="management-form">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="usr-nombre">Nombre completo *</label>
+                    <input id="usr-nombre" name="nombre" type="text" required maxlength="140" placeholder="Nombre del usuario">
+                </div>
+                <div class="form-group">
+                    <label for="usr-email">Usuario *</label>
+                    <input id="usr-email" name="email" type="text" required maxlength="160" placeholder="usuario o correo">
+                </div>
+                <div class="form-group">
+                    <label for="usr-rol">Rol *</label>
+                    <select id="usr-rol" name="rol" required>
+                        <option value="">Seleccione rol</option>
+                        <option value="admin">Admin</option>
+                        <option value="operario_movimientos">Operario Movimientos</option>
+                        <option value="operario_chequeo">Operario Chequeo</option>
+                        <option value="mecanico">Mecánico</option>
+                        <option value="jefe_mecanicos">Jefe de Mecánicos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="usr-password">Contraseña *</label>
+                    <input id="usr-password" name="password" type="password" minlength="6" placeholder="Mínimo 6 caracteres">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="usuario-cancel-btn" type="button" class="btn-secondary">Cancelar</button>
+                <button type="submit" class="btn-primary">
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Detalles del Usuario (VER) -->
+<div id="usuario-detalle-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="usuario-detalle-title">
+        <div class="modal-header">
+            <h2 id="usuario-detalle-title">Detalles del Usuario</h2>
+            <button id="usuario-detalle-close-btn" type="button" class="btn-close" aria-label="Cerrar detalles">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="detail-header-block">
+                <div class="detail-avatar">
+                    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </div>
+                <div>
+                    <div id="detalle-usr-nombre" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">Nombre Usuario</div>
+                    <div id="detalle-usr-estado" class="badge badge-success">Activo</div>
+                </div>
+            </div>
+
+            <div class="details-grid">
+                <div class="detail-item">
+                    <div class="detail-label">Usuario / Email</div>
+                    <div class="detail-value" id="detalle-usr-email">---</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Rol</div>
+                    <div class="detail-value" id="detalle-usr-rol">---</div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="usuario-detalle-close-btn2" type="button" class="btn-secondary">Cerrar</button>
+        </div>
+    </div>
+</div>

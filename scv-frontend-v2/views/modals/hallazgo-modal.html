@@ -1,0 +1,102 @@
+<!-- Modal Hallazgo (Crear/Editar) -->
+<div id="hallazgo-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="hallazgo-form-title">
+        <div class="modal-header">
+            <h2 id="hallazgo-form-title">Nuevo Hallazgo</h2>
+            <button id="hallazgo-close-btn" type="button" class="btn-close" aria-label="Cerrar formulario">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <form id="hallazgo-form" class="management-form">
+            <div class="modal-body">
+                <div class="form-group selector-search-group">
+                    <label for="hallazgo-vehiculo-search">Vehículo *</label>
+                    <input type="search" id="hallazgo-vehiculo-search" class="form-input" placeholder="Escribe placa, marca o modelo" autocomplete="off">
+                    <input type="hidden" id="hallazgo-vehiculo-id" name="vehiculo_id">
+                    <div id="hallazgo-vehiculo-results" class="selector-results" role="listbox" aria-label="Resultados de vehiculos"></div>
+                    <p id="hallazgo-vehiculo-selected" class="selector-selected">Sin vehículo seleccionado.</p>
+                </div>
+                 <div class="form-group" style="display:none">
+                    <input type="hidden" id="hallazgo-tipo" name="tipo" value="operacion">
+                </div>
+                <div class="form-group">
+                    <label for="hallazgo-categoria">Categoría *</label>
+                    <select id="hallazgo-categoria" name="categoria" class="form-input" required>
+                        <option value="">Seleccione categoría</option>
+                        <option value="motor">Motor</option>
+                        <option value="transmision">Transmisión</option>
+                        <option value="frenos">Frenos</option>
+                        <option value="suspension">Suspensión</option>
+                        <option value="electrico">Eléctrico</option>
+                        <option value="carroceria">Carrocería</option>
+                        <option value="neumaticos">Neumáticos</option>
+                        <option value="neumatica">Neumática</option>
+                        <option value="varias">Varias</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="hallazgo-prioridad">Prioridad *</label>
+                    <select id="hallazgo-prioridad" name="prioridad" class="form-input" required>
+                        <option value="baja">Baja</option>
+                        <option value="media">Media</option>
+                        <option value="alta">Alta</option>
+                        <option value="critica">Crítica</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="hallazgo-descripcion">Descripción *</label>
+                    <textarea id="hallazgo-descripcion" name="descripcion" class="form-input" rows="3" required placeholder="Describe el hallazgo"></textarea>
+                </div>
+                <input type="hidden" id="hallazgo-id" name="hallazgo_id">
+            </div>
+            <div class="modal-footer">
+                <button id="hallazgo-export-pdf-single-btn" type="button" class="btn-sm btn-export-pdf" style="display: none; margin-right: auto;">Exportar PDF</button>
+                <button id="hallazgo-export-excel-single-btn" type="button" class="btn-sm btn-export-excel" style="display: none; margin-right: auto;">Exportar Excel</button>
+                <button id="hallazgo-cancel-btn" type="button" class="btn-secondary">Cancelar</button>
+                <button type="submit" class="btn-primary">
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Evaluar Hallazgo -->
+<div id="hallazgo-evaluar-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="hallazgo-evaluar-title">
+        <div class="modal-header">
+            <h2 id="hallazgo-evaluar-title">Evaluar Hallazgo</h2>
+            <button id="hallazgo-evaluar-close-btn" type="button" class="btn-close" aria-label="Cerrar">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <form id="hallazgo-evaluar-form" class="management-form">
+            <div class="modal-body">
+                <div id="hallazgo-evaluar-info" class="chequeo-detalle-content" style="background: #f8faf9; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;"></div>
+                <div class="form-group">
+                    <label for="hallazgo-evaluar-estado">Decisión *</label>
+                    <select id="hallazgo-evaluar-estado" name="estado" class="form-input" required>
+                        <option value="">Seleccione decisión</option>
+                        <option value="evaluado">Marcar como Evaluado</option>
+                        <option value="convertido_orden">Convertir a Orden de Trabajo</option>
+                        <option value="descartado">Descartar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="hallazgo-evaluar-observaciones">Observaciones</label>
+                    <textarea id="hallazgo-evaluar-observaciones" name="observaciones" class="form-input" rows="3" placeholder="Observaciones de la evaluación"></textarea>
+                </div>
+                <input type="hidden" id="hallazgo-evaluar-id" name="hallazgo_id">
+            </div>
+            <div class="modal-footer">
+                <button id="hallazgo-evaluar-cancel-btn" type="button" class="btn-secondary">Cancelar</button>
+                <button type="submit" class="btn-primary">
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    Guardar Evaluación
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

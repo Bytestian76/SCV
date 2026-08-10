@@ -1,0 +1,21 @@
+<!-- Diálogos comunes y Loading Overlay -->
+<div id="app-dialog" class="modal-backdrop" aria-hidden="true">
+    <div class="modal app-dialog-window" role="dialog" aria-modal="true" aria-labelledby="dialog-title" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2 id="dialog-title">Notificación</h2>
+        </div>
+        <div class="modal-body">
+            <p id="dialog-message" class="dialog-message" style="margin:0; font-size: 1rem; color: var(--text-main);"></p>
+        </div>
+        <div class="modal-footer">
+            <button id="dialog-cancel" type="button" class="btn-secondary">Cancelar</button>
+            <button id="dialog-confirm" type="button" class="btn-primary">Aceptar</button>
+        </div>
+    </div>
+</div>
+
+<div id="loading" class="loading-overlay" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;">
+    <div class="spinner" style="width: 40px; height: 40px; border: 4px solid var(--gray-light); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <p style="font-weight: 700; color: var(--primary);">Cargando...</p>
+    <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+</div>

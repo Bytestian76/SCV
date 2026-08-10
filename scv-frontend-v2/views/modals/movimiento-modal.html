@@ -1,0 +1,96 @@
+<!-- Formulario de Registro de Movimiento -->
+<div id="movimiento-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="form-title">
+        <div class="modal-header">
+            <h2 id="form-title">Registro de Salida</h2>
+            <button id="movimiento-close-btn" type="button" class="btn-close" aria-label="Cerrar formulario">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <form id="movimiento-form" class="management-form movimiento-form-scroll">
+            <div class="modal-body">
+                <div class="form-group selector-search-group">
+                    <label for="mov-vehiculo-search">Vehículo *</label>
+                    <input type="search" id="mov-vehiculo-search" class="form-input" placeholder="Escribe placa, marca o modelo" autocomplete="off">
+                    <input type="hidden" id="vehiculo" name="vehiculo_id">
+                    <div id="mov-vehiculo-results" class="selector-results" role="listbox" aria-label="Resultados de vehiculos"></div>
+                    <p id="mov-vehiculo-selected" class="selector-selected">Sin vehículo seleccionado.</p>
+                </div>
+                <div class="form-group selector-search-group">
+                    <label for="mov-conductor-search">Conductor *</label>
+                    <input type="search" id="mov-conductor-search" class="form-input" placeholder="Escribe nombre o cedula" autocomplete="off">
+                    <input type="hidden" id="conductor" name="conductor_id">
+                    <div id="mov-conductor-results" class="selector-results" role="listbox" aria-label="Resultados de conductores"></div>
+                    <p id="mov-conductor-selected" class="selector-selected">Sin conductor seleccionado.</p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="kilometraje">Kilometraje *</label>
+                        <input type="number" id="kilometraje" name="kilometraje" class="form-input" required min="0" placeholder="Se completa al elegir vehiculo">
+                    </div>
+                    <div class="form-group">
+                        <label for="bascula">Báscula (si/no)</label>
+                        <input type="text" id="bascula" name="bascula" class="form-input" maxlength="3" placeholder="si o no">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="auxiliar">Auxiliar</label>
+                    <input type="text" id="auxiliar" name="auxiliar" class="form-input" placeholder="Nombre del auxiliar">
+                </div>
+                <div class="form-group">
+                    <label for="proveedor">Proveedor / Destino</label>
+                    <input type="text" id="proveedor" name="proveedor" class="form-input" placeholder="Destino o cliente">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="mov-soat">Vencimiento SOAT</label>
+                        <input type="date" id="mov-soat" class="form-input" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="mov-rtm">Vencimiento RTM</label>
+                        <input type="date" id="mov-rtm" class="form-input" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sacas">Sacas</label>
+                        <input type="number" id="sacas" name="sacas" class="form-input" min="0" placeholder="Cantidad de sacas">
+                    </div>
+                    <div class="form-group">
+                        <label for="cajon">Estado del Cajón</label>
+                        <input type="text" id="cajon" name="cajon" class="form-input" placeholder="Observación del cajón">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="observaciones">Observaciones</label>
+                    <textarea id="observaciones" name="observaciones" class="form-input" rows="3" placeholder="Observaciones adicionales"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="movimiento-cancel-btn" type="button" class="btn-secondary">Cancelar</button>
+                <button type="submit" class="btn-primary">
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Detalle de Movimiento -->
+<div id="movimiento-detalle-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="movimiento-detalle-title">
+        <div class="modal-header">
+            <h2 id="movimiento-detalle-title">Detalle de movimiento</h2>
+            <button id="movimiento-detalle-close" type="button" class="btn-close" aria-label="Cerrar detalle">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="modal-body" id="movimiento-detalle-content" style="padding-top: 1rem; padding-bottom: 1rem;">
+            <!-- Contenido dinámico del detalle de movimiento -->
+        </div>
+        <div class="modal-footer">
+            <button id="movimiento-detalle-accept" type="button" class="btn-primary">Cerrar</button>
+        </div>
+    </div>
+</div>
