@@ -27,6 +27,19 @@ services:
       - scv-network
       - vps-gateway
 
+  scv-frontend-v2:
+    build:
+      context: ./scv-frontend-v2
+    container_name: scv-frontend-v2
+    expose:
+      - "80"
+    volumes:
+      - ./scv-frontend-v2:/usr/share/nginx/html:ro
+    restart: unless-stopped
+    networks:
+      - scv-network
+      - vps-gateway
+
 volumes:
   scv-db:
 

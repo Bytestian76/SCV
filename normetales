@@ -41,13 +41,25 @@ require_docker() {
     fi
 }
 
+ensure_networks() {
+    require_docker
+    if ! docker network inspect scv-network >/dev/null 2>&1; then
+        echo "[normetales] Creando red docker: scv-network..."
+        docker network create scv-network >/dev/null 2>&1 || true
+    fi
+    if ! docker network inspect vps-gateway >/dev/null 2>&1; then
+        echo "[normetales] Creando red docker: vps-gateway..."
+        docker network create vps-gateway >/dev/null 2>&1 || true
+    fi
+}
+
 start_gateway() {
     if [[ ! -f "$GATEWAY_COMPOSE_FILE" ]]; then
         echo "[normetales] No se encontro el compose del gateway: $GATEWAY_COMPOSE_FILE"
         return 1
     fi
 
-    require_docker
+    ensure_networks
     docker compose -f "$GATEWAY_COMPOSE_FILE" up -d "$GATEWAY_SERVICE"
     echo "[normetales] gateway iniciado en http://localhost:8000"
 }
