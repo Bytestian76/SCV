@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablero de despacho - SCV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* SCV Official Palette from Image */
+            --primary: #1f6a43;
+            --primary-light: #2d8a53;
+            --secondary: #8abf5f;
+            --accent: #d4822f;
+            --bg-main: #f5f8f5;
+            --surface: #ffffff;
+            --text-main: #152118;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --danger-light: #fee2e2;
+            --danger-text: #dc2626;
+            
+            --font-family: 'Atkinson Hyperlegible', sans-serif;
+            --sidebar-width: 80px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem 0;
+            gap: 1.5rem;
+            z-index: 100;
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .menu-btn svg { width: 24px; height: 24px; }
+
+        .nav-item {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active {
+            background-color: var(--bg-main);
+            color: var(--primary);
+        }
+
+        .nav-item:not(.active):hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* MAIN CONTENT AREA */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 1.5rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* HEADER */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface);
+            padding: 1.25rem 2rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            border: 1px solid var(--border);
+        }
+
+        .app-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .btn-logout {
+            background: var(--danger-light);
+            color: var(--danger-text);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: 0.2s;
+        }
+        .btn-logout:hover { background: rgba(220, 38, 38, 0.1); }
+        .btn-logout svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2;}
+
+        /* DASHBOARD GRID */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: minmax(380px, 1fr) 2fr;
+            grid-template-rows: auto auto;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        /* CARDS GENERAL */
+        .card {
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        }
+
+        /* TOP LEFT: CENTRO DE MANDO */
+        .ops-command {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+        }
+
+        .ops-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .kicker {
+            color: var(--accent);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 0.25rem;
+        }
+
+        .ops-command h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--text-main);
+        }
+
+        .shield-icon {
+            width: 40px;
+            height: 40px;
+            background: #eaf3ed;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+        }
+
+        .main-kpi {
+            background: var(--primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            color: white;
+            box-shadow: 0 8px 16px rgba(31, 106, 67, 0.15);
+        }
+
+        .main-kpi-val { font-size: 3.5rem; font-weight: 700; line-height: 1; margin-bottom: 0.5rem; }
+        .main-kpi-label { font-size: 0.9rem; opacity: 0.9; }
+
+        .sub-kpis {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .sub-kpi-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .sub-kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sub-kpi-val { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+        .sub-kpi-icon {
+            width: 28px;
+            height: 28px;
+            background: #eaf3ed;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+        }
+        .sub-kpi-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;}
+
+        .sub-kpi-label { font-size: 0.75rem; color: var(--text-muted); line-height: 1.2; font-weight: 500;}
+
+        /* TOP RIGHT: LECTURA DINAMICA */
+        .analytics-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .analytics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analytics-header h2 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+
+        .analytics-controls { display: flex; align-items: center; gap: 1rem; }
+        .analytics-controls label { font-size: 0.85rem; color: var(--text-muted); }
+        .analytics-controls select {
+            border: 1px solid var(--border);
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            font-family: inherit;
+            color: var(--text-main);
+            outline: none;
+        }
+        .btn-outline {
+            border: 1px solid var(--secondary);
+            color: var(--primary);
+            background: transparent;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+        .btn-outline svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+
+        .chart-container {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-title { font-weight: 700; color: var(--primary); margin-bottom: 0.25rem; }
+        .chart-subtitle { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+
+        .bar-chart {
+            flex: 1;
+            background: #f8faf9;
+            border-radius: 8px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding: 1rem 1rem 0 1rem;
+            position: relative;
+        }
+
+        .bar-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            height: 100%;
+            justify-content: flex-end;
+            width: 40px;
+        }
+        .bar {
+            width: 24px;
+            background: var(--secondary);
+            border-radius: 4px 4px 0 0;
+            transition: 0.3s;
+        }
+        .bar:hover { background: var(--primary-light); }
+        .bar-label { font-size: 0.7rem; color: var(--text-muted); padding-bottom: 0.5rem; white-space: nowrap;}
+
+        /* BOTTOM LEFT: ESTADO GENERAL (DONUT) */
+        .status-panel { display: flex; flex-direction: column; gap: 1rem; }
+        .status-panel h3 { font-size: 1.1rem; color: var(--primary); font-weight: 700;}
+
+        .donut-wrap {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-top: 0.5rem;
+        }
+
+        .donut {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 16px solid var(--border);
+            border-top-color: var(--secondary);
+            border-right-color: var(--secondary);
+            border-bottom-color: var(--primary);
+            border-left-color: #eaf3ed;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(-45deg);
+        }
+        .donut span {
+            transform: rotate(45deg);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .legend { flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
+        .legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; font-weight: 500;}
+        .legend-label { display: flex; align-items: center; gap: 0.5rem; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot.c1 { background: var(--secondary); }
+        .dot.c2 { background: #eaf3ed; border: 1px solid var(--secondary); }
+        .dot.c3 { background: var(--accent); }
+
+        /* BOTTOM RIGHT: ACTIVIDAD RECIENTE */
+        .activity-panel { display: flex; flex-direction: column; gap: 1rem; }
+        .activity-panel h3 { font-size: 1.1rem; color: var(--primary); font-weight: 700;}
+
+        .activity-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .activity-item:last-child { border-bottom: none; }
+        .act-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .act-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;}
+        .act-icon.green { background: #eaf3ed; color: var(--primary); }
+        .act-icon.orange { background: #fdf3e7; color: var(--accent); }
+
+        .act-content { flex: 1; }
+        .act-title { font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+        .act-desc { font-size: 0.75rem; color: var(--text-muted); }
+        .act-time { font-size: 0.7rem; font-weight: 700; }
+        .time-green { color: var(--primary); }
+        .time-orange { color: var(--accent); }
+
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <button class="menu-btn">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        
+        <a href="#" class="nav-item active">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        </a>
+        <a href="#" class="nav-item">
+            <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+        </a>
+        <a href="#" class="nav-item">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </a>
+        <a href="#" class="nav-item">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </a>
+        <a href="#" class="nav-item">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        </a>
+        <a href="#" class="nav-item">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        </a>
+        <a href="#" class="nav-item">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        </a>
+    </aside>
+
+    <main class="main-content">
+        <header class="app-header">
+            <h1>Tablero de despacho</h1>
+            <button class="btn-logout">
+                <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Cerrar Sesión
+            </button>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- TOP LEFT -->
+            <div class="card ops-command">
+                <div class="ops-header">
+                    <div>
+                        <div class="kicker">ESTADO DEL TURNO</div>
+                        <h2>Centro de mando<br>de movilidad</h2>
+                    </div>
+                    <div class="shield-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+                    </div>
+                </div>
+                
+                <div class="main-kpi">
+                    <div class="main-kpi-val">42</div>
+                    <div class="main-kpi-label">Movimientos reportados hoy</div>
+                </div>
+
+                <div class="sub-kpis">
+                    <div class="sub-kpi-card">
+                        <div class="sub-kpi-header">
+                            <span class="sub-kpi-val">18</span>
+                            <div class="sub-kpi-icon">
+                                <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                            </div>
+                        </div>
+                        <span class="sub-kpi-label">Vehículos<br>Activos</span>
+                    </div>
+                    <div class="sub-kpi-card">
+                        <div class="sub-kpi-header">
+                            <span class="sub-kpi-val">12</span>
+                            <div class="sub-kpi-icon">
+                                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            </div>
+                        </div>
+                        <span class="sub-kpi-label">Conductores<br>en línea</span>
+                    </div>
+                    <div class="sub-kpi-card">
+                        <div class="sub-kpi-header">
+                            <span class="sub-kpi-val">35</span>
+                            <div class="sub-kpi-icon">
+                                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><polyline points="9 15 11 17 15 11"></polyline></svg>
+                            </div>
+                        </div>
+                        <span class="sub-kpi-label">Chequeos<br>del día</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOP RIGHT -->
+            <div class="card analytics-panel">
+                <div class="analytics-header">
+                    <h2>Lectura dinámica de operaciones</h2>
+                    <div class="analytics-controls">
+                        <label>Rango</label>
+                        <select>
+                            <option>Últimos 7 días</option>
+                        </select>
+                        <button class="btn-outline">
+                            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                            Actualizar gráfica
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Tendencia diaria</div>
+                    <div class="chart-subtitle">Movimientos y chequeos por día</div>
+                    <div class="bar-chart">
+                        <div class="bar-wrap"><div class="bar" style="height: 40%;"></div><span class="bar-label">Hace 7 días</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 45%;"></div><span class="bar-label">Hace 6 días</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 60%;"></div><span class="bar-label">Hace 5 días</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 70%;"></div><span class="bar-label">Hace 4 días</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 50%;"></div><span class="bar-label">Hace 3 días</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 45%;"></div><span class="bar-label">Hace 2 días</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 80%;"></div><span class="bar-label">Hoy</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM LEFT -->
+            <div class="card status-panel">
+                <h3>Estado general</h3>
+                <div class="donut-wrap">
+                    <div class="donut">
+                        <span>86%</span>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-label"><span class="dot c1"></span> Operaciones completadas</div>
+                            <span>86%</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-label"><span class="dot c2"></span> En progreso</div>
+                            <span>10%</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-label"><span class="dot c3"></span> Pendientes</div>
+                            <span>4%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM RIGHT -->
+            <div class="card activity-panel">
+                <h3>Actividad reciente</h3>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <div class="act-icon green">
+                            <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                        </div>
+                        <div class="act-content">
+                            <div class="act-title">Movimiento registrado</div>
+                            <div class="act-desc">VH-18 • Ingreso</div>
+                        </div>
+                        <div class="act-time time-green">Hace 10 min</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="act-icon green">
+                            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        </div>
+                        <div class="act-content">
+                            <div class="act-title">Conductor asignado</div>
+                            <div class="act-desc">Juan Pérez • VH-07</div>
+                        </div>
+                        <div class="act-time time-green">Hace 25 min</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="act-icon orange">
+                            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><polyline points="9 15 11 17 15 11"></polyline></svg>
+                        </div>
+                        <div class="act-content">
+                            <div class="act-title">Chequeo completado</div>
+                            <div class="act-desc">VH-02 • Preoperacional</div>
+                        </div>
+                        <div class="act-time time-orange">Hace 40 min</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</body>
+</html>

@@ -459,3 +459,6 @@ const API = {
         return await this.request('GET', `/ordenes-historial/?${params}`);
     },
 };
+
+export { API };
+window.API = API;

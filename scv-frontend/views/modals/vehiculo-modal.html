@@ -1,0 +1,76 @@
+<!-- Modal Vehículo (Nuevo/Editar) -->
+<div id="vehiculo-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="vehiculo-form-title">
+        <div class="modal-header">
+            <h3 id="vehiculo-form-title">Nuevo vehículo</h3>
+            <button id="vehiculo-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+        </div>
+        <form id="vehiculo-form" class="management-form">
+            <div class="form-group">
+                <label for="vh-placa">Placa *</label>
+                <input id="vh-placa" name="placa" type="text" required maxlength="20" placeholder="ABC123">
+            </div>
+            <div class="form-group">
+                <label for="vh-marca">Marca *</label>
+                <input id="vh-marca" name="marca" type="text" required maxlength="80" placeholder="Chevrolet">
+            </div>
+            <div class="form-group">
+                <label for="vh-modelo">Modelo *</label>
+                <input id="vh-modelo" name="modelo" type="text" required maxlength="80" placeholder="NHR">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="vh-anio">Año *</label>
+                    <input id="vh-anio" name="año" type="number" required min="1950" max="2100" placeholder="2022">
+                </div>
+                <div class="form-group">
+                    <label for="vh-kilometraje">Kilometraje actual *</label>
+                    <input id="vh-kilometraje" name="kilometraje" type="number" required min="0" placeholder="Ej: 125000">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="vh-empresa">Empresa</label>
+                    <input id="vh-empresa" name="empresa" type="text" maxlength="120" placeholder="Normetales S.A.S">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="vh-soat">Vencimiento SOAT</label>
+                    <input id="vh-soat" name="fecha_venc_soat" type="date">
+                </div>
+                <div class="form-group">
+                    <label for="vh-rtm">Vencimiento RTM</label>
+                    <input id="vh-rtm" name="fecha_venc_rtm" type="date">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="vh-especificaciones">Especificaciones del Vehículo (Aceite, Llantas, etc.)</label>
+                <textarea id="vh-especificaciones" name="especificaciones" placeholder="Ej: Aceite: Mobil Delvac 15W-40, Llantas: Bridgestone 215/75R17.5" rows="3" style="width: 100%; resize: vertical;"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-form-action">Guardar</button>
+                <button id="vehiculo-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Historial de Mantenimientos del Vehículo -->
+<div id="vehiculo-historial-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="vehiculo-historial-title">
+        <div class="modal-header">
+            <h3 id="vehiculo-historial-title">Historial de Mantenimientos</h3>
+            <button id="vehiculo-historial-close-btn" type="button" class="modal-close" aria-label="Cerrar">×</button>
+        </div>
+        <div class="modal-body" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+            <div id="vehiculo-especificaciones-resumen" style="margin-bottom: 20px; padding: 15px; background: #eaf3ed; border-left: 4px solid #1f6a43; border-radius: 4px;">
+                <strong>Especificaciones del carro:</strong>
+                <p id="vh-especificaciones-texto" style="margin: 5px 0 0 0; color: #333; font-style: italic; white-space: pre-line;"></p>
+            </div>
+            <div id="vehiculo-historial-timeline" class="timeline-container">
+                <!-- Carga dinámica del historial -->
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,81 @@
+<!-- Formulario de Registro de Movimiento -->
+<div id="movimiento-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal movimiento-modal-window" role="dialog" aria-modal="true" aria-labelledby="form-title">
+        <div class="modal-header">
+            <h3 id="form-title">Registro de Salida</h3>
+            <button id="movimiento-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+        </div>
+        <form id="movimiento-form" class="management-form movimiento-form-scroll">
+            <div class="form-group selector-search-group">
+                <label for="mov-vehiculo-search">Vehículo *</label>
+                <input type="search" id="mov-vehiculo-search" placeholder="Escribe placa, marca o modelo" autocomplete="off">
+                <input type="hidden" id="vehiculo" name="vehiculo_id">
+                <div id="mov-vehiculo-results" class="selector-results" role="listbox" aria-label="Resultados de vehiculos"></div>
+                <p id="mov-vehiculo-selected" class="selector-selected">Sin vehículo seleccionado.</p>
+            </div>
+            <div class="form-group selector-search-group">
+                <label for="mov-conductor-search">Conductor *</label>
+                <input type="search" id="mov-conductor-search" placeholder="Escribe nombre o cedula" autocomplete="off">
+                <input type="hidden" id="conductor" name="conductor_id">
+                <div id="mov-conductor-results" class="selector-results" role="listbox" aria-label="Resultados de conductores"></div>
+                <p id="mov-conductor-selected" class="selector-selected">Sin conductor seleccionado.</p>
+            </div>
+            <div class="form-group">
+                <label for="kilometraje">Kilometraje *</label>
+                <input type="number" id="kilometraje" name="kilometraje" required min="0" placeholder="Se completa al elegir vehiculo">
+            </div>
+            <div class="form-group">
+                <label for="auxiliar">Auxiliar</label>
+                <input type="text" id="auxiliar" name="auxiliar" placeholder="Nombre del auxiliar">
+            </div>
+            <div class="form-group">
+                <label for="proveedor">Proveedor / Destino</label>
+                <input type="text" id="proveedor" name="proveedor" placeholder="Destino o cliente">
+            </div>
+            <div class="form-group">
+                <label for="bascula">Bascula (si/no)</label>
+                <input type="text" id="bascula" name="bascula" maxlength="3" placeholder="si o no">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="mov-soat">Vencimiento SOAT</label>
+                    <input type="date" id="mov-soat" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="mov-rtm">Vencimiento RTM</label>
+                    <input type="date" id="mov-rtm" readonly>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="sacas">Sacas</label>
+                <input type="number" id="sacas" name="sacas" min="0" placeholder="Cantidad de sacas">
+            </div>
+            <div class="form-group">
+                <label for="cajon">Estado del Cajón</label>
+                <input type="text" id="cajon" name="cajon" placeholder="Observación del cajón">
+            </div>
+            <div class="form-group">
+                <label for="observaciones">Observaciones</label>
+                <textarea id="observaciones" name="observaciones" rows="3" placeholder="Observaciones adicionales"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-form-action">Guardar Registro</button>
+                <button id="movimiento-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Detalle de Movimiento -->
+<div id="movimiento-detalle-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="movimiento-detalle-title">
+        <div class="modal-header">
+            <h3 id="movimiento-detalle-title">Detalle de movimiento</h3>
+            <button id="movimiento-detalle-close" type="button" class="modal-close" aria-label="Cerrar detalle">×</button>
+        </div>
+        <div id="movimiento-detalle-content" class="chequeo-detalle-content"></div>
+        <div class="form-actions">
+            <button id="movimiento-detalle-accept" type="button" class="btn-primary btn-form-action">Cerrar</button>
+        </div>
+    </div>
+</div>

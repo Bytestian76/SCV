@@ -1,0 +1,72 @@
+<!-- Pantalla Gestión de Hallazgos -->
+<div id="admin-hallazgos" class="screen" data-module="admin-hallazgos">
+    <header class="app-header">
+        <button class="btn-back" onclick="goBack()">← Volver</button>
+        <h2>Gestión de Hallazgos</h2>
+        <div class="header-actions">
+            <button class="btn-logout" onclick="logout()">
+                <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+    </header>
+    <div class="dashboard-content admin-management-layout">
+        <section class="management-panel">
+            <div class="management-toolbar">
+                <h3>Hallazgos Registrados</h3>
+                <div class="toolbar-actions">
+                    <button id="hallazgo-nuevo-btn" type="button" class="btn-secondary">Nuevo Hallazgo</button>
+                    <button id="hallazgos-export-btn" type="button" class="btn-ghost" onclick="if(typeof exportHallazgosReport==='function')exportHallazgosReport();else console.warn('no exportHallazgosReport')">Exportar Excel</button>
+                    <button id="hallazgos-export-pdf-btn" type="button" class="btn-ghost" onclick="if(typeof exportHallazgosPdfReport==='function')exportHallazgosPdfReport();else console.warn('no exportHallazgosPdfReport')">Exportar PDF</button>
+                </div>
+            </div>
+            <p id="hallazgos-feedback" class="helper-text" aria-live="polite"></p>
+            <div class="management-filters">
+                <div class="form-group filter-search-group">
+                    <label for="hallazgos-search">Buscar</label>
+                    <input id="hallazgos-search" type="search" placeholder="Vehículo, descripción...">
+                </div>
+                <div class="filter-row">
+                    <div class="form-group">
+                        <label for="hallazgos-filtro-estado">Estado</label>
+                        <select id="hallazgos-filtro-estado">
+                            <option value="todas">Todas</option>
+                            <option value="abierto">Abierto</option>
+                            <option value="evaluado">Evaluado</option>
+                            <option value="convertido_orden">Convertido a Orden</option>
+                            <option value="descartado">Descartado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="hallazgos-filtro-prioridad">Prioridad</label>
+                        <select id="hallazgos-filtro-prioridad">
+                            <option value="todas">Todas</option>
+                            <option value="baja">Baja</option>
+                            <option value="media">Media</option>
+                            <option value="alta">Alta</option>
+                            <option value="critica">Crítica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="hallazgos-filtro-categoria">Categoría</label>
+                        <select id="hallazgos-filtro-categoria">
+                            <option value="todas">Todas</option>
+                            <option value="motor">Motor</option>
+                            <option value="transmision">Transmisión</option>
+                            <option value="frenos">Frenos</option>
+                            <option value="suspension">Suspensión</option>
+                            <option value="electrico">Eléctrico</option>
+                            <option value="carroceria">Carrocería</option>
+                            <option value="neumaticos">Neumáticos</option>
+                            <option value="neumatica">Neumática</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    <button id="hallazgos-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                </div>
+                <p id="hallazgos-results" class="helper-text filter-results" aria-live="polite"></p>
+            </div>
+            <div id="hallazgos-list" class="management-list"></div>
+        </section>
+    </div>
+</div>

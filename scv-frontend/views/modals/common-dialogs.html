@@ -1,0 +1,18 @@
+<!-- Diálogos comunes y Loading Overlay -->
+<div id="app-dialog" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window app-dialog-window" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+        <div class="modal-header">
+            <h3 id="dialog-title">Notificación</h3>
+        </div>
+        <p id="dialog-message" class="dialog-message"></p>
+        <div class="dialog-actions">
+            <button id="dialog-cancel" type="button" class="btn-ghost">Cancelar</button>
+            <button id="dialog-confirm" type="button" class="btn-primary btn-form-action">Aceptar</button>
+        </div>
+    </div>
+</div>
+
+<div id="loading" class="loading-overlay" style="display:none;">
+    <div class="spinner"></div>
+    <p>Cargando...</p>
+</div>

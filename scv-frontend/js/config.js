@@ -45,3 +45,7 @@ const CONFIG = {
 
 // URL completa de la API
 const API_BASE = CONFIG.API_URL + CONFIG.API_VERSION;
+
+export { CONFIG, API_BASE };
+window.CONFIG = CONFIG;
+window.API_BASE = API_BASE;

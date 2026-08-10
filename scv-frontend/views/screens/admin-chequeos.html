@@ -1,0 +1,50 @@
+<!-- Pantalla Historial de Chequeos (Admin) -->
+<div id="admin-chequeos" class="screen" data-module="admin-chequeos">
+    <header class="app-header">
+        <button class="btn-back" onclick="goBack()">← Volver</button>
+        <h2>Historial de Chequeos</h2>
+        <button class="btn-logout" onclick="logout()">
+            <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+            <span>Cerrar Sesión</span>
+        </button>
+    </header>
+    <div class="dashboard-content admin-management-layout">
+        <section class="management-panel">
+            <div class="management-toolbar">
+                <h3>Chequeos preoperacionales</h3>
+                <div class="toolbar-actions">
+                    <button id="chequeo-nuevo-btn" type="button" class="btn-secondary">Nuevo chequeo</button>
+                    <button id="chequeos-export-btn" type="button" class="btn-ghost">Exportar Excel</button>
+                    <button id="chequeos-export-pdf-btn" type="button" class="btn-ghost">Exportar PDF</button>
+                </div>
+            </div>
+            <p id="chequeos-feedback" class="helper-text" aria-live="polite"></p>
+            <div class="management-filters">
+                <div class="form-group filter-search-group">
+                    <label for="chequeos-search">Buscar chequeos</label>
+                    <input id="chequeos-search" type="search" placeholder="Placa, conductor, inspector o observaciones">
+                </div>
+                <div class="filter-row">
+                    <div class="form-group">
+                        <label for="chequeos-fecha-inicio">Fecha inicio</label>
+                        <input id="chequeos-fecha-inicio" type="date">
+                    </div>
+                    <div class="form-group">
+                        <label for="chequeos-fecha-fin">Fecha fin</label>
+                        <input id="chequeos-fecha-fin" type="date">
+                    </div>
+                    <div class="form-group">
+                        <label for="chequeos-orden">Ordenar por</label>
+                        <select id="chequeos-orden">
+                            <option value="fecha_desc">Recientes primero</option>
+                            <option value="fecha_asc">Antiguos primero</option>
+                        </select>
+                    </div>
+                    <button id="chequeos-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                </div>
+                <p id="chequeos-results" class="helper-text filter-results" aria-live="polite"></p>
+            </div>
+            <div id="chequeos-list" class="management-list"></div>
+        </section>
+    </div>
+</div>

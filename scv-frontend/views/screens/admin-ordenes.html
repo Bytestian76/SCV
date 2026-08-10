@@ -1,0 +1,59 @@
+<!-- Pantalla Gestión de Órdenes de Trabajo -->
+<div id="admin-ordenes" class="screen" data-module="admin-ordenes">
+    <header class="app-header">
+        <button class="btn-back" onclick="goBack()">← Volver</button>
+        <h2>Gestión de Órdenes</h2>
+        <div class="header-actions">
+            <button class="btn-logout" onclick="logout()">
+                <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+    </header>
+    <div class="dashboard-content admin-management-layout">
+        <section class="management-panel">
+            <div class="management-toolbar">
+                <h3>Órdenes de Trabajo</h3>
+                <div class="toolbar-actions">
+                    <button id="orden-nuevo-btn" type="button" class="btn-secondary">Nueva Orden</button>
+                    <button id="ordenes-export-btn" type="button" class="btn-ghost" onclick="if(typeof exportOrdenesReport==='function')exportOrdenesReport();else console.warn('no exportOrdenesReport')">Exportar Excel</button>
+                    <button id="ordenes-export-pdf-btn" type="button" class="btn-ghost" onclick="if(typeof exportOrdenesPdfReport==='function')exportOrdenesPdfReport();else console.warn('no exportOrdenesPdfReport')">Exportar PDF</button>
+                </div>
+            </div>
+            <p id="ordenes-feedback" class="helper-text" aria-live="polite"></p>
+            <div class="management-filters">
+                <div class="form-group filter-search-group">
+                    <label for="ordenes-search">Buscar</label>
+                    <input id="ordenes-search" type="search" placeholder="Vehículo, descripción...">
+                </div>
+                <div class="filter-row">
+                    <div class="form-group">
+                        <label for="ordenes-filtro-estado">Estado</label>
+                        <select id="ordenes-filtro-estado">
+                            <option value="todas">Todas</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="asignada">Asignada</option>
+                            <option value="en_progreso">En progreso</option>
+                            <option value="pausada">Pausada</option>
+                            <option value="completada">Completada</option>
+                            <option value="cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ordenes-filtro-prioridad">Prioridad</label>
+                        <select id="ordenes-filtro-prioridad">
+                            <option value="todas">Todas</option>
+                            <option value="baja">Baja</option>
+                            <option value="media">Media</option>
+                            <option value="alta">Alta</option>
+                            <option value="urgente">Urgente</option>
+                        </select>
+                    </div>
+                    <button id="ordenes-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                </div>
+                <p id="ordenes-results" class="helper-text filter-results" aria-live="polite"></p>
+            </div>
+            <div id="ordenes-list" class="management-list"></div>
+        </section>
+    </div>
+</div>

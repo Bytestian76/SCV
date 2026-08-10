@@ -1,0 +1,69 @@
+<!-- Pantalla Gestión de Usuarios (Admin) -->
+<div id="admin-usuarios" class="screen" data-module="admin-usuarios">
+    <header class="app-header">
+        <button class="btn-back" onclick="goBack()">← Volver</button>
+        <h2>Gestión de Usuarios</h2>
+        <button class="btn-logout" onclick="logout()">
+            <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+            <span>Cerrar Sesión</span>
+        </button>
+    </header>
+    <div class="dashboard-content admin-management-layout">
+        <section class="management-panel">
+            <div class="management-toolbar">
+                <h3>Usuarios del sistema</h3>
+                <div class="toolbar-actions">
+                    <button id="usuario-nuevo-btn" type="button" class="btn-secondary">Nuevo usuario</button>
+                    <button id="usuarios-export-btn" type="button" class="btn-ghost">Exportar Excel</button>
+                    <button id="usuarios-export-pdf-btn" type="button" class="btn-ghost">Exportar PDF</button>
+                </div>
+            </div>
+            <p id="usuarios-feedback" class="helper-text" aria-live="polite"></p>
+            <div class="management-filters">
+                <div class="form-group filter-search-group">
+                    <label for="usuarios-search">Buscar usuarios</label>
+                    <input id="usuarios-search" type="search" placeholder="Nombre, email o rol">
+                </div>
+                <div class="filter-row">
+                    <div class="form-group">
+                        <label for="usuarios-estado">Estado</label>
+                        <select id="usuarios-estado">
+                            <option value="todos">Todos</option>
+                            <option value="activos">Solo activos</option>
+                            <option value="inactivos">Solo inactivos</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="usuarios-rol">Rol</label>
+                        <select id="usuarios-rol">
+                            <option value="todos">Todos</option>
+                            <option value="admin">Admin</option>
+                            <option value="operario_movimientos">Operario Movimientos</option>
+                            <option value="operario_chequeo">Operario Chequeo</option>
+                            <option value="mecanico">Mecánico</option>
+                            <option value="jefe_mecanicos">Jefe de Mecánicos</option>
+                        </select>
+                    </div>
+                    <button id="usuarios-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                </div>
+                <div class="filter-row filter-row-secondary">
+                    <div class="form-group">
+                        <label for="usuarios-orden">Ordenar por</label>
+                        <select id="usuarios-orden">
+                            <option value="nombre_asc">Nombre (A-Z)</option>
+                            <option value="nombre_desc">Nombre (Z-A)</option>
+                            <option value="email_asc">Email (A-Z)</option>
+                            <option value="rol_asc">Rol (A-Z)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="usuarios-email-domain">Dominio de email</label>
+                        <input id="usuarios-email-domain" type="text" placeholder="Ej: normetales.com">
+                    </div>
+                </div>
+                <p id="usuarios-results" class="helper-text filter-results" aria-live="polite"></p>
+            </div>
+            <div id="usuarios-list" class="management-list"></div>
+        </section>
+    </div>
+</div>

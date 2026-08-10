@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas de Mantenimiento - SCV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* SCV Official Palette */
+            --primary: #1f6a43;
+            --primary-light: #2d8a53;
+            --secondary: #8abf5f;
+            --accent: #d4822f;
+            --bg-main: #f5f8f5;
+            --surface: #ffffff;
+            --text-main: #152118;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --danger: #dc2626;
+            --danger-light: #fee2e2;
+            --info: #0284c7;
+            --warning: #fbbf24;
+            --gray: #64748b;
+            
+            --font-family: 'Atkinson Hyperlegible', sans-serif;
+            --sidebar-width: 80px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem 0;
+            gap: 1.5rem;
+            z-index: 100;
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .menu-btn svg { width: 24px; height: 24px; }
+
+        .nav-item {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active { background-color: var(--bg-main); color: var(--primary); }
+        .nav-item:not(.active):hover { background-color: rgba(255, 255, 255, 0.1); }
+        .nav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+        /* MAIN CONTENT */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 1.5rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* HEADER */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface);
+            padding: 1.25rem 2rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            border: 1px solid var(--border);
+        }
+
+        .app-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-outline {
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            background: transparent;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-logout {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-logout svg, .btn-outline svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2;}
+
+        /* KPIS */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+        }
+        .kpi-card.c-green::before { background-color: var(--primary); }
+        .kpi-card.c-blue::before { background-color: var(--info); }
+        .kpi-card.c-yellow::before { background-color: var(--warning); }
+        .kpi-card.c-lightgreen::before { background-color: var(--primary-light); }
+
+        .kpi-val { font-size: 2rem; font-weight: 700; color: var(--primary); margin-left: 0.5rem;}
+        .kpi-card.c-blue .kpi-val { color: var(--info); }
+        .kpi-card.c-yellow .kpi-val { color: var(--warning); }
+        .kpi-card.c-lightgreen .kpi-val { color: var(--primary-light); }
+        
+        .kpi-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; margin-left: 0.5rem;}
+
+        /* CHARTS GRID */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            min-height: 320px;
+        }
+        
+        .card-title {
+            font-size: 1rem; 
+            font-weight: 700; 
+            color: var(--text-main);
+            text-transform: uppercase;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* FAKE BAR CHARTS */
+        .chart-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .y-axis {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding-right: 10px;
+        }
+        
+        .grid-lines {
+            position: absolute;
+            left: 30px;
+            right: 0;
+            top: 0;
+            bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 0;
+        }
+        
+        .grid-line {
+            width: 100%;
+            height: 1px;
+            background-color: var(--border);
+        }
+
+        .bars-area {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding-bottom: 30px; /* Space for x-axis */
+            height: 100%;
+        }
+
+        .bar-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+            width: 15%;
+        }
+
+        .bar {
+            width: 100%;
+            background: var(--secondary);
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .x-axis-label {
+            position: absolute;
+            bottom: 0;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* DONUT CHART */
+        .donut-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .donut {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 25px solid var(--primary); /* Completadas */
+            border-top-color: var(--danger); /* Canceladas */
+            border-left-color: var(--gray); /* Pendientes */
+            border-bottom-color: var(--warning); /* En progreso */
+            transform: rotate(-15deg);
+        }
+
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted);}
+        .legend-dot { width: 12px; height: 12px; }
+        .dot-danger { background: var(--danger); }
+        .dot-primary { background: var(--primary); }
+        .dot-warning { background: var(--warning); }
+        .dot-gray { background: var(--gray); }
+
+        /* GAUGE CHART (Half Donut) */
+        .gauge-container {
+            flex: 1;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            overflow: hidden;
+            padding-bottom: 1rem;
+        }
+
+        .gauge {
+            width: 200px;
+            height: 100px;
+            border-top-left-radius: 100px;
+            border-top-right-radius: 100px;
+            border: 40px solid var(--warning);
+            border-bottom: 0;
+            position: relative;
+        }
+        
+        .gauge::before {
+            content: '';
+            position: absolute;
+            left: -40px; top: -40px; right: 50%; bottom: 0;
+            border-top-left-radius: 100px;
+            border: 40px solid var(--danger);
+            border-right: 0; border-bottom: 0;
+        }
+        
+        .gauge-legend {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <button class="menu-btn">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <a href="#" class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></a>
+        <a href="#" class="nav-item"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg></a>
+        <a href="#" class="nav-item"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></a>
+        <a href="#" class="nav-item"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></a>
+        <a href="#" class="nav-item"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></a>
+        <a href="#" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></a>
+        <a href="#" class="nav-item"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></a>
+    </aside>
+
+    <main class="main-content">
+        <header class="app-header">
+            <h1>ESTADÍSTICAS DE MANTENIMIENTO</h1>
+            <div class="header-actions">
+                <button class="btn-outline">
+                    <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    VOLVER
+                </button>
+                <button class="btn-logout">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    CERRAR SESIÓN
+                </button>
+            </div>
+        </header>
+
+        <!-- KPI ROW -->
+        <div class="kpi-row">
+            <div class="kpi-card c-green">
+                <div class="kpi-val">$ 1.5M</div>
+                <div class="kpi-label">Costo Total Acumulado</div>
+            </div>
+            <div class="kpi-card c-blue">
+                <div class="kpi-val">45 d</div>
+                <div class="kpi-label">Intervalo MTBM Promedio</div>
+            </div>
+            <div class="kpi-card c-yellow">
+                <div class="kpi-val">12</div>
+                <div class="kpi-label">Órdenes Completadas</div>
+            </div>
+            <div class="kpi-card c-lightgreen">
+                <div class="kpi-val">4.5 hrs</div>
+                <div class="kpi-label">Resolución Promedio</div>
+            </div>
+        </div>
+
+        <!-- CHARTS GRID -->
+        <div class="dashboard-grid">
+            
+            <!-- Tendencia Mensual de Costos -->
+            <div class="card">
+                <div class="card-title">TENDENCIA MENSUAL DE COSTOS</div>
+                <div class="chart-container">
+                    <div class="y-axis"><span>$50k</span><span>$40k</span><span>$30k</span><span>$20k</span><span>$10k</span><span>$0</span></div>
+                    <div class="grid-lines">
+                        <div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div>
+                    </div>
+                    <div class="bars-area">
+                        <div class="bar-wrap"><div class="bar" style="height: 30%;"></div><span class="x-axis-label">Ene</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 50%;"></div><span class="x-axis-label">Feb</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 40%;"></div><span class="x-axis-label">Mar</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 80%;"></div><span class="x-axis-label">Abr</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 60%;"></div><span class="x-axis-label">May</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Costos Totales por Vehículo -->
+            <div class="card">
+                <div class="card-title">COSTOS TOTALES POR VEHÍCULO</div>
+                <div class="chart-container">
+                    <div class="y-axis"><span>$15k</span><span>$12k</span><span>$9k</span><span>$6k</span><span>$3k</span><span>$0</span></div>
+                    <div class="grid-lines">
+                        <div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div>
+                    </div>
+                    <div class="bars-area">
+                        <div class="bar-wrap"><div class="bar" style="height: 90%;"></div><span class="x-axis-label">VH-01</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 70%;"></div><span class="x-axis-label">VH-05</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 50%;"></div><span class="x-axis-label">VH-12</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 40%;"></div><span class="x-axis-label">VH-03</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 20%;"></div><span class="x-axis-label">VH-08</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribución de Órdenes por Estado -->
+            <div class="card">
+                <div class="card-title">DISTRIBUCIÓN DE ÓRDENES POR ESTADO</div>
+                <div class="donut-container">
+                    <div class="donut"></div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-dot dot-danger"></div>Canceladas (2)</div>
+                        <div class="legend-item"><div class="legend-dot dot-primary"></div>Completadas (12)</div>
+                        <div class="legend-item"><div class="legend-dot dot-warning"></div>En Progreso (4)</div>
+                        <div class="legend-item"><div class="legend-dot dot-gray"></div>Pendientes (1)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribución de Órdenes por Prioridad -->
+            <div class="card">
+                <div class="card-title">DISTRIBUCIÓN DE ÓRDENES POR PRIORIDAD</div>
+                <div class="gauge-container">
+                    <div class="gauge"></div>
+                </div>
+                <div class="gauge-legend">
+                    <div class="legend-item"><div class="legend-dot dot-danger"></div>Alta</div>
+                    <div class="legend-item"><div class="legend-dot dot-warning"></div>Media/Baja</div>
+                </div>
+            </div>
+
+            <!-- Distribución de Gastos por Categoría -->
+            <div class="card">
+                <div class="card-title">DISTRIBUCIÓN DE GASTOS POR CATEGORÍA</div>
+                <div class="chart-container">
+                    <div class="y-axis"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
+                    <div class="grid-lines">
+                        <div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div>
+                    </div>
+                    <div class="bars-area">
+                        <div class="bar-wrap"><div class="bar" style="height: 80%; background: var(--primary);"></div><span class="x-axis-label">Repuestos</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 50%; background: var(--info);"></div><span class="x-axis-label">Mano de Obra</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 20%; background: var(--warning);"></div><span class="x-axis-label">Servicios Ext.</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Productividad -->
+            <div class="card">
+                <div class="card-title">PRODUCTIVIDAD: ÓRDENES POR MECÁNICO</div>
+                <div class="chart-container">
+                    <div class="y-axis"><span>10</span><span>8</span><span>6</span><span>4</span><span>2</span><span>0</span></div>
+                    <div class="grid-lines">
+                        <div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div><div class="grid-line"></div>
+                    </div>
+                    <div class="bars-area">
+                        <div class="bar-wrap"><div class="bar" style="height: 90%;"></div><span class="x-axis-label">Carlos M.</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 60%;"></div><span class="x-axis-label">Luis G.</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 40%;"></div><span class="x-axis-label">Andrés T.</span></div>
+                        <div class="bar-wrap"><div class="bar" style="height: 20%;"></div><span class="x-axis-label">Roberto S.</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</body>
+</html>

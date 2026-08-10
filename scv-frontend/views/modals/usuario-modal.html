@@ -1,0 +1,38 @@
+<!-- Modal Usuario (Nuevo/Editar) -->
+<div id="usuario-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="usuario-form-title">
+        <div class="modal-header">
+            <h3 id="usuario-form-title">Nuevo usuario</h3>
+            <button id="usuario-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+        </div>
+        <form id="usuario-form" class="management-form">
+            <div class="form-group">
+                <label for="usr-nombre">Nombre completo *</label>
+                <input id="usr-nombre" name="nombre" type="text" required maxlength="140" placeholder="Nombre del usuario">
+            </div>
+            <div class="form-group">
+                <label for="usr-email">Usuario *</label>
+                <input id="usr-email" name="email" type="text" required maxlength="160" placeholder="usuario o correo">
+            </div>
+            <div class="form-group">
+                <label for="usr-rol">Rol *</label>
+                <select id="usr-rol" name="rol" required>
+                    <option value="">Seleccione rol</option>
+                    <option value="admin">Admin</option>
+                    <option value="operario_movimientos">Operario Movimientos</option>
+                    <option value="operario_chequeo">Operario Chequeo</option>
+                    <option value="mecanico">Mecánico</option>
+                    <option value="jefe_mecanicos">Jefe de Mecánicos</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="usr-password">Contraseña *</label>
+                <input id="usr-password" name="password" type="password" minlength="6" placeholder="Mínimo 6 caracteres">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-form-action">Guardar</button>
+                <button id="usuario-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>

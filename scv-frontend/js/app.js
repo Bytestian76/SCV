@@ -93,89 +93,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     await registerServiceWorker();
 });
 
-function normalizeUiText(value = '') {
-    return String(value)
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
 
-function resolveUnifiedButtonIcon(button, label) {
-    if (button.classList.contains('btn-back')) return 'assets/icons/box-arrow-in-left.svg';
-    if (label.includes('cerrar sesion')) return 'assets/icons/box-arrow-right.svg';
-    if (label.includes('iniciar sesion')) return 'assets/icons/box-arrow-right.svg';
-    if (label.includes('volver')) return 'assets/icons/box-arrow-in-left.svg';
-    if (label.includes('salida')) return 'assets/icons/box-arrow-up-right.svg';
-    if (label.includes('entrada')) return 'assets/icons/box-arrow-in-left.svg';
-    if (label.includes('historial') || label.includes('ver movimientos') || label.includes('ver chequeos')) return 'assets/icons/bar-chart-line.svg';
-    if (label.includes('vehiculo')) return 'assets/icons/truck.svg';
-    if (label.includes('conductor') || label.includes('usuario')) return 'assets/icons/people.svg';
-    if (label.includes('chequeo')) return 'assets/icons/clipboard-check.svg';
-    if (label.includes('buscar') || label.includes('filtro')) return 'assets/icons/search.svg';
-    if (label.includes('actualizar') || label.includes('refrescar')) return 'assets/icons/arrow-clockwise.svg';
-    if (label.includes('exportar') || label.includes('descargar')) return 'assets/icons/download.svg';
-    if (label.includes('cancelar') || label.includes('cerrar') || label.includes('limpiar')) return 'assets/icons/x-lg.svg';
-    if (label.includes('guardar') || label.includes('registrar') || label.includes('nuevo')) return 'assets/icons/plus-lg.svg';
+/* Extracted normalizeUiText */
 
-    if (button.classList.contains('btn-danger')) return 'assets/icons/x-lg.svg';
-    return 'assets/icons/search.svg';
-}
 
-function getUnifiedIconClass(button) {
-    if (button.classList.contains('action-btn')) return 'action-icon';
-    if (button.classList.contains('btn-large')) return 'btn-large-icon';
-    if (button.classList.contains('btn-back') || button.classList.contains('btn-logout')) return 'btn-icon';
-    return 'btn-inline-icon';
-}
 
-function decorateButtonWithIcon(button) {
-    if (!button || button.dataset.iconReady === 'true') return;
-    if (button.classList.contains('modal-close')) return;
-    if (button.classList.contains('selector-result-item')) return;
-    if (button.querySelector('img')) {
-        button.dataset.iconReady = 'true';
-        return;
-    }
+/* Extracted resolveUnifiedButtonIcon */
 
-    const label = normalizeUiText(button.textContent || '');
-    if (!label) return;
 
-    const iconPath = resolveUnifiedButtonIcon(button, label);
-    const icon = document.createElement('img');
-    icon.src = iconPath;
-    icon.alt = '';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.className = getUnifiedIconClass(button);
 
-    button.prepend(icon);
-    button.dataset.iconReady = 'true';
-}
+/* Extracted getUnifiedIconClass */
 
-function applyUnifiedButtonIcons(scope = document) {
-    const buttons = scope.querySelectorAll ? scope.querySelectorAll('button') : [];
-    buttons.forEach(decorateButtonWithIcon);
-}
 
-function initAdaptiveButtonIcons() {
-    applyUnifiedButtonIcons(document);
 
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-                if (!(node instanceof HTMLElement)) return;
-                if (node.matches('button')) {
-                    decorateButtonWithIcon(node);
-                    return;
-                }
-                applyUnifiedButtonIcons(node);
-            });
-        });
-    });
+/* Extracted decorateButtonWithIcon */
 
-    observer.observe(document.body, { childList: true, subtree: true });
-}
+
+
+/* Extracted applyUnifiedButtonIcons */
+
+
+
+/* Extracted initAdaptiveButtonIcons */
+
 
 // ============ SERVICE WORKER ============
 
@@ -186,24 +126,6 @@ async function registerServiceWorker() {
         APP.swRegistration = reg;
     } catch (err) {
         console.warn('Error al registrar Service Worker:', err);
-    }
-}
-
-function checkAuth() {
-    const token = localStorage.getItem(CONFIG.TOKEN_KEY);
-    const userJson = localStorage.getItem(CONFIG.USER_KEY);
-    
-    if (token && userJson) {
-        try {
-            const user = JSON.parse(userJson);
-            APP.token = token;
-            APP.user = user;
-            showDashboard(user.rol);
-        } catch (e) {
-            logout();
-        }
-    } else {
-        showScreen('login-screen');
     }
 }
 
@@ -1027,452 +949,73 @@ function setupEventListeners() {
 
 // ============ AUTENTICACIÓN ============
 
-async function handleLogin(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const remember = document.getElementById('remember').checked;
-    
-    const errorDiv = document.getElementById('login-error');
-    const btnText = document.querySelector('#login-form .btn-text');
-    const btnLoading = document.querySelector('#login-form .btn-loading');
-    
-    errorDiv.style.display = 'none';
-    btnText.style.display = 'none';
-    btnLoading.style.display = 'inline';
-    
-    try {
-        const response = await API.login(email, password);
-        
-        // Guardar datos
-        APP.token = response.access_token;
-        APP.user = response.user;
-        
-        localStorage.setItem(CONFIG.TOKEN_KEY, response.access_token);
-        localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(response.user));
-        
-        if (remember) {
-            localStorage.setItem(CONFIG.REMEMBER_KEY, 'true');
-        }
-        
-        // Mostrar dashboard según rol
-        showDashboard(response.user.rol);
 
-        // Iniciar notificaciones push y auto-refresh
-        if (typeof iniciarNotificaciones === 'function') {
-            iniciarNotificaciones(response.user);
-        }
-        
-    } catch (error) {
-        errorDiv.textContent = error.message || 'Credenciales inválidas';
-        errorDiv.style.display = 'block';
-    } finally {
-        btnText.style.display = 'inline';
-        btnLoading.style.display = 'none';
-    }
-}
+/* Extracted showScreen */
 
-async function logout(options = {}) {
-    const { revoke = true } = options;
-    const token = localStorage.getItem(CONFIG.TOKEN_KEY);
 
-    if (revoke && token) {
-        try {
-            await API.logout();
-        } catch (error) {
-            console.warn('No se pudo revocar token en backend:', error);
-        }
-    }
 
-    APP.token = null;
-    APP.user = null;
-    clearAdminAutoRefresh();
-    
-    localStorage.removeItem(CONFIG.TOKEN_KEY);
-    localStorage.removeItem(CONFIG.USER_KEY);
-    localStorage.removeItem(CONFIG.REMEMBER_KEY);
-    
-    // Detener push y notificaciones
-    if (typeof detenerNotificaciones === 'function') {
-        detenerNotificaciones();
-    }
-    
-    showScreen('login-screen');
-    document.getElementById('login-form').reset();
-}
+/* Extracted showDashboard */
 
-function forceLogoutByExpiredSession() {
-    logout({ revoke: false });
-}
 
-window.forceLogoutByExpiredSession = forceLogoutByExpiredSession;
 
-// ============ NAVEGACIÓN ============
+/* Extracted getRoleCredentialMeta */
 
-function showScreen(screenId) {
-    // Ocultar todas las pantallas
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-    
-    // Mostrar la pantalla deseada
-    const screen = document.getElementById(screenId);
-    if (screen) {
-        screen.classList.add('active');
-        APP.currentScreen = screenId;
-    }
-}
 
-function showDashboard(rol) {
-    const dashboardId = CONFIG.DASHBOARDS[rol];
-    if (dashboardId) {
-        showScreen(dashboardId);
-        renderUserCredentialCards();
-        configureAdminAutoRefresh(rol);
-        loadDashboardData(rol);
-    }
-}
 
-function getRoleCredentialMeta(rol) {
-    if (rol === CONFIG.ROLES.ADMIN) {
-        return {
-            className: 'is-admin',
-            icon: 'assets/icons/people.svg'
-        };
-    }
+/* Extracted renderUserCredentialCards */
 
-    if (rol === CONFIG.ROLES.OPERARIO_MOVIMIENTOS) {
-        return {
-            className: 'is-operario-movimientos',
-            icon: 'assets/icons/truck.svg'
-        };
-    }
 
-    if (rol === CONFIG.ROLES.OPERARIO_CHEQUEO) {
-        return {
-            className: 'is-operario-chequeo',
-            icon: 'assets/icons/clipboard-check.svg'
-        };
-    }
 
-    if (rol === CONFIG.ROLES.MECANICO) {
-        return {
-            className: 'is-mecanico',
-            icon: 'assets/icons/wrench.svg'
-        };
-    }
+/* Extracted shouldRefreshAdminDashboard */
 
-    if (rol === CONFIG.ROLES.JEFE_MECANICOS) {
-        return {
-            className: 'is-jefe-mecanicos',
-            icon: 'assets/icons/people.svg'
-        };
-    }
 
-    return {
-        className: 'is-admin',
-        icon: 'assets/icons/people.svg'
-    };
-}
 
-function renderUserCredentialCards() {
-    const cards = document.querySelectorAll('[data-user-credential]');
-    if (!cards.length) return;
+/* Extracted handleDashboardDataChangeEvent */
 
-    const user = APP.user || {};
-    const roleMeta = getRoleCredentialMeta(user.rol);
-    const roleText = rolLabel(user.rol);
-    const userName = (user.nombre || 'Usuario no identificado').trim();
-    const userEmail = (user.email || 'Sin correo registrado').trim();
 
-    cards.forEach((card) => {
-        card.classList.remove('is-admin', 'is-operario-movimientos', 'is-operario-chequeo');
-        card.classList.add(roleMeta.className);
 
-        const avatar = card.querySelector('[data-user-avatar]');
-        const name = card.querySelector('[data-user-name]');
-        const role = card.querySelector('[data-user-rol]');
-        const email = card.querySelector('[data-user-email]');
+/* Extracted handleDashboardStorageSync */
 
-        if (avatar) {
-            avatar.src = roleMeta.icon;
-            avatar.alt = `Perfil ${roleText}`;
-        }
-        if (name) name.textContent = userName;
-        if (role) role.textContent = roleText;
-        if (email) email.textContent = userEmail;
-    });
-}
 
-function shouldRefreshAdminDashboard() {
-    const rol = APP.user?.rol;
-    const screen = APP.currentScreen;
-    if (rol === CONFIG.ROLES.ADMIN && screen === 'dashboard-admin') return true;
-    if (rol === CONFIG.ROLES.JEFE_MECANICOS && screen === 'dashboard-jefe-mecanicos') return true;
-    if (rol === CONFIG.ROLES.MECANICO && screen === 'dashboard-mecanico') return true;
-    return false;
-}
 
-function handleDashboardDataChangeEvent() {
-    if (!shouldRefreshAdminDashboard()) return;
-    loadDashboardData(APP.user?.rol);
-}
+/* Extracted handleDashboardVisibilityChange */
 
-function handleDashboardStorageSync(event) {
-    if (event.key !== CONFIG.DASHBOARD_SYNC_KEY) return;
-    if (!shouldRefreshAdminDashboard()) return;
-    loadDashboardData(APP.user?.rol);
-}
 
-function handleDashboardVisibilityChange() {
-    if (document.hidden) return;
-    if (!shouldRefreshAdminDashboard()) return;
-    loadDashboardData(APP.user?.rol);
-}
 
-function handleDashboardWindowFocus() {
-    if (!shouldRefreshAdminDashboard()) return;
-    loadDashboardData(APP.user?.rol);
-}
+/* Extracted handleDashboardWindowFocus */
 
-function clearAdminAutoRefresh() {
-    if (APP.ui.adminChartsInterval) {
-        clearInterval(APP.ui.adminChartsInterval);
-        APP.ui.adminChartsInterval = null;
-    }
-}
 
-function configureAdminAutoRefresh(rol) {
-    clearAdminAutoRefresh();
-    if (rol === CONFIG.ROLES.ADMIN) {
-        APP.ui.adminChartsInterval = setInterval(() => {
-            if (!document.hidden && APP.currentScreen === 'dashboard-admin') {
-                loadDashboardData(CONFIG.ROLES.ADMIN);
-            }
-        }, CONFIG.ADMIN_REFRESH_INTERVAL_MS || 30000);
-    } else if (rol === CONFIG.ROLES.JEFE_MECANICOS) {
-        APP.ui.adminChartsInterval = setInterval(() => {
-            if (!document.hidden && APP.currentScreen === 'dashboard-jefe-mecanicos') {
-                loadDashboardData(CONFIG.ROLES.JEFE_MECANICOS, true);
-            }
-        }, 30000);
-    } else if (rol === CONFIG.ROLES.MECANICO) {
-        APP.ui.adminChartsInterval = setInterval(() => {
-            if (!document.hidden && APP.currentScreen === 'dashboard-mecanico') {
-                loadDashboardData(CONFIG.ROLES.MECANICO, true);
-            }
-        }, 30000);
-    }
-}
 
-async function loadDashboardData(rol, silent = false) {
-    try {
-        if (rol === CONFIG.ROLES.ADMIN) {
-            const requestSeq = ++APP.ui.adminDashboardRequestSeq;
-            const rangoSelect = document.getElementById('admin-chart-range');
-            const dias = parseInt(rangoSelect?.value || '7', 10);
-            const stats = await API.getDashboard(Number.isInteger(dias) ? dias : 7);
-            if (requestSeq !== APP.ui.adminDashboardRequestSeq) return;
-            document.getElementById('stat-vehiculos').textContent = stats.totales?.vehiculos_activos || 0;
-            document.getElementById('stat-conductores').textContent = stats.totales?.conductores_activos || 0;
-            document.getElementById('stat-movimientos').textContent = stats.totales?.movimientos_hoy || 0;
-            document.getElementById('stat-chequeos').textContent = stats.totales?.chequeos_hoy || 0;
-            renderAdminAnalytics(stats.analitica || null);
-        } else if (rol === CONFIG.ROLES.JEFE_MECANICOS) {
-            if (typeof loadJefeMecanicosDashboard === 'function') {
-                loadJefeMecanicosDashboard(silent);
-            }
-        } else if (rol === CONFIG.ROLES.MECANICO) {
-            if (typeof loadMecanicoDashboard === 'function') {
-                loadMecanicoDashboard(silent);
-            }
-        } else if (rol === CONFIG.ROLES.OPERARIO_MOVIMIENTOS) {
-            const movimientos = await API.getMovimientos();
-            renderMovimientosRecientes(movimientos.slice(0, 5));
-        } else if (rol === CONFIG.ROLES.OPERARIO_CHEQUEO) {
-            const chequeos = await API.getChequeos();
-            renderChequeosRecientes(chequeos.slice(0, 5));
-        }
-    } catch (error) {
-        console.error('Error cargando dashboard:', error);
-    }
-}
+/* Extracted clearAdminAutoRefresh */
 
-function navigate(section) {
-    if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.MECANICO, CONFIG.ROLES.JEFE_MECANICOS].includes(APP.user?.rol)) {
-        return;
-    }
 
-    closeChequeoForm();
-    closeMovimientoForm();
 
-    if (section === 'vehiculos') {
-        showScreen('admin-vehiculos');
-        closeVehiculoForm();
-        closeConductorForm();
-        closeUsuarioForm();
-        loadVehiculosManagement();
-        return;
-    }
+/* Extracted configureAdminAutoRefresh */
 
-    if (section === 'conductores') {
-        showScreen('admin-conductores');
-        closeConductorForm();
-        closeVehiculoForm();
-        closeUsuarioForm();
-        loadConductoresManagement();
-        return;
-    }
 
-    if (section === 'usuarios') {
-        showScreen('admin-usuarios');
-        closeUsuarioForm();
-        closeConductorForm();
-        closeVehiculoForm();
-        loadUsuariosManagement();
-        return;
-    }
 
-    if (section === 'chequeos') {
-        openChequeosPanel();
-        return;
-    }
+/* Extracted loadDashboardData */
 
-    if (section === 'movimientos') {
-        openMovimientosPanel();
-        return;
-    }
 
-    if (section === 'admin-hallazgos') {
-        if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.JEFE_MECANICOS].includes(APP.user?.rol)) {
-            showAppAlert('Acceso denegado', 'No tienes permisos para ver hallazgos.');
-            return;
-        }
-        showScreen('admin-hallazgos');
-        if (typeof loadHallazgosManagement === 'function') {
-            loadHallazgosManagement();
-        }
-        return;
-    }
 
-    if (section === 'admin-ordenes') {
-        if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.JEFE_MECANICOS, CONFIG.ROLES.MECANICO].includes(APP.user?.rol)) {
-            showAppAlert('Acceso denegado', 'No tienes permisos para ver órdenes.');
-            return;
-        }
-        showScreen('admin-ordenes');
-        if (typeof loadOrdenesManagement === 'function') {
-            loadOrdenesManagement();
-        }
-        return;
-    }
+/* Extracted navigate */
 
-    if (section === 'admin-estadisticas') {
-        if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.JEFE_MECANICOS].includes(APP.user?.rol)) {
-            showAppAlert('Acceso denegado', 'No tienes permisos para ver estadísticas.');
-            return;
-        }
-        showScreen('admin-estadisticas');
-        if (typeof loadMantenimientoStats === 'function') {
-            loadMantenimientoStats();
-        }
-        return;
-    }
 
-    showAppAlert('Módulo en construcción', `El módulo ${section} se habilitará en la siguiente iteración.`);
 
-}
+/* Extracted openChequeosPanel */
 
-function openChequeosPanel() {
-    if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.OPERARIO_CHEQUEO].includes(APP.user?.rol)) {
-        showAppAlert('Acceso denegado', 'No tienes permisos para ver el historial de chequeos.');
-        return;
-    }
 
-    showScreen('admin-chequeos');
-    closeUsuarioForm();
-    closeConductorForm();
-    closeVehiculoForm();
-    closeChequeoForm();
-    loadChequeosManagement();
-}
 
-function openMovimientosPanel() {
-    if (![CONFIG.ROLES.ADMIN, CONFIG.ROLES.OPERARIO_MOVIMIENTOS].includes(APP.user?.rol)) {
-        showAppAlert('Acceso denegado', 'No tienes permisos para ver el historial de movimientos.');
-        return;
-    }
+/* Extracted openMovimientosPanel */
 
-    showScreen('admin-movimientos');
-    closeUsuarioForm();
-    closeConductorForm();
-    closeVehiculoForm();
-    closeChequeoForm();
-    closeMovimientoForm();
-    closeChequeoDetalleModal();
-    closeMovimientoDetalleModal();
-    resetMovimientosFilters();
-}
 
-function showForm(type) {
-    APP.formType = type;
-    
-    if (type === 'salida' || type === 'entrada') {
-        APP.movimiento.returnScreen = APP.currentScreen || 'dashboard-movimientos';
-        document.getElementById('form-title').textContent =
-            type === 'salida' ? 'Registro de Salida' : 'Registro de Entrada';
-        loadSelectores();
-        toggleModal('movimiento-modal', true);
-    } else if (type === 'chequeo') {
-        APP.chequeo.returnScreen = APP.currentScreen || 'dashboard-chequeo';
-        loadSelectores();
-        loadFormularioChequeo();
-        toggleModal('chequeo-modal', true);
-    }
-}
 
-function goBack() {
-    const current = APP.currentScreen;
-    if (current.startsWith('form-')) {
-        // Volver al dashboard según rol
-        showDashboard(APP.user.rol);
-        return;
-    }
+/* Extracted showForm */
 
-    if (current === 'admin-vehiculos') {
-        closeVehiculoForm();
-        showDashboard(APP.user?.rol);
-        return;
-    }
 
-    if (current === 'admin-conductores') {
-        closeConductorForm();
-        showDashboard(APP.user?.rol);
-        return;
-    }
 
-    if (current === 'admin-usuarios') {
-        closeUsuarioForm();
-        showDashboard(APP.user?.rol);
-        return;
-    }
+/* Extracted goBack */
 
-    if (current === 'admin-chequeos') {
-        showDashboard(APP.user?.rol);
-        return;
-    }
-
-    if (current === 'admin-movimientos') {
-        showDashboard(APP.user?.rol);
-        return;
-    }
-
-    if (current === 'admin-hallazgos' || current === 'admin-ordenes' || current === 'admin-estadisticas') {
-        showDashboard(APP.user?.rol);
-        return;
-    }
-}
 
 function escapeHtml(value) {
     return String(value || '')
@@ -1564,303 +1107,37 @@ function formatApiTime(value, locale = 'es-CO') {
     return parsed.toLocaleTimeString(locale);
 }
 
-function renderAdminTrendChart(series) {
-    const container = document.getElementById('admin-trend-chart');
-    if (!container) return;
 
-    const labels = Array.isArray(series?.labels) ? series.labels : [];
-    const movimientos = Array.isArray(series?.movimientos) ? series.movimientos : [];
-    const chequeos = Array.isArray(series?.chequeos) ? series.chequeos : [];
+/* Extracted renderAdminTrendChart */
 
-    if (!labels.length || (!movimientos.length && !chequeos.length)) {
-        container.innerHTML = '<p class="empty-message">Sin datos suficientes para graficar tendencia.</p>';
-        return;
-    }
 
-    const width = 940;
-    const height = 380;
-    const plotArea = {
-        x: 62,
-        y: 22,
-        width: width - 82,
-        height: height - 76
-    };
 
-    const allValues = [...movimientos, ...chequeos].map((value) => Number(value || 0));
-    const rawMin = Math.min(...allValues);
-    const rawMax = Math.max(...allValues);
-    const buffer = Math.max(2, Math.round((rawMax - rawMin) * 0.12));
-    const minValue = rawMin === rawMax ? Math.max(0, rawMin - 5) : Math.max(0, rawMin - buffer);
-    const maxValue = rawMin === rawMax ? rawMax + 5 : rawMax + buffer;
+/* Extracted renderAdminTipoChart */
 
-    const movPoints = getTrendPoints(movimientos, plotArea, minValue, maxValue);
-    const chePoints = getTrendPoints(chequeos, plotArea, minValue, maxValue);
-    const movPath = pointsToSmoothPath(movPoints);
-    const chePath = pointsToSmoothPath(chePoints);
 
-    const movAreaPath = `${movPath} L ${movPoints[movPoints.length - 1].x.toFixed(2)} ${(plotArea.y + plotArea.height).toFixed(2)} L ${movPoints[0].x.toFixed(2)} ${(plotArea.y + plotArea.height).toFixed(2)} Z`;
 
-    const tickCount = 5;
-    const ticks = Array.from({ length: tickCount + 1 }, (_, step) => {
-        const ratio = step / tickCount;
-        const y = plotArea.y + (plotArea.height * ratio);
-        const value = maxValue - ((maxValue - minValue) * ratio);
-        return {
-            y,
-            value: formatCompactNumber(value)
-        };
-    });
+/* Extracted renderAdminTopVehiculosChart */
 
-    const gridLines = ticks
-        .map((tick) => `<line x1="${plotArea.x}" y1="${tick.y.toFixed(2)}" x2="${(plotArea.x + plotArea.width).toFixed(2)}" y2="${tick.y.toFixed(2)}" />`)
-        .join('');
 
-    const yLabels = ticks
-        .map((tick) => `<text class="trend-y-label" x="${(plotArea.x - 8).toFixed(2)}" y="${(tick.y + 4).toFixed(2)}" text-anchor="end">${tick.value}</text>`)
-        .join('');
 
-    const pointsMarkup = movPoints.map((point, index) => {
-        const label = labels[index] || '';
-        const movValue = movimientos[index] ?? 0;
-        const cheValue = chequeos[index] ?? 0;
-        return `
-            <circle class="trend-dot trend-dot-mov" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="4.8">
-                <title>${escapeHtml(label)} · Movimientos: ${movValue} · Chequeos: ${cheValue}</title>
-            </circle>
-            <circle class="trend-dot trend-dot-che" cx="${chePoints[index]?.x?.toFixed(2) || point.x.toFixed(2)}" cy="${chePoints[index]?.y?.toFixed(2) || point.y.toFixed(2)}" r="4.2">
-                <title>${escapeHtml(label)} · Chequeos: ${cheValue} · Movimientos: ${movValue}</title>
-            </circle>
-        `;
-    }).join('');
+/* Extracted renderAdminAnalytics */
 
-    const labelStep = Math.max(1, Math.ceil(labels.length / 6));
-    const xLabels = labels
-        .map((label, index) => ({ label, index }))
-        .filter(({ index }) => index === 0 || index === labels.length - 1 || index % labelStep === 0)
-        .map(({ label, index }) => {
-            const point = movPoints[index];
-            if (!point) return '';
-            let anchor = 'middle';
-            if (index === 0) anchor = 'start';
-            if (index === labels.length - 1) anchor = 'end';
-            return `<text class="trend-x-label" x="${point.x.toFixed(2)}" y="${(height - 10).toFixed(2)}" text-anchor="${anchor}">${escapeHtml(label)}</text>`;
-        })
-        .join('');
 
-    container.innerHTML = `
-        <svg class="trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Tendencia diaria de movimientos y chequeos">
-            <defs>
-                <linearGradient id="trendFillMov" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="rgba(43, 99, 240, 0.26)" />
-                    <stop offset="100%" stop-color="rgba(43, 99, 240, 0.03)" />
-                </linearGradient>
-            </defs>
-            <g class="trend-grid">${gridLines}</g>
-            ${yLabels}
-            <line class="trend-axis" x1="${plotArea.x}" y1="${(plotArea.y + plotArea.height).toFixed(2)}" x2="${(plotArea.x + plotArea.width).toFixed(2)}" y2="${(plotArea.y + plotArea.height).toFixed(2)}" />
-            <line class="trend-axis" x1="${plotArea.x}" y1="${plotArea.y}" x2="${plotArea.x}" y2="${(plotArea.y + plotArea.height).toFixed(2)}" />
-            <path class="trend-area trend-area-mov" d="${movAreaPath}" />
-            <path class="trend-line trend-line-mov" d="${movPath}" />
-            <path class="trend-line trend-line-che" d="${chePath}" />
-            ${pointsMarkup}
-            ${xLabels}
-        </svg>
-        <div class="trend-legend">
-            <span><i class="legend-dot mov"></i>Movimientos</span>
-            <span><i class="legend-dot che"></i>Chequeos</span>
-        </div>
-    `;
-}
 
-function renderAdminTipoChart(movimientosTipo) {
-    const container = document.getElementById('admin-tipo-chart');
-    if (!container) return;
+/* Extracted closeChequeoForm */
 
-    const entrada = Number(movimientosTipo?.entrada || 0);
-    const salida = Number(movimientosTipo?.salida || 0);
-    const total = entrada + salida;
 
-    if (total <= 0) {
-        container.innerHTML = '<p class="empty-message">Sin movimientos en el rango seleccionado.</p>';
-        return;
-    }
 
-    const porcentajeEntrada = Math.round((entrada / total) * 100);
+/* Extracted closeMovimientoForm */
 
-    container.innerHTML = `
-        <div class="donut-visual" style="--entrada:${porcentajeEntrada}%">
-            <div class="donut-center">
-                <strong>${total}</strong>
-                <span>movimientos</span>
-            </div>
-        </div>
-        <div class="donut-legend">
-            <p><i class="legend-dot entrada"></i>Entradas: ${entrada}</p>
-            <p><i class="legend-dot salida"></i>Salidas: ${salida}</p>
-        </div>
-    `;
-}
 
-function renderAdminTopVehiculosChart(topVehiculos) {
-    const container = document.getElementById('admin-top-vehiculos-chart');
-    if (!container) return;
 
-    const items = Array.isArray(topVehiculos) ? topVehiculos : [];
-    if (!items.length) {
-        container.innerHTML = '<p class="empty-message">Aun no hay vehiculos con actividad en este rango.</p>';
-        return;
-    }
+/* Extracted toggleModal */
 
-    const maxValue = Math.max(1, ...items.map((item) => Number(item.total || 0)));
-    container.innerHTML = items.map((item) => {
-        const value = Number(item.total || 0);
-        const width = Math.max(8, Math.round((value / maxValue) * 100));
-        return `
-            <div class="bar-item">
-                <div class="bar-item-header">
-                    <span>${escapeHtml(item.placa || 'Sin placa')}</span>
-                    <strong>${value}</strong>
-                </div>
-                <div class="bar-track">
-                    <div class="bar-fill" style="width:${width}%"></div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
 
-function renderAdminAnalytics(analitica) {
-    renderAdminTrendChart(analitica?.series || null);
-    renderAdminTipoChart(analitica?.movimientos_tipo || null);
-    renderAdminTopVehiculosChart(analitica?.top_vehiculos || null);
-}
 
-function closeChequeoForm() {
-    const form = document.getElementById('chequeo-form');
-    if (form) {
-        form.reset();
-    }
-    clearSelectorSelection('ch-vehiculo', true);
-    clearSelectorSelection('ch-conductor', true);
-    document.querySelectorAll('.check-option-btn.is-selected').forEach((btn) => {
-        btn.classList.remove('is-selected');
-    });
-    document.querySelectorAll('.chequeo-item-value').forEach((input) => {
-        input.value = '';
-    });
-    toggleModal('chequeo-modal', false);
-}
+/* Extracted handleEscapeKey */
 
-function closeMovimientoForm() {
-    const form = document.getElementById('movimiento-form');
-    if (form) {
-        form.reset();
-    }
-    APP.formType = null;
-    clearSelectorSelection('mov-vehiculo', true);
-    clearSelectorSelection('mov-conductor', true);
-    toggleModal('movimiento-modal', false);
-}
-
-function toggleModal(modalId, visible) {
-    const modal = document.getElementById(modalId);
-    if (!modal) return;
-
-    modal.classList.toggle('active', visible);
-    modal.setAttribute('aria-hidden', visible ? 'false' : 'true');
-
-    if (visible) {
-        document.body.classList.add('modal-open');
-    } else {
-        document.body.classList.remove('modal-open');
-    }
-}
-
-function handleEscapeKey(e) {
-    if (e.key !== 'Escape') return;
-
-    const dialog = document.getElementById('app-dialog');
-    if (dialog?.classList.contains('active')) {
-        resolveDialog(false);
-        return;
-    }
-
-    const vehiculoModal = document.getElementById('vehiculo-modal');
-    if (vehiculoModal?.classList.contains('active')) {
-        closeVehiculoForm();
-        return;
-    }
-
-    const conductorModal = document.getElementById('conductor-modal');
-    if (conductorModal?.classList.contains('active')) {
-        closeConductorForm();
-        return;
-    }
-
-    const usuarioModal = document.getElementById('usuario-modal');
-    if (usuarioModal?.classList.contains('active')) {
-        closeUsuarioForm();
-        return;
-    }
-
-    const chequeoModal = document.getElementById('chequeo-modal');
-    if (chequeoModal?.classList.contains('active')) {
-        closeChequeoForm();
-        return;
-    }
-
-    const movimientoModal = document.getElementById('movimiento-modal');
-    if (movimientoModal?.classList.contains('active')) {
-        closeMovimientoForm();
-        return;
-    }
-
-    const chequeoDetalleModal = document.getElementById('chequeo-detalle-modal');
-    if (chequeoDetalleModal?.classList.contains('active')) {
-        closeChequeoDetalleModal();
-        return;
-    }
-
-    const movimientoDetalleModal = document.getElementById('movimiento-detalle-modal');
-    if (movimientoDetalleModal?.classList.contains('active')) {
-        closeMovimientoDetalleModal();
-    }
-
-    const hallazgoModal = document.getElementById('hallazgo-modal');
-    if (hallazgoModal?.classList.contains('active')) {
-        closeHallazgoForm();
-        return;
-    }
-
-    const hallazgoEvaluarModal = document.getElementById('hallazgo-evaluar-modal');
-    if (hallazgoEvaluarModal?.classList.contains('active')) {
-        closeHallazgoEvaluarModal();
-        return;
-    }
-
-    const ordenModal = document.getElementById('orden-modal');
-    if (ordenModal?.classList.contains('active')) {
-        closeOrdenForm();
-        return;
-    }
-
-    const ordenDetalleModal = document.getElementById('orden-detalle-modal');
-    if (ordenDetalleModal?.classList.contains('active')) {
-        closeOrdenDetalleModal();
-        return;
-    }
-
-    const actividadModal = document.getElementById('actividad-modal');
-    if (actividadModal?.classList.contains('active')) {
-        closeActividadForm();
-        return;
-    }
-
-    const costoModal = document.getElementById('costo-modal');
-    if (costoModal?.classList.contains('active')) {
-        closeCostoForm();
-    }
-}
 
 function openDialog({
     title = 'Notificación',
@@ -1891,73 +1168,29 @@ function openDialog({
     });
 }
 
-function resolveDialog(result) {
-    toggleModal('app-dialog', false);
 
-    if (APP.ui.dialogResolver) {
-        const resolver = APP.ui.dialogResolver;
-        APP.ui.dialogResolver = null;
-        resolver(result);
-    }
-}
+/* Extracted resolveDialog */
 
-async function showAppAlert(title, message) {
-    await openDialog({ title, message, confirmText: 'Entendido', showCancel: false });
-}
 
-function showDialogHTML(title, html) {
-    const dialog = document.getElementById('app-dialog');
-    if (!dialog) return;
-    document.getElementById('dialog-title').textContent = title;
-    const msg = document.getElementById('dialog-message');
-    const actions = dialog.querySelector('.dialog-actions');
-    msg.innerHTML = html;
-    msg.style.display = 'block';
-    if (actions) actions.style.display = 'none';
-    dialog.style.display = 'flex';
-    document.body.classList.add('modal-open');
 
-    const closeHandler = () => {
-        dialog.style.display = 'none';
-        document.body.classList.remove('modal-open');
-        msg.innerHTML = '';
-        msg.style.display = '';
-        if (actions) actions.style.display = '';
-        dialog.querySelector('#dialog-cancel')?.removeEventListener('click', closeHandler);
-        dialog.querySelector('#dialog-confirm')?.removeEventListener('click', closeHandler);
-        dialog.removeEventListener('click', overlayHandler);
-    };
-    const overlayHandler = (e) => {
-        if (e.target === dialog) closeHandler();
-    };
-    dialog.querySelector('#dialog-cancel')?.addEventListener('click', closeHandler);
-    dialog.querySelector('#dialog-confirm')?.addEventListener('click', closeHandler);
-    dialog.addEventListener('click', overlayHandler);
-}
+/* Extracted showAppAlert */
 
-async function showAppConfirm(title, message) {
-    return await openDialog({
-        title,
-        message,
-        confirmText: 'Confirmar',
-        cancelText: 'Cancelar',
-        showCancel: true
-    });
-}
 
-function normalizeText(value) {
-    return String(value || '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase();
-}
 
-function normalizeSiNo(value) {
-    const normalized = normalizeText(value).trim();
-    if (!normalized) return null;
-    if (normalized === 'si' || normalized === 'no') return normalized;
-    return null;
-}
+/* Extracted showDialogHTML */
+
+
+
+/* Extracted showAppConfirm */
+
+
+
+/* Extracted normalizeText */
+
+
+
+/* Extracted normalizeSiNo */
+
 
 function syncVehiculoFechasToFields(vehiculo, { kilometrajeFieldId, soatFieldId, rtmFieldId }) {
     const kilometrajeField = document.getElementById(kilometrajeFieldId || '');
@@ -1990,10 +1223,10 @@ function formatVencimientoLabel(value) {
 
 // ============ LOADING ============
 
-function showLoading() {
-    document.getElementById('loading').style.display = 'flex';
-}
 
-function hideLoading() {
-    document.getElementById('loading').style.display = 'none';
-}
+/* Extracted showLoading */
+
+
+
+/* Extracted hideLoading */
+

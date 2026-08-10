@@ -1,0 +1,78 @@
+<!-- Formulario de Chequeo Preoperacional -->
+<div id="chequeo-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal chequeo-modal-window" role="dialog" aria-modal="true" aria-labelledby="chequeo-form-title">
+        <div class="modal-header">
+            <h3 id="chequeo-form-title">Chequeo Preoperacional</h3>
+            <button id="chequeo-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+        </div>
+        <form id="chequeo-form" class="management-form chequeo-form-scroll">
+            <div class="form-section">
+                <h3>Datos del Vehículo</h3>
+                <div class="form-group selector-search-group">
+                    <label for="ch-vehiculo-search">Vehículo *</label>
+                    <input type="search" id="ch-vehiculo-search" placeholder="Escribe placa, marca o modelo" autocomplete="off">
+                    <input type="hidden" id="ch-vehiculo" name="vehiculo_id">
+                    <div id="ch-vehiculo-results" class="selector-results" role="listbox" aria-label="Resultados de vehiculos"></div>
+                    <p id="ch-vehiculo-selected" class="selector-selected">Sin vehículo seleccionado.</p>
+                </div>
+                <div class="form-group selector-search-group">
+                    <label for="ch-conductor-search">Conductor *</label>
+                    <input type="search" id="ch-conductor-search" placeholder="Escribe nombre o cedula" autocomplete="off">
+                    <input type="hidden" id="ch-conductor" name="conductor_id">
+                    <div id="ch-conductor-results" class="selector-results" role="listbox" aria-label="Resultados de conductores"></div>
+                    <p id="ch-conductor-selected" class="selector-selected">Sin conductor seleccionado.</p>
+                </div>
+                <div class="form-group">
+                    <label for="ch-kilometraje">Kilometraje *</label>
+                    <input type="number" id="ch-kilometraje" name="kilometraje" required min="0" placeholder="Se completa al elegir vehiculo">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Fechas de Vencimiento</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ch-soat">SOAT</label>
+                        <input type="date" id="ch-soat" name="fecha_venc_soat">
+                    </div>
+                    <div class="form-group">
+                        <label for="ch-rtm">RTM</label>
+                        <input type="date" id="ch-rtm" name="fecha_venc_rtm">
+                    </div>
+                    <div class="form-group">
+                        <label for="ch-extintor">Extintor</label>
+                        <input type="date" id="ch-extintor" name="fecha_venc_extintor">
+                    </div>
+                </div>
+            </div>
+
+            <div id="secciones-chequeo"></div>
+
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="ch-obs">Observaciones Generales</label>
+                    <textarea id="ch-obs" name="obs_generales" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-form-action">Finalizar Chequeo</button>
+                <button id="chequeo-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Detalle de Chequeo -->
+<div id="chequeo-detalle-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="chequeo-detalle-title">
+        <div class="modal-header">
+            <h3 id="chequeo-detalle-title">Detalle de chequeo</h3>
+            <button id="chequeo-detalle-close" type="button" class="modal-close" aria-label="Cerrar detalle">×</button>
+        </div>
+        <div id="chequeo-detalle-content" class="chequeo-detalle-content"></div>
+        <div class="form-actions">
+            <button id="chequeo-detalle-accept" type="button" class="btn-primary btn-form-action">Cerrar</button>
+        </div>
+    </div>
+</div>
