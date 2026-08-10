@@ -16,6 +16,7 @@ from app.schemas.movimiento import (
     MovimientoResponse,
     MovimientoListResponse,
 )
+from app.schemas.pagination import PaginatedResponse
 
 router = APIRouter(prefix="/movimientos", tags=["Movimientos"])
 
@@ -96,7 +97,7 @@ def _get_vehiculo_kilometraje_referencia(db: Session, vehiculo_id: int, vehiculo
     )
 
 
-@router.get("/", response_model=List[MovimientoListResponse])
+@router.get("/", response_model=PaginatedResponse[MovimientoListResponse])
 def listar_movimientos(
     skip: int = 0,
     limit: int = 50,
@@ -106,6 +107,7 @@ def listar_movimientos(
     fecha_inicio: date = None,
     fecha_fin: date = None,
     usuario_id: int = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user = Depends(require_role(["admin", "operario_movimientos"])),
 ):
@@ -133,10 +135,29 @@ def listar_movimientos(
         query = query.filter(Movimiento.fecha_hora >= datetime.combine(fecha_inicio, datetime.min.time()))
     if fecha_fin:
         query = query.filter(Movimiento.fecha_hora <= datetime.combine(fecha_fin, datetime.max.time()))
+    if search:
+        search_term = f"%{search}%"
+        query = query.join(Movimiento.vehiculo, isouter=True).join(Movimiento.conductor, isouter=True).filter(
+            (Vehiculo.placa.ilike(search_term)) |
+            (Conductor.nombre.ilike(search_term)) |
+            (Movimiento.proveedor.ilike(search_term))
+        )
 
-    movimientos = query.order_by(Movimiento.fecha_hora.desc()).offset(skip).limit(limit).all()
+    from sqlalchemy.orm import joinedload
+    
+    total = query.count()
+    movimientos = query.options(
+        joinedload(Movimiento.vehiculo),
+        joinedload(Movimiento.conductor),
+        joinedload(Movimiento.usuario)
+    ).order_by(Movimiento.fecha_hora.desc()).offset(skip).limit(limit).all()
 
-    return [MovimientoListResponse(**_build_movimiento_payload(m)) for m in movimientos]
+    return {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "items": [MovimientoListResponse(**_build_movimiento_payload(m)) for m in movimientos]
+    }
 
 
 @router.get("/{movimiento_id}", response_model=MovimientoDetailResponse)

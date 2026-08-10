@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "SCV API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+    ENV: str = "production"
 
     # Endpoints expuestos
     ENABLE_API_DOCS: bool = False
@@ -19,14 +20,14 @@ class Settings(BaseSettings):
     CORS_ALLOWED_ORIGINS: str = "*"
     
     # Security
-    SECRET_KEY: str = "scv-secret-key-change-in-production-2026"
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 360  # 6 horas
     LOGIN_RATE_LIMIT_MAX_ATTEMPTS: int = 5
     LOGIN_RATE_LIMIT_WINDOW_SECONDS: int = 60
     
     # Database
-    DATABASE_URL: str = "sqlite:///./data/scv.db"
+    DATABASE_URL: str
 
     # Web Push (VAPID)
     VAPID_PUBLIC_KEY: str = "BJpbFxN3FZBDCIgvdKUHS3nPCeMBwklO1yYeQW9vBBNrRQee8u9IMN7IBZULhwJdFhIOFNaVNF-3ySri8KEEdOA"

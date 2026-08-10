@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from uuid import uuid4
 from jose import JWTError, jwt
-from passlib.hash import bcrypt
+import bcrypt
 
 from app.core.config import settings
 
@@ -73,7 +73,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True si coincide, False si no
     """
-    return bcrypt.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
@@ -86,7 +89,7 @@ def get_password_hash(password: str) -> str:
     Returns:
         Hash de la contraseña
     """
-    return bcrypt.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 # Roles válidos en el sistema
