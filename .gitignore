@@ -10,3 +10,7 @@ SCV/
 scratch/
 *.bak
 scv.db*
+*.pdf
+*key*.pem
+*audit*.md
+plandesarrollo.md
