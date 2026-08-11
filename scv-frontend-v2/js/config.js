@@ -12,5 +12,6 @@ export const CONFIG = {
     STORAGE_KEYS: {
         TOKEN: 'scv_token',
         USER: 'scv_user'
-    }
+    },
+    VAPID_PUBLIC_KEY: 'BOf2u5sAS3d6w-kz84ZlKpn1RVouKuZtSrm4n_RhD3nfN6COIntgrvvYmB5V_p8wypfSL4BS_lbDEhokvCRa1e8'
 };

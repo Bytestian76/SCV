@@ -14,3 +14,4 @@ scv.db*
 *key*.pem
 *audit*.md
 plandesarrollo.md
+.env

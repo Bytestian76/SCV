@@ -1,6 +1,7 @@
 """Seed y reseteo de datos de desarrollo."""
 
 from datetime import date, datetime, timedelta
+import os
 import random
 
 from passlib.hash import bcrypt
@@ -15,31 +16,31 @@ MAIN_USERS = [
     {
         "nombre": "Carlos Mecanico",
         "email": "mecanico",
-        "password": "********",
+        "password": os.getenv("SEED_MECANICO_PWD", "changeme"),
         "rol": "mecanico",
     },
     {
         "nombre": "Jefe de Mantenimiento",
         "email": "jefe",
-        "password": "********",
+        "password": os.getenv("SEED_JEFE_PWD", "changeme"),
         "rol": "jefe_mecanicos",
     },
     {
         "nombre": "Administrador",
         "email": "admin",
-        "password": "********",
+        "password": os.getenv("SEED_ADMIN_PWD", "changeme"),
         "rol": "admin",
     },
     {
         "nombre": "Operario Movimientos",
         "email": "movimientos",
-        "password": "********",
+        "password": os.getenv("SEED_MOVIMIENTOS_PWD", "changeme"),
         "rol": "operario_movimientos",
     },
     {
         "nombre": "Operario Chequeo",
         "email": "chequeo",
-        "password": "********",
+        "password": os.getenv("SEED_CHEQUEO_PWD", "changeme"),
         "rol": "operario_chequeo",
     },
 ]

@@ -30,8 +30,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     # Web Push (VAPID)
-    VAPID_PUBLIC_KEY: str = "BJpbFxN3FZBDCIgvdKUHS3nPCeMBwklO1yYeQW9vBBNrRQee8u9IMN7IBZULhwJdFhIOFNaVNF-3ySri8KEEdOA"
-    VAPID_PRIVATE_KEY: str = "********"
+    VAPID_PUBLIC_KEY: str = "BOf2u5sAS3d6w-kz84ZlKpn1RVouKuZtSrm4n_RhD3nfN6COIntgrvvYmB5V_p8wypfSL4BS_lbDEhokvCRa1e8"
+    VAPID_PRIVATE_KEY: str
     VAPID_CLAIM_EMAIL: str = "admin@scv.normetales.xyz"
     
     class Config:
