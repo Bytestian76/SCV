@@ -1,5 +1,6 @@
 import { API } from '../api.js';
 import { ICONS, openModal, closeModal, showToast } from '../ui.js';
+import { exportMovimientosExcel, exportMovimientosPdf } from '../exports.js';
 
 export function renderMovimientosView() {
     return `
@@ -16,7 +17,17 @@ export function renderMovimientosView() {
                     <option value="SALIDA">Solo Salidas</option>
                 </select>
             </div>
-            <div style="display:flex; gap:0.75rem;">
+            <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+                <div class="export-btns">
+                    <button class="btn-ghost" id="btn-export-excel" title="Exportar a Excel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                        Excel
+                    </button>
+                    <button class="btn-ghost" id="btn-export-pdf" title="Exportar a PDF">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                        PDF
+                    </button>
+                </div>
                 <button class="btn-primary" id="btn-reg-entrada" style="background:#16a34a;">
                     <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
                     Registrar Entrada
@@ -56,6 +67,7 @@ export async function initMovimientosView(router) {
     const searchInput = document.getElementById('mov-search');
     const filterTipo = document.getElementById('mov-filter-tipo');
     let rawList = [];
+    let currentFiltered = [];
 
     const loadData = async () => {
         try {
@@ -72,7 +84,7 @@ export async function initMovimientosView(router) {
         const query = searchInput?.value.toLowerCase().trim() || '';
         const tipo = filterTipo?.value || '';
 
-        const filtered = (rawList || []).filter(item => {
+        currentFiltered = (rawList || []).filter(item => {
             const itemTipo = item.tipo_movimiento || item.tipo;
             if (tipo && itemTipo !== tipo) return false;
             if (query) {
@@ -82,7 +94,7 @@ export async function initMovimientosView(router) {
             return true;
         });
 
-        renderRows(filtered);
+        renderRows(currentFiltered);
     };
 
     searchInput?.addEventListener('input', applyFilterAndRender);
@@ -90,6 +102,18 @@ export async function initMovimientosView(router) {
 
     document.getElementById('btn-reg-entrada')?.addEventListener('click', () => openMovimientoModal('ENTRADA', loadData));
     document.getElementById('btn-reg-salida')?.addEventListener('click', () => openMovimientoModal('SALIDA', loadData));
+
+    // Exportación
+    document.getElementById('btn-export-excel')?.addEventListener('click', () => {
+        if (!currentFiltered.length) { showToast('No hay datos para exportar', 'warning'); return; }
+        if (exportMovimientosExcel(currentFiltered)) showToast(`${currentFiltered.length} movimientos exportados a Excel`, 'success');
+    });
+    document.getElementById('btn-export-pdf')?.addEventListener('click', async () => {
+        if (!currentFiltered.length) { showToast('No hay datos para exportar', 'warning'); return; }
+        showToast('Generando PDF...', 'info');
+        const ok = await exportMovimientosPdf(currentFiltered);
+        if (!ok) showToast('No se pudo generar el PDF', 'error');
+    });
 
     // Global listener for dashboard triggers
     window.addEventListener('scv:open-movimiento-modal', (e) => {

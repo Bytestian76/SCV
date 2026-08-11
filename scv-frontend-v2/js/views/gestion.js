@@ -1,5 +1,10 @@
 import { API } from '../api.js';
 import { ICONS, openModal, closeModal, showToast } from '../ui.js';
+import {
+    exportVehiculosExcel, exportVehiculosPdf,
+    exportConductoresExcel, exportConductoresPdf,
+    exportUsuariosExcel, exportUsuariosPdf
+} from '../exports.js';
 
 export function renderGestionView(entityType = 'vehiculos') {
     const titles = {
@@ -58,7 +63,17 @@ export function renderGestionView(entityType = 'vehiculos') {
                 ` : ''}
             </div>
             
-            <!-- ACTION BUTTON NEW -->
+            <!-- ACTION BUTTONS -->
+            <div class="export-btns">
+                <button id="btn-export-excel" class="btn-ghost" title="Exportar tabla a Excel">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                    Excel
+                </button>
+                <button id="btn-export-pdf" class="btn-ghost" title="Exportar tabla a PDF">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                    PDF
+                </button>
+            </div>
             <button id="btn-gestion-new" class="btn-primary">
                 ${ICONS.plus}
                 ${newBtnLabels[entityType] || 'Registrar'}
@@ -130,6 +145,7 @@ export async function initGestionView(entityType = 'vehiculos', router) {
     });
 
     let rawData = [];
+    let currentFiltered = [];
 
     const loadTableData = async () => {
         try {
@@ -154,7 +170,7 @@ export async function initGestionView(entityType = 'vehiculos', router) {
         const estado = document.getElementById('gestion-filter-estado')?.value || '';
         const tipo = document.getElementById('gestion-filter-tipo')?.value || '';
 
-        const filtered = (rawData || []).filter(item => {
+        currentFiltered = (rawData || []).filter(item => {
             if (estado) {
                 const itemEstado = (item.estado || (item.activo ? 'ACTIVO' : 'INACTIVO')).toUpperCase();
                 if (itemEstado !== estado) return false;
@@ -170,7 +186,7 @@ export async function initGestionView(entityType = 'vehiculos', router) {
             return true;
         });
 
-        renderTableRows(filtered, entityType);
+        renderTableRows(currentFiltered, entityType);
     };
 
     const searchInput = document.getElementById('gestion-search-input');
@@ -183,6 +199,26 @@ export async function initGestionView(entityType = 'vehiculos', router) {
 
     document.getElementById('btn-gestion-new')?.addEventListener('click', () => {
         openCreateModal(entityType, loadTableData);
+    });
+
+    // ── Exportación ──────────────────────────────────────────────────────────
+    document.getElementById('btn-export-excel')?.addEventListener('click', () => {
+        if (!currentFiltered.length) { showToast('No hay datos para exportar', 'warning'); return; }
+        let ok;
+        if (entityType === 'vehiculos') ok = exportVehiculosExcel(currentFiltered);
+        else if (entityType === 'conductores') ok = exportConductoresExcel(currentFiltered);
+        else ok = exportUsuariosExcel(currentFiltered);
+        if (ok) showToast(`${currentFiltered.length} registros exportados a Excel`, 'success');
+    });
+
+    document.getElementById('btn-export-pdf')?.addEventListener('click', async () => {
+        if (!currentFiltered.length) { showToast('No hay datos para exportar', 'warning'); return; }
+        showToast('Generando PDF...', 'info');
+        let ok;
+        if (entityType === 'vehiculos') ok = await exportVehiculosPdf(currentFiltered);
+        else if (entityType === 'conductores') ok = await exportConductoresPdf(currentFiltered);
+        else ok = await exportUsuariosPdf(currentFiltered);
+        if (!ok) showToast('No se pudo generar el PDF. Revisa tu conexión.', 'error');
     });
 
     await loadTableData();

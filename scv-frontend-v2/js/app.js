@@ -124,4 +124,11 @@ class AppRouter {
 document.addEventListener('DOMContentLoaded', () => {
     window.App = new AppRouter();
     window.App.init();
+
+    // Registro del Service Worker (PWA)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('[SCV] Service Worker registrado:', reg.scope))
+            .catch(err => console.warn('[SCV] Service Worker no pudo registrarse:', err));
+    }
 });

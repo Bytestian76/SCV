@@ -1424,9 +1424,6 @@ tbody tr:hover {
 }
 @keyframes toastSlideIn { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-/* ==========================================================================
-   RESPONSIVE OVERRIDES
-   ========================================================================== */
 @media (max-width: 900px) {
     .login-wrapper { flex-direction: column; height: auto; max-height: none; }
     .login-banner { padding: 3rem 2rem; }
@@ -1445,3 +1442,177 @@ tbody tr:hover {
     .app-header { padding: 1rem; }
     .details-grid { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   EXPORT BUTTONS
+   ========================================================================== */
+.export-btns {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.export-btns .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 7px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.export-btns .btn-ghost:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-ghost, #eaf3ed);
+}
+
+.export-btns .btn-ghost svg {
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   MOBILE CARD LAYOUT — Tablas en celulares (≤600px)
+   Convierte cada <tr> en una tarjeta apilada con etiquetas visibles.
+   Requiere que cada <td> tenga atributo data-label="Nombre Columna".
+   ========================================================================== */
+@media (max-width: 600px) {
+    /* Ocultar encabezados de tabla en móvil */
+    .table-responsive thead {
+        display: none;
+    }
+
+    .table-responsive table,
+    .table-responsive tbody,
+    .table-responsive tr,
+    .table-responsive td {
+        display: block;
+        width: 100%;
+    }
+
+    /* Cada fila se convierte en una tarjeta */
+    .table-responsive tr {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 0.85rem;
+        padding: 0.75rem 1rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        position: relative;
+    }
+
+    .table-responsive tr:hover {
+        border-color: var(--primary-light, #a7f3d0);
+        box-shadow: 0 2px 8px rgba(44,122,75,0.12);
+    }
+
+    /* Cada celda: etiqueta + valor */
+    .table-responsive td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.35rem 0;
+        border: none;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.875rem;
+        min-height: unset;
+    }
+
+    .table-responsive td:last-child {
+        border-bottom: none;
+        padding-top: 0.5rem;
+    }
+
+    /* Etiqueta generada desde data-label */
+    .table-responsive td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        min-width: 110px;
+        flex-shrink: 0;
+    }
+
+    /* Fila de loading/vacía: volver a centrar */
+    .table-responsive tr.empty-row,
+    .table-responsive td[colspan] {
+        display: table-cell;
+        text-align: center;
+        border: none;
+    }
+    .table-responsive tr.empty-row {
+        display: table-row;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+    }
+
+    /* Toolbar en columna en móvil */
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar-filters {
+        flex-direction: column;
+    }
+
+    .toolbar .export-btns,
+    .toolbar > div {
+        justify-content: flex-start;
+    }
+
+    /* Botones primarios a ancho completo en móvil */
+    .toolbar .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Tabs en scroll horizontal */
+    .tabs-header {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Modal más compacto en móvil */
+    .modal-box {
+        max-height: 90vh;
+        overflow-y: auto;
+        margin: 1rem;
+        border-radius: 14px;
+    }
+
+    /* Dashboard grid en columna */
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .kpi-row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Teléfonos muy pequeños */
+@media (max-width: 380px) {
+    .kpi-row {
+        grid-template-columns: 1fr;
+    }
+
+    .export-btns .btn-ghost span,
+    .export-btns .btn-ghost {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.55rem;
+    }
+}
+

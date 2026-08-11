@@ -1,5 +1,6 @@
 import { API } from '../api.js';
 import { ICONS, openModal, closeModal, showToast } from '../ui.js';
+import { exportChequeosExcel, exportChequeosPdf } from '../exports.js';
 
 export function renderChequeosView() {
     return `
@@ -17,11 +18,22 @@ export function renderChequeosView() {
                     <option value="RECHAZADO">Rechazados</option>
                 </select>
             </div>
-            <button class="btn-primary" id="btn-nuevo-chequeo">
-                ${ICONS.plus}
-                Nuevo Chequeo Preoperacional
-            </button>
-        </div>
+            <div style="display:flex; gap:0.75rem; align-items:center;">
+                <div class="export-btns">
+                    <button class="btn-ghost" id="btn-export-excel" title="Exportar a Excel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                        Excel
+                    </button>
+                    <button class="btn-ghost" id="btn-export-pdf" title="Exportar a PDF">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                        PDF
+                    </button>
+                </div>
+                <button class="btn-primary" id="btn-nuevo-chequeo">
+                    ${ICONS.plus}
+                    Nuevo Chequeo Preoperacional
+                </button>
+            </div>
 
         <!-- TABLE CARD -->
         <div class="table-card">
@@ -51,6 +63,7 @@ export async function initChequeosView(router) {
     const searchInput = document.getElementById('chq-search');
     const filterEstado = document.getElementById('chq-filter-estado');
     let rawList = [];
+    let currentFiltered = [];
 
     const loadData = async () => {
         try {
@@ -67,7 +80,7 @@ export async function initChequeosView(router) {
         const query = searchInput?.value.toLowerCase().trim() || '';
         const estado = filterEstado?.value || '';
 
-        const filtered = (rawList || []).filter(item => {
+        currentFiltered = (rawList || []).filter(item => {
             const itemEstado = (item.estado || 'APROBADO').toUpperCase();
             if (estado && itemEstado !== estado) return false;
             if (query) {
@@ -77,13 +90,25 @@ export async function initChequeosView(router) {
             return true;
         });
 
-        renderRows(filtered);
+        renderRows(currentFiltered);
     };
 
     searchInput?.addEventListener('input', applyFilterAndRender);
     filterEstado?.addEventListener('change', applyFilterAndRender);
 
     document.getElementById('btn-nuevo-chequeo')?.addEventListener('click', () => openChequeoWizard(loadData));
+
+    // Exportación
+    document.getElementById('btn-export-excel')?.addEventListener('click', () => {
+        if (!currentFiltered.length) { showToast('No hay datos para exportar', 'warning'); return; }
+        if (exportChequeosExcel(currentFiltered)) showToast(`${currentFiltered.length} chequeos exportados a Excel`, 'success');
+    });
+    document.getElementById('btn-export-pdf')?.addEventListener('click', async () => {
+        if (!currentFiltered.length) { showToast('No hay datos para exportar', 'warning'); return; }
+        showToast('Generando PDF...', 'info');
+        const ok = await exportChequeosPdf(currentFiltered);
+        if (!ok) showToast('No se pudo generar el PDF', 'error');
+    });
 
     // Global listener for dashboard trigger
     window.addEventListener('scv:open-chequeo-modal', () => openChequeoWizard(loadData));
