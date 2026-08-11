@@ -355,15 +355,15 @@ async function loadOrdenesData() {
 
             return `
                 <tr>
-                    <td><strong>ORD-${o.id}</strong></td>
-                    <td><strong style="color:var(--primary); font-family:monospace; font-size:0.95rem;">${placa}</strong></td>
-                    <td style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${descripcion}">
+                    <td data-label="Código"><strong>ORD-${o.id}</strong></td>
+                    <td data-label="Vehículo"><strong style="color:var(--primary); font-family:monospace; font-size:0.95rem;">${placa}</strong></td>
+                    <td data-label="Descripción" style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${descripcion}">
                         ${descripcion}
                     </td>
-                    <td><span class="badge ${badgePrioridad}">${prioLabel}</span></td>
-                    <td>${responsable}</td>
-                    <td><span class="badge ${badgeEstado}">${estLabel}</span></td>
-                    <td>
+                    <td data-label="Prioridad"><span class="badge ${badgePrioridad}">${prioLabel}</span></td>
+                    <td data-label="Responsable">${responsable}</td>
+                    <td data-label="Estado"><span class="badge ${badgeEstado}">${estLabel}</span></td>
+                    <td data-label="Acciones">
                         <button class="btn-action view" data-ord-id="${o.id}" title="Ver Detalles y Cambiar Estado">${ICONS.eye}</button>
                     </td>
                 </tr>
@@ -481,15 +481,15 @@ async function loadHallazgosData() {
 
             return `
                 <tr>
-                    <td><strong>#${h.id}</strong></td>
-                    <td><strong style="color:var(--primary); font-family:monospace; font-size:0.95rem;">${placa}</strong></td>
-                    <td style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${desc}">
+                    <td data-label="ID"><strong>#${h.id}</strong></td>
+                    <td data-label="Vehículo"><strong style="color:var(--primary); font-family:monospace; font-size:0.95rem;">${placa}</strong></td>
+                    <td data-label="Descripción" style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${desc}">
                         ${desc}
                     </td>
-                    <td><span class="badge ${badgeCrit}">${critLabel}</span></td>
-                    <td>${fechaFormateada}</td>
-                    <td><span class="badge ${badgeEst}">${estLabel}</span></td>
-                    <td>
+                    <td data-label="Severidad"><span class="badge ${badgeCrit}">${critLabel}</span></td>
+                    <td data-label="Fecha">${fechaFormateada}</td>
+                    <td data-label="Estado"><span class="badge ${badgeEst}">${estLabel}</span></td>
+                    <td data-label="Acciones">
                         ${est !== 'convertido_orden' && est !== 'resuelto' ? `
                             <button class="btn-primary btn-convert-orden" style="padding:0.35rem 0.75rem; font-size:0.75rem;" data-hal-id="${h.id}">
                                 Crear Orden

@@ -133,13 +133,13 @@ function renderRows(items) {
 
         return `
             <tr>
-                <td>${c.fecha || c.created_at ? new Date(c.fecha || c.created_at).toLocaleDateString('es-CO') : 'Hoy'}</td>
-                <td><strong style="color:var(--primary); font-size:1.05rem;">${c.vehiculo_placa || c.placa || 'N/A'}</strong></td>
-                <td>${c.conductor_nombre || 'N/A'}</td>
-                <td>Preoperacional Diario</td>
-                <td><span class="badge ${badgeClass}">${estado}</span></td>
-                <td>${c.hallazgos_count || (estado === 'OBSERVADO' ? '1 detectado' : '0')}</td>
-                <td>
+                <td data-label="Fecha">${c.fecha || c.created_at ? new Date(c.fecha || c.created_at).toLocaleDateString('es-CO') : 'Hoy'}</td>
+                <td data-label="Placa"><strong style="color:var(--primary); font-size:1.05rem;">${c.vehiculo_placa || c.placa || 'N/A'}</strong></td>
+                <td data-label="Conductor">${c.conductor_nombre || 'N/A'}</td>
+                <td data-label="Tipo Chequeo">Preoperacional Diario</td>
+                <td data-label="Estado"><span class="badge ${badgeClass}">${estado}</span></td>
+                <td data-label="Hallazgos">${c.hallazgos_count || (estado === 'OBSERVADO' ? '1 detectado' : '0')}</td>
+                <td data-label="Acciones">
                     <button class="btn-action view" data-chq-id="${c.id}" title="Ver Inspección">${ICONS.eye}</button>
                 </td>
             </tr>

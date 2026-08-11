@@ -242,12 +242,12 @@ function renderTableRows(items, entityType) {
 
             return `
                 <tr>
-                    <td><strong style="color:var(--primary); font-size:1.05rem;">${item.placa || 'N/A'}</strong></td>
-                    <td>${item.tipo_vehiculo || item.tipo || 'Camión'} • ${item.marca || ''} ${item.modelo || ''}</td>
-                    <td>Capacidad: ${item.capacidad_carga_kg ? `${item.capacidad_carga_kg} kg` : (item.capacidad || 'N/A')}</td>
-                    <td><span class="badge ${badgeClass}">${estado}</span></td>
-                    <td>${item.ultima_inspeccion || item.updated_at ? new Date(item.ultima_inspeccion || item.updated_at).toLocaleDateString('es-CO') : 'Al día'}</td>
-                    <td>
+                    <td data-label="Placa"><strong style="color:var(--primary); font-size:1.05rem;">${item.placa || 'N/A'}</strong></td>
+                    <td data-label="Tipo / Marca">${item.tipo_vehiculo || item.tipo || 'Camión'} • ${item.marca || ''} ${item.modelo || ''}</td>
+                    <td data-label="Capacidad">Capacidad: ${item.capacidad_carga_kg ? `${item.capacidad_carga_kg} kg` : (item.capacidad || 'N/A')}</td>
+                    <td data-label="Estado"><span class="badge ${badgeClass}">${estado}</span></td>
+                    <td data-label="Última Insp.">${item.ultima_inspeccion || item.updated_at ? new Date(item.ultima_inspeccion || item.updated_at).toLocaleDateString('es-CO') : 'Al día'}</td>
+                    <td data-label="Acciones">
                         <div class="action-btns">
                             <button class="btn-action view" data-id="${item.id}" title="Ver Detalles">${ICONS.eye}</button>
                             <button class="btn-action edit" data-id="${item.id}" title="Editar">${ICONS.edit}</button>
@@ -260,12 +260,12 @@ function renderTableRows(items, entityType) {
             const estado = item.activo !== false ? 'ACTIVO' : 'INACTIVO';
             return `
                 <tr>
-                    <td><strong>${item.nombre || item.nombre_completo || 'Conductor'}</strong></td>
-                    <td>${item.cedula || item.documento || 'N/A'}</td>
-                    <td>${item.numero_licencia || item.licencia || 'C2'} (Cat: ${item.categoria_licencia || 'C2'})</td>
-                    <td>${item.telefono || item.celular || 'N/A'}</td>
-                    <td><span class="badge ${estado === 'ACTIVO' ? 'badge-success' : 'badge-danger'}">${estado}</span></td>
-                    <td>
+                    <td data-label="Nombre"><strong>${item.nombre || item.nombre_completo || 'Conductor'}</strong></td>
+                    <td data-label="Cédula">${item.cedula || item.documento || 'N/A'}</td>
+                    <td data-label="Licencia">${item.numero_licencia || item.licencia || 'C2'} (Cat: ${item.categoria_licencia || 'C2'})</td>
+                    <td data-label="Teléfono">${item.telefono || item.celular || 'N/A'}</td>
+                    <td data-label="Estado"><span class="badge ${estado === 'ACTIVO' ? 'badge-success' : 'badge-danger'}">${estado}</span></td>
+                    <td data-label="Acciones">
                         <div class="action-btns">
                             <button class="btn-action view" data-id="${item.id}" title="Ver Detalles">${ICONS.eye}</button>
                             <button class="btn-action edit" data-id="${item.id}" title="Editar">${ICONS.edit}</button>
@@ -278,12 +278,12 @@ function renderTableRows(items, entityType) {
             const estado = item.activo !== false ? 'ACTIVO' : 'INACTIVO';
             return `
                 <tr>
-                    <td><strong>${item.nombre || 'Usuario'}</strong></td>
-                    <td>${item.email || 'N/A'}</td>
-                    <td><span class="badge badge-info">${item.rol || 'OPERADOR'}</span></td>
-                    <td><span class="badge ${estado === 'ACTIVO' ? 'badge-success' : 'badge-danger'}">${estado}</span></td>
-                    <td>${item.created_at ? new Date(item.created_at).toLocaleDateString('es-CO') : 'Reciente'}</td>
-                    <td>
+                    <td data-label="Nombre"><strong>${item.nombre || 'Usuario'}</strong></td>
+                    <td data-label="Email">${item.email || 'N/A'}</td>
+                    <td data-label="Rol"><span class="badge badge-info">${item.rol || 'OPERADOR'}</span></td>
+                    <td data-label="Estado"><span class="badge ${estado === 'ACTIVO' ? 'badge-success' : 'badge-danger'}">${estado}</span></td>
+                    <td data-label="Creación">${item.created_at ? new Date(item.created_at).toLocaleDateString('es-CO') : 'Reciente'}</td>
+                    <td data-label="Acciones">
                         <div class="action-btns">
                             <button class="btn-action view" data-id="${item.id}" title="Ver Detalles">${ICONS.eye}</button>
                             <button class="btn-action edit" data-id="${item.id}" title="Editar">${ICONS.edit}</button>

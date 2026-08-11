@@ -138,17 +138,17 @@ function renderRows(items) {
 
         return `
             <tr>
-                <td>${dateFormatted}</td>
-                <td>
+                <td data-label="Fecha y Hora">${dateFormatted}</td>
+                <td data-label="Tipo">
                     <span class="badge ${isEntrada ? 'badge-success' : 'b-warning'}">
                         ${isEntrada ? 'ENTRADA' : 'SALIDA'}
                     </span>
                 </td>
-                <td><strong style="color:var(--primary); font-size:1.05rem;">${m.vehiculo_placa || m.placa || 'N/A'}</strong></td>
-                <td>${m.conductor_nombre || m.conductor || 'N/A'}</td>
-                <td>${m.kilometraje ? `${m.kilometraje.toLocaleString()} km` : 'N/A'}</td>
-                <td>${m.destino || m.origen || 'Patio Central'}</td>
-                <td>${m.observaciones || m.novedades || '<span style="color:#9ca3af;">Sin novedades</span>'}</td>
+                <td data-label="Placa"><strong style="color:var(--primary); font-size:1.05rem;">${m.vehiculo_placa || m.placa || 'N/A'}</strong></td>
+                <td data-label="Conductor">${m.conductor_nombre || m.conductor || 'N/A'}</td>
+                <td data-label="Kilometraje">${m.kilometraje ? `${m.kilometraje.toLocaleString()} km` : 'N/A'}</td>
+                <td data-label="Destino / Origen">${m.destino || m.origen || 'Patio Central'}</td>
+                <td data-label="Novedades">${m.observaciones || m.novedades || '<span style="color:#9ca3af;">Sin novedades</span>'}</td>
             </tr>
         `;
     }).join('');
