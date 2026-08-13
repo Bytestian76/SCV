@@ -24,13 +24,18 @@ def listar_vehiculos(
     limit: int = 100,
     activo: bool = None,
     db: Session = Depends(get_db),
-    current_user = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"]))
+    current_user = Depends(require_role(["admin", "jefe_mecanicos", "mecanico", "operario_movimientos", "operario_chequeo"]))
 ):
     """Listar todos los vehículos"""
     query = db.query(Vehiculo)
     
     if activo is not None:
         query = query.filter(Vehiculo.activo == activo)
+        
+    if current_user.rol == "mecanico":
+        from app.models.models import OrdenTrabajo
+        vehiculos_asignados = db.query(OrdenTrabajo.vehiculo_id).filter(OrdenTrabajo.responsable_id == current_user.id).distinct().subquery()
+        query = query.filter(Vehiculo.id.in_(vehiculos_asignados))
     
     return query.offset(skip).limit(limit).all()
 
@@ -39,7 +44,7 @@ def listar_vehiculos(
 def obtener_vehiculo(
     vehiculo_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"]))
+    current_user = Depends(require_role(["admin", "jefe_mecanicos", "mecanico", "operario_movimientos", "operario_chequeo"]))
 ):
     """Obtener un vehículo por ID"""
     vehiculo = db.query(Vehiculo).filter(Vehiculo.id == vehiculo_id).first()

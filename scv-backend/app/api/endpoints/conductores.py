@@ -20,9 +20,9 @@ def listar_conductores(
     limit: int = 100,
     activo: bool = None,
     db: Session = Depends(get_db),
-    current_user = Depends(require_role(["admin"]))
+    current_user = Depends(require_role(["admin", "operario_movimientos", "operario_chequeo"]))
 ):
-    """Listar todos los conductores (solo admin)"""
+    """Listar todos los conductores"""
     query = db.query(Conductor)
     
     if activo is not None:
@@ -35,9 +35,9 @@ def listar_conductores(
 def obtener_conductor(
     conductor_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(require_role(["admin"]))
+    current_user = Depends(require_role(["admin", "operario_movimientos", "operario_chequeo"]))
 ):
-    """Obtener un conductor por ID (solo admin)"""
+    """Obtener un conductor por ID"""
     conductor = db.query(Conductor).filter(Conductor.id == conductor_id).first()
     
     if not conductor:

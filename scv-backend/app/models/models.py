@@ -41,12 +41,17 @@ class Vehiculo(Base):
     placa = Column(String(20), unique=True, nullable=False, index=True)
     marca = Column(String(100), nullable=False)
     modelo = Column(String(100), nullable=False)
-    año = Column(Integer, nullable=False)
+    año = Column(Integer, nullable=True)
     empresa = Column(String(255), nullable=True)
     kilometraje = Column(Integer, nullable=False, default=0)
     fecha_venc_soat = Column(Date, nullable=True)
     fecha_venc_rtm = Column(Date, nullable=True)
     especificaciones = Column(Text, nullable=True) # JSON string: {"tipo_aceite": "...", "medida_llantas": "...", "bateria": "..."}
+    tipo_vehiculo = Column(String(50), nullable=True)
+    capacidad_carga_kg = Column(Integer, nullable=True)
+    chasis = Column(String(100), nullable=True)
+    comentarios = Column(Text, nullable=True)
+    estado = Column(String(50), nullable=True, default='ACTIVO')
     activo = Column(Boolean, default=True)
 
     # Relaciones
@@ -66,7 +71,8 @@ class Conductor(Base):
     cedula = Column(String(50), unique=True, nullable=False, index=True)
     licencia = Column(String(50), nullable=False)
     fecha_venc_licencia = Column(Date, nullable=True)
-    categoria = Column(String(10), nullable=False)  # C1, C2, C3
+    categoria = Column(String(10), nullable=True)  # C1, C2, C3
+    telefono = Column(String(50), nullable=True)
     activo = Column(Boolean, default=True)
 
     # Relaciones

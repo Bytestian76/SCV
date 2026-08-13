@@ -530,9 +530,6 @@ def listar_chequeos(
     """Listar chequeos con filtros (S5-03)"""
     query = db.query(Chequeo)
 
-    if current_user.rol == "operario_chequeo":
-        query = query.filter(Chequeo.usuario_id == current_user.id)
-
     if vehiculo_id:
         query = query.filter(Chequeo.vehiculo_id == vehiculo_id)
     if conductor_id:

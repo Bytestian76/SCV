@@ -120,9 +120,6 @@ def listar_movimientos(
 
     query = db.query(Movimiento)
 
-    if current_user.rol == "operario_movimientos":
-        query = query.filter(Movimiento.usuario_id == current_user.id)
-    
     if tipo:
         query = query.filter(Movimiento.tipo == tipo)
     if vehiculo_id:
