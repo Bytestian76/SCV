@@ -65,11 +65,15 @@ export function openModal(title, bodyHtml, footerButtons = []) {
     const container = document.getElementById('modal-container');
     if (!container) return;
 
-    const footerHtml = footerButtons.map(btn => `
-        <button class="${btn.className || 'btn-primary'}" id="${btn.id || ''}" ${btn.attrs || ''}>
+    const footerHtml = footerButtons.map((btn, index) => {
+        const id = btn.id || `modal-btn-${index}`;
+        btn._tempId = id;
+        return `
+        <button class="${btn.className || 'btn-primary'}" id="${id}" ${btn.attrs || ''}>
             ${btn.icon ? ICONS[btn.icon] || '' : ''} ${btn.text}
         </button>
-    `).join('');
+        `;
+    }).join('');
 
     container.innerHTML = `
         <div class="modal-overlay" id="modal-overlay">
@@ -97,7 +101,7 @@ export function openModal(title, bodyHtml, footerButtons = []) {
     // Bind custom button actions
     footerButtons.forEach(btn => {
         if (btn.onClick) {
-            const btnEl = btn.id ? document.getElementById(btn.id) : null;
+            const btnEl = document.getElementById(btn._tempId);
             if (btnEl) {
                 btnEl.addEventListener('click', (e) => btn.onClick(e, closeModal));
             }
@@ -122,17 +126,17 @@ export function getNavItemsForRole(role) {
                 { id: 'nav-vehiculos', route: 'gestion-vehiculos', label: 'Vehículos', icon: ICONS.vehiculos },
                 { id: 'nav-conductores', route: 'gestion-conductores', label: 'Conductores', icon: ICONS.conductores },
                 { id: 'nav-usuarios', route: 'gestion-usuarios', label: 'Usuarios', icon: ICONS.usuarios },
-                { id: 'nav-mantenimiento', route: 'mantenimiento', label: 'Mantenimiento', icon: ICONS.mantenimiento }
+                { id: 'nav-mantenimiento', route: 'mantenimiento', label: 'Mantenimiento', icon: ICONS.mantenimiento },
+                { id: 'nav-movimientos', route: 'movimientos', label: 'Movimientos', icon: ICONS.dashboard },
+                { id: 'nav-chequeos', route: 'chequeos', label: 'Chequeos', icon: ICONS.chequeos }
             ];
         case 'OPERARIO_DESPACHO':
             return [
-                { id: 'nav-dashboard', route: 'dashboard', label: 'Movimientos', icon: ICONS.dashboard },
-                { id: 'nav-vehiculos', route: 'gestion-vehiculos', label: 'Vehículos', icon: ICONS.vehiculos }
+                { id: 'nav-dashboard', route: 'dashboard', label: 'Movimientos', icon: ICONS.dashboard }
             ];
         case 'OPERARIO_CHEQUEO':
             return [
-                { id: 'nav-dashboard', route: 'dashboard', label: 'Inspección', icon: ICONS.chequeos },
-                { id: 'nav-vehiculos', route: 'gestion-vehiculos', label: 'Vehículos', icon: ICONS.vehiculos }
+                { id: 'nav-dashboard', route: 'dashboard', label: 'Inspección', icon: ICONS.chequeos }
             ];
         case 'MECANICO':
             return [

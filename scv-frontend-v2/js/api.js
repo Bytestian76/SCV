@@ -198,6 +198,15 @@ export const API = {
         },
         async create(data) {
             return await apiFetch('/chequeos/', { method: 'POST', body: data });
+        },
+        async createItems(chequeoId, items) {
+            return await apiFetch(`/chequeos/${chequeoId}/items`, {
+                method: 'POST',
+                body: { items }
+            });
+        },
+        async getFormulario() {
+            return await apiFetch('/chequeos/formulario');
         }
     },
     ordenes: {

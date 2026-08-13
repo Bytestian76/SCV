@@ -1,5 +1,7 @@
 import { API, auth } from '../api.js';
 import { ICONS, showToast, normalizeRole } from '../ui.js';
+import { openMovimientoModal } from './movimientos.js';
+import { openChequeoWizard } from './chequeos.js';
 
 export function renderDashboardView(user) {
     const role = normalizeRole(user?.rol);
@@ -162,6 +164,12 @@ function renderOperarioMovimientosHTML(user) {
                     <button class="big-btn btn-salida" id="btn-op-salida">
                         <svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                         REGISTRAR SALIDA
+                    </button>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <button class="btn-primary" id="btn-op-ver-mov-historial" style="width: 100%; justify-content: center;">
+                        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: currentColor; fill: none; margin-right: 8px;"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>
+                        VER HISTORIAL DE MOVIMIENTOS
                     </button>
                 </div>
             </div>
@@ -357,11 +365,11 @@ async function initAdminDashboard(router) {
                 API.movimientos.list({ limit: 10 }).catch(() => [])
             ]);
 
-            // KPIs
-            const movsCount = stats?.total_movimientos || movimientos?.length || 0;
-            const vehCount = Array.isArray(vehiculos) ? vehiculos.filter(v => v.activo !== false).length : 24;
-            const condCount = Array.isArray(conductores) ? conductores.filter(c => c.activo !== false).length : 18;
-            const chqCount = Array.isArray(chequeos) ? chequeos.length : 15;
+            // KPIs — backend returns stats.totales.* for real counts
+            const movsCount = stats?.totales?.movimientos_hoy ?? movimientos?.length ?? 0;
+            const vehCount = stats?.totales?.vehiculos_activos ?? (Array.isArray(vehiculos) ? vehiculos.filter(v => v.activo !== false).length : 0);
+            const condCount = stats?.totales?.conductores_activos ?? (Array.isArray(conductores) ? conductores.filter(c => c.activo !== false).length : 0);
+            const chqCount = stats?.totales?.chequeos_hoy ?? (Array.isArray(chequeos) ? chequeos.length : 0);
 
             document.getElementById('admin-kpi-movimientos').textContent = movsCount;
             document.getElementById('admin-kpi-vehiculos').textContent = vehCount;
@@ -382,8 +390,19 @@ async function initAdminDashboard(router) {
             document.getElementById('admin-legend-mantenimiento').textContent = `${enMantenimiento} vehículos`;
             document.getElementById('admin-legend-inactivo').textContent = `${inactivos} vehículos`;
 
-            // Bar Chart
-            renderAdminBarChart(stats?.dias || generateMockDaysData(parseInt(range)));
+            // Bar Chart — backend returns stats.analitica.series with {labels, movimientos, chequeos}
+            const series = stats?.analitica?.series;
+            let chartData = null;
+            if (series && Array.isArray(series.labels)) {
+                // Map to [{dia, valor}] format
+                chartData = series.labels.map((label, i) => ({
+                    dia: label,
+                    valor: (series.movimientos?.[i] ?? 0) + (series.chequeos?.[i] ?? 0),
+                    movimientos: series.movimientos?.[i] ?? 0,
+                    chequeos: series.chequeos?.[i] ?? 0
+                }));
+            }
+            renderAdminBarChart(chartData);
 
             // Activity List
             renderAdminActivityList(movimientos, chequeos);
@@ -402,6 +421,7 @@ async function initAdminDashboard(router) {
 }
 
 function generateMockDaysData(daysCount = 7) {
+    // DEPRECATED: only used as fallback if backend unavailable
     const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     const result = [];
     const today = new Date();
@@ -410,7 +430,7 @@ function generateMockDaysData(daysCount = 7) {
         d.setDate(today.getDate() - i);
         result.push({
             dia: days[d.getDay()],
-            valor: Math.floor(Math.random() * 40) + 10
+            valor: 0
         });
     }
     return result;
@@ -418,16 +438,24 @@ function generateMockDaysData(daysCount = 7) {
 
 function renderAdminBarChart(data) {
     const chart = document.getElementById('admin-bar-chart');
-    if (!chart || !Array.isArray(data)) return;
+    if (!chart) return;
 
-    const maxVal = Math.max(...data.map(d => d.valor || d.movimientos || 1), 10);
+    if (!Array.isArray(data) || data.length === 0) {
+        chart.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; width:100%; height:120px; color:#6b7280;">Sin datos para el período seleccionado</div>';
+        return;
+    }
+
+    const maxVal = Math.max(...data.map(d => d.valor ?? d.movimientos ?? 0), 1);
 
     chart.innerHTML = data.map(item => {
         const val = item.valor ?? item.movimientos ?? 0;
-        const heightPct = Math.max(8, Math.round((val / maxVal) * 100));
+        const heightPct = maxVal > 0 ? Math.max(4, Math.round((val / maxVal) * 100)) : 4;
+        const title = item.movimientos !== undefined
+            ? `${val} total (${item.movimientos} mov + ${item.chequeos ?? 0} chequeos)`
+            : `${val} movimientos`;
         return `
             <div class="bar-wrap">
-                <div class="bar" style="height: ${heightPct}%;" title="${val} movimientos"></div>
+                <div class="bar" style="height: ${heightPct}%;" title="${title}"></div>
                 <span class="bar-label">${item.dia || item.fecha || ''}</span>
             </div>
         `;
@@ -440,29 +468,33 @@ function renderAdminActivityList(movimientos = [], chequeos = []) {
 
     const items = [];
 
-    if (Array.isArray(movimientos)) {
-        movimientos.slice(0, 3).forEach(m => {
-            const isEntrada = m.tipo_movimiento === 'ENTRADA' || m.tipo === 'ENTRADA';
-            items.push({
-                type: isEntrada ? 'entrada' : 'salida',
-                title: `${isEntrada ? 'Entrada' : 'Salida'}: ${m.vehiculo_placa || m.placa || 'Vehículo'}`,
-                desc: `Conductor: ${m.conductor_nombre || m.conductor || 'N/A'} • Destino: ${m.destino || 'Patio Central'}`,
-                time: formatRelativeTime(m.fecha_hora || m.created_at)
-            });
+    // Normalize movimientos list — backend returns PaginatedResponse {items: [...]} or array
+    const movsList = Array.isArray(movimientos) ? movimientos : (movimientos?.items || []);
+    movsList.slice(0, 3).forEach(m => {
+        // Backend returns tipo: 'entrada'|'salida' (lowercase)
+        const isEntrada = (m.tipo || '').toLowerCase() === 'entrada';
+        const placa = m.vehiculo?.placa || m.vehiculo_placa || 'Vehículo';
+        const condNombre = m.conductor?.nombre || m.conductor_nombre || 'N/A';
+        items.push({
+            type: isEntrada ? 'entrada' : 'salida',
+            title: `${isEntrada ? 'Entrada' : 'Salida'}: ${placa}`,
+            desc: `Conductor: ${condNombre} · Km: ${m.kilometraje || 0}`,
+            time: formatRelativeTime(m.fecha_hora || m.created_at)
         });
-    }
+    });
 
-    if (Array.isArray(chequeos)) {
-        chequeos.slice(0, 2).forEach(c => {
-            const hasFindings = (c.hallazgos_count > 0) || (c.estado === 'RECHAZADO');
-            items.push({
-                type: hasFindings ? 'warn' : 'ok',
-                title: `Chequeo: ${c.vehiculo_placa || c.placa || 'Vehículo'}`,
-                desc: hasFindings ? 'Hallazgos detectados' : 'Inspección aprobada sin novedades',
-                time: formatRelativeTime(c.fecha || c.created_at)
-            });
+    // Normalize chequeos list
+    const chqList = Array.isArray(chequeos) ? chequeos : (chequeos?.items || []);
+    chqList.slice(0, 2).forEach(c => {
+        const placa = c.vehiculo?.placa || c.vehiculo_placa || 'Vehículo';
+        const hasFindings = (c.total_items > 0 && c.obs_generales) || (c.estado === 'RECHAZADO') || (c.hallazgos_count > 0);
+        items.push({
+            type: hasFindings ? 'warn' : 'ok',
+            title: `Chequeo: ${placa}`,
+            desc: hasFindings ? 'Con observaciones' : 'Sin novedades',
+            time: formatRelativeTime(c.fecha_hora || c.created_at)
         });
-    }
+    });
 
     if (items.length === 0) {
         container.innerHTML = `<div style="text-align:center; padding:1.5rem; color:#6b7280;">No hay actividad reciente registrada hoy.</div>`;
@@ -493,80 +525,91 @@ function renderAdminActivityList(movimientos = [], chequeos = []) {
 }
 
 async function initOperarioMovimientos(router) {
+    const loadActivity = async () => {
+        try {
+            const movimientos = await API.movimientos.list({ limit: 8 }).catch(() => []);
+            const list = document.getElementById('operador-activity-list');
+            if (list) {
+                if (!movimientos || movimientos.length === 0) {
+                    list.innerHTML = `<div style="text-align:center; padding:2rem; color:#6b7280;">No hay movimientos recientes registrados.</div>`;
+                    return;
+                }
+                list.innerHTML = movimientos.map(m => {
+                    const isEntrada = m.tipo_movimiento === 'ENTRADA' || m.tipo === 'ENTRADA';
+                    return `
+                        <div class="activity-item">
+                            <div class="act-icon ${isEntrada ? 'in' : 'out'}">
+                                <svg viewBox="0 0 24 24"><line x1="12" y1="${isEntrada ? '5' : '19'}" x2="12" y2="${isEntrada ? '19' : '5'}"></line><polyline points="${isEntrada ? '19 12 12 19 5 12' : '5 12 12 5 19 12'}"></polyline></svg>
+                            </div>
+                            <div class="act-content">
+                                <div class="act-title">${m.vehiculo_placa || m.placa || 'Vehículo'} (${isEntrada ? 'Entrada' : 'Salida'})</div>
+                                <div class="act-desc">Conductor: ${m.conductor_nombre || m.conductor || 'N/A'} • ${m.destino || 'Patio Central'}</div>
+                            </div>
+                            <div class="act-time ${isEntrada ? 'time-in' : 'time-out'}">${formatRelativeTime(m.fecha_hora || m.created_at)}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (err) {
+            console.error("Error loading operario movimientos:", err);
+        }
+    };
+
     document.getElementById('btn-op-entrada')?.addEventListener('click', () => {
-        window.dispatchEvent(new CustomEvent('scv:open-movimiento-modal', { detail: { tipo: 'ENTRADA' } }));
+        openMovimientoModal('ENTRADA', loadActivity);
     });
     document.getElementById('btn-op-salida')?.addEventListener('click', () => {
-        window.dispatchEvent(new CustomEvent('scv:open-movimiento-modal', { detail: { tipo: 'SALIDA' } }));
+        openMovimientoModal('SALIDA', loadActivity);
+    });
+    document.getElementById('btn-op-ver-mov-historial')?.addEventListener('click', () => {
+        router.navigate('movimientos');
     });
 
-    try {
-        const movimientos = await API.movimientos.list({ limit: 8 }).catch(() => []);
-        const list = document.getElementById('operador-activity-list');
-        if (list) {
-            if (!movimientos || movimientos.length === 0) {
-                list.innerHTML = `<div style="text-align:center; padding:2rem; color:#6b7280;">No hay movimientos recientes registrados.</div>`;
-                return;
-            }
-            list.innerHTML = movimientos.map(m => {
-                const isEntrada = m.tipo_movimiento === 'ENTRADA' || m.tipo === 'ENTRADA';
-                return `
-                    <div class="activity-item">
-                        <div class="act-icon ${isEntrada ? 'in' : 'out'}">
-                            <svg viewBox="0 0 24 24"><line x1="12" y1="${isEntrada ? '5' : '19'}" x2="12" y2="${isEntrada ? '19' : '5'}"></line><polyline points="${isEntrada ? '19 12 12 19 5 12' : '5 12 12 5 19 12'}"></polyline></svg>
-                        </div>
-                        <div class="act-content">
-                            <div class="act-title">${m.vehiculo_placa || m.placa || 'Vehículo'} (${isEntrada ? 'Entrada' : 'Salida'})</div>
-                            <div class="act-desc">Conductor: ${m.conductor_nombre || m.conductor || 'N/A'} • ${m.destino || 'Patio Central'}</div>
-                        </div>
-                        <div class="act-time ${isEntrada ? 'time-in' : 'time-out'}">${formatRelativeTime(m.fecha_hora || m.created_at)}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-    } catch (err) {
-        console.error("Error loading operario movimientos:", err);
-    }
+    await loadActivity();
 }
 
 async function initOperarioChequeo(router) {
+    const loadActivity = async () => {
+        try {
+            const chequeos = await API.chequeos.list({ limit: 8 }).catch(() => []);
+            const list = document.getElementById('chequeos-activity-list');
+            if (list) {
+                if (!chequeos || chequeos.length === 0) {
+                    list.innerHTML = `<div style="text-align:center; padding:2rem; color:#6b7280;">No hay chequeos recientes registrados.</div>`;
+                    return;
+                }
+                list.innerHTML = chequeos.map(c => {
+                    const hasIssues = c.hallazgos_count > 0 || c.estado === 'RECHAZADO' || c.estado === 'OBSERVADO';
+                    return `
+                        <div class="activity-item">
+                            <div class="act-icon ${hasIssues ? 'warn' : 'ok'}">
+                                ${hasIssues 
+                                    ? `<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+                                    : `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+                                }
+                            </div>
+                            <div class="act-content">
+                                <div class="act-title">${c.vehiculo_placa || c.placa || 'Vehículo'} (${hasIssues ? 'Con Novedades' : 'Aprobado'})</div>
+                                <div class="act-desc">Conductor: ${c.conductor_nombre || 'N/A'} • ${hasIssues ? `${c.hallazgos_count || 1} hallazgo(s)` : 'Checklist 100% conforme'}</div>
+                            </div>
+                            <div class="act-time ${hasIssues ? 'time-orange' : 'time-green'}">${formatRelativeTime(c.fecha || c.created_at)}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (err) {
+            console.error("Error loading chequeos activity:", err);
+        }
+    };
+
     document.getElementById('btn-op-nuevo-chequeo')?.addEventListener('click', () => {
-        window.dispatchEvent(new CustomEvent('scv:open-chequeo-modal'));
+        openChequeoWizard(loadActivity);
     });
     document.getElementById('btn-op-ver-historial')?.addEventListener('click', () => {
-        window.dispatchEvent(new CustomEvent('scv:open-chequeo-history'));
+        router.navigate('chequeos');
     });
 
-    try {
-        const chequeos = await API.chequeos.list({ limit: 8 }).catch(() => []);
-        const list = document.getElementById('chequeos-activity-list');
-        if (list) {
-            if (!chequeos || chequeos.length === 0) {
-                list.innerHTML = `<div style="text-align:center; padding:2rem; color:#6b7280;">No hay chequeos recientes registrados.</div>`;
-                return;
-            }
-            list.innerHTML = chequeos.map(c => {
-                const hasIssues = c.hallazgos_count > 0 || c.estado === 'RECHAZADO' || c.estado === 'OBSERVADO';
-                return `
-                    <div class="activity-item">
-                        <div class="act-icon ${hasIssues ? 'warn' : 'ok'}">
-                            ${hasIssues 
-                                ? `<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
-                                : `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`
-                            }
-                        </div>
-                        <div class="act-content">
-                            <div class="act-title">${c.vehiculo_placa || c.placa || 'Vehículo'} (${hasIssues ? 'Con Novedades' : 'Aprobado'})</div>
-                            <div class="act-desc">Conductor: ${c.conductor_nombre || 'N/A'} • ${hasIssues ? `${c.hallazgos_count || 1} hallazgo(s)` : 'Checklist 100% conforme'}</div>
-                        </div>
-                        <div class="act-time ${hasIssues ? 'time-orange' : 'time-green'}">${formatRelativeTime(c.fecha || c.created_at)}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-    } catch (err) {
-        console.error("Error loading chequeos activity:", err);
-    }
+    await loadActivity();
 }
 
 async function initMecanicoDashboard(router) {

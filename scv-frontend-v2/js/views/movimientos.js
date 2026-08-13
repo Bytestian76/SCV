@@ -18,14 +18,14 @@ export function renderMovimientosView() {
                 </select>
             </div>
             <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
-                <div class="export-btns">
-                    <button class="btn-ghost" id="btn-export-excel" title="Exportar a Excel">
+                <div class="export-btns" style="display:flex; gap:0.5rem; align-items:center;">
+                    <button class="btn-outline" id="btn-export-excel" title="Exportar a Excel" style="border-color: var(--border); padding: 0.5rem 1rem;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-                        Excel
+                        Exportar Excel
                     </button>
-                    <button class="btn-ghost" id="btn-export-pdf" title="Exportar a PDF">
+                    <button class="btn-outline" id="btn-export-pdf" title="Exportar a PDF" style="border-color: var(--border); padding: 0.5rem 1rem;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                        PDF
+                        Exportar PDF
                     </button>
                 </div>
                 <button class="btn-primary" id="btn-reg-entrada" style="background:#16a34a;">
@@ -71,7 +71,8 @@ export async function initMovimientosView(router) {
 
     const loadData = async () => {
         try {
-            rawList = await API.movimientos.list();
+            const res = await API.movimientos.list();
+            rawList = Array.isArray(res) ? res : (res?.items || []);
             applyFilterAndRender();
         } catch (err) {
             console.error("Error loading movimientos:", err);
@@ -144,10 +145,10 @@ function renderRows(items) {
                         ${isEntrada ? 'ENTRADA' : 'SALIDA'}
                     </span>
                 </td>
-                <td data-label="Placa"><strong style="color:var(--primary); font-size:1.05rem;">${m.vehiculo_placa || m.placa || 'N/A'}</strong></td>
-                <td data-label="Conductor">${m.conductor_nombre || m.conductor || 'N/A'}</td>
+                <td data-label="Placa"><strong style="color:var(--primary); font-size:1.05rem;">${m.vehiculo?.placa || m.vehiculo_placa || m.placa || 'N/A'}</strong></td>
+                <td data-label="Conductor">${m.conductor?.nombre || m.conductor_nombre || m.conductor || 'N/A'}</td>
                 <td data-label="Kilometraje">${m.kilometraje ? `${m.kilometraje.toLocaleString()} km` : 'N/A'}</td>
-                <td data-label="Destino / Origen">${m.destino || m.origen || 'Patio Central'}</td>
+                <td data-label="Destino / Origen">${m.proveedor || m.destino || m.origen || 'Patio Central'}</td>
                 <td data-label="Novedades">${m.observaciones || m.novedades || '<span style="color:#9ca3af;">Sin novedades</span>'}</td>
             </tr>
         `;
@@ -156,20 +157,27 @@ function renderRows(items) {
 
 export function openMovimientoModal(tipo = 'ENTRADA', onSuccess) {
     const isEntrada = tipo === 'ENTRADA';
+    // Store loaded data in closure for lookup during submit
+    let vehiculosData = [];
+    let conductoresData = [];
+
     const body = `
         <form id="modal-form-movimiento">
             <div class="form-group">
                 <label class="form-label">Placa del Vehículo *</label>
-                <input type="text" class="form-input" id="mov-inp-placa" placeholder="ej. ABC-123" required style="padding-left:1rem; text-transform:uppercase;">
+                <input type="text" class="form-input" id="mov-inp-placa" list="mov-dl-placas" placeholder="ej. ABC-123" required style="padding-left:1rem; text-transform:uppercase;" autocomplete="off">
+                <datalist id="mov-dl-placas"></datalist>
             </div>
             <div class="form-group">
                 <label class="form-label">Nombre del Conductor *</label>
-                <input type="text" class="form-input" id="mov-inp-conductor" placeholder="ej. Juan Gómez" required style="padding-left:1rem;">
+                <input type="text" class="form-input" id="mov-inp-conductor" list="mov-dl-conductores" placeholder="ej. Juan Gómez" required style="padding-left:1rem;" autocomplete="off">
+                <datalist id="mov-dl-conductores"></datalist>
             </div>
             <div class="details-grid" style="padding:0; background:transparent; border:none; margin-bottom:1rem;">
                 <div class="form-group">
                     <label class="form-label">Kilometraje Actual *</label>
-                    <input type="number" class="form-input" id="mov-inp-km" placeholder="45200" required style="padding-left:1rem;">
+                    <input type="number" class="form-input" id="mov-inp-km" placeholder="Ej. 45200" required style="padding-left:1rem;">
+                    <small style="color:#6b7280; font-size:0.8rem; margin-top:0.2rem; display:block;">Debe ser mayor al último registro</small>
                 </div>
                 <div class="form-group">
                     <label class="form-label">${isEntrada ? 'Origen' : 'Destino / Ruta'}</label>
@@ -190,28 +198,48 @@ export function openMovimientoModal(tipo = 'ENTRADA', onSuccess) {
             className: 'btn-primary',
             attrs: isEntrada ? 'style="background:#16a34a;"' : 'style="background:#ea580c;"',
             onClick: async (e, close) => {
-                const placa = document.getElementById('mov-inp-placa')?.value.trim().toUpperCase();
-                const conductor = document.getElementById('mov-inp-conductor')?.value.trim();
+                const placaRaw = document.getElementById('mov-inp-placa')?.value.trim().toUpperCase();
+                const conductorNombre = document.getElementById('mov-inp-conductor')?.value.trim();
                 const km = parseFloat(document.getElementById('mov-inp-km')?.value) || 0;
                 const destino = document.getElementById('mov-inp-destino')?.value.trim();
                 const obs = document.getElementById('mov-inp-obs')?.value.trim();
 
-                if (!placa || !conductor) {
+                if (!placaRaw || !conductorNombre) {
                     showToast('Placa y conductor son obligatorios', 'warning');
+                    return;
+                }
+                if (isNaN(km) || km <= 0) {
+                    showToast('El kilometraje es obligatorio y debe ser mayor a 0', 'warning');
+                    return;
+                }
+
+                // Find vehiculo_id by placa
+                const vehiculo = vehiculosData.find(v => v.placa && v.placa.toUpperCase() === placaRaw);
+                if (!vehiculo) {
+                    showToast(`Vehículo con placa ${placaRaw} no encontrado. Verifica la placa.`, 'error');
+                    return;
+                }
+
+                // Find conductor_id by name (case-insensitive partial match)
+                const conductorNombreLower = conductorNombre.toLowerCase();
+                const conductor = conductoresData.find(c => 
+                    c.nombre && c.nombre.toLowerCase().includes(conductorNombreLower)
+                );
+                if (!conductor) {
+                    showToast(`Conductor '${conductorNombre}' no encontrado. Verifica el nombre.`, 'error');
                     return;
                 }
 
                 try {
                     await API.movimientos.create({
-                        tipo_movimiento: tipo,
-                        vehiculo_placa: placa,
-                        conductor_nombre: conductor,
-                        kilometraje: km,
-                        destino,
-                        observaciones: obs,
-                        fecha_hora: new Date().toISOString()
+                        tipo: tipo.toLowerCase(),
+                        vehiculo_id: vehiculo.id,
+                        conductor_id: conductor.id,
+                        kilometraje: Math.round(km),
+                        proveedor: destino || null,
+                        observaciones: obs || null,
                     });
-                    showToast(`${tipo === 'ENTRADA' ? 'Entrada' : 'Salida'} de ${placa} registrada`, 'success');
+                    showToast(`${tipo === 'ENTRADA' ? 'Entrada' : 'Salida'} de ${placaRaw} registrada`, 'success');
                     close();
                     if (onSuccess) onSuccess();
                 } catch (err) {
@@ -220,4 +248,28 @@ export function openMovimientoModal(tipo = 'ENTRADA', onSuccess) {
             }
         }
     ]);
+
+    // Load smart search data asynchronously
+    setTimeout(async () => {
+        try {
+            const [vRes, cRes] = await Promise.all([
+                API.vehiculos ? API.vehiculos.list().catch(() => []) : [],
+                API.conductores ? API.conductores.list().catch(() => []): []
+            ]);
+            vehiculosData = Array.isArray(vRes) ? vRes : (vRes?.items || []);
+            conductoresData = Array.isArray(cRes) ? cRes : (cRes?.items || []);
+
+            const dlPlacas = document.getElementById('mov-dl-placas');
+            if (dlPlacas && vehiculosData.length) {
+                dlPlacas.innerHTML = vehiculosData.map(v => `<option value="${v.placa}">${v.marca || ''} ${v.modelo || ''}</option>`).join('');
+            }
+
+            const dlCond = document.getElementById('mov-dl-conductores');
+            if (dlCond && conductoresData.length) {
+                dlCond.innerHTML = conductoresData.map(c => `<option value="${c.nombre}">CC: ${c.cedula || ''}</option>`).join('');
+            }
+        } catch (e) {
+            console.error('Error loading datalists', e);
+        }
+    }, 100);
 }

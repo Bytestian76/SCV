@@ -7,6 +7,11 @@ import {
 } from '../exports.js';
 
 export function renderGestionView(entityType = 'vehiculos') {
+    const user = typeof APP !== 'undefined' && APP.user ? APP.user : {};
+    const role = user.rol ? user.rol.toUpperCase() : 'ADMIN';
+    const isMecanico = role === 'MECANICO' || role === 'JEFE_MECANICOS';
+    const isAdmin = role === 'ADMIN';
+
     const titles = {
         'vehiculos': 'GESTIÓN DE VEHÍCULOS',
         'conductores': 'GESTIÓN DE CONDUCTORES',
@@ -28,15 +33,17 @@ export function renderGestionView(entityType = 'vehiculos') {
     return `
         <!-- HEADER CONTROLS (TABS SI ES ADMIN) -->
         <div class="tabs-header">
-            <button class="tab-btn ${entityType === 'vehiculos' ? 'active' : ''}" data-gestion="vehiculos">
+            <button class="tab-btn active" data-gestion="vehiculos">
                 ${ICONS.vehiculos} Vehículos
             </button>
+            ${isAdmin ? `
             <button class="tab-btn ${entityType === 'conductores' ? 'active' : ''}" data-gestion="conductores">
                 ${ICONS.conductores} Conductores
             </button>
             <button class="tab-btn ${entityType === 'usuarios' ? 'active' : ''}" data-gestion="usuarios">
                 ${ICONS.usuarios} Usuarios
             </button>
+            ` : ''}
         </div>
 
         <!-- TOOLBAR (SEARCH & FILTERS & ADD BTN) -->
@@ -64,20 +71,22 @@ export function renderGestionView(entityType = 'vehiculos') {
             </div>
             
             <!-- ACTION BUTTONS -->
-            <div class="export-btns">
-                <button id="btn-export-excel" class="btn-ghost" title="Exportar tabla a Excel">
+            <div class="export-btns" style="display:flex; gap:0.5rem; align-items:center; margin-right:1rem;">
+                <button id="btn-export-excel" class="btn-outline" title="Exportar tabla a Excel" style="border-color: var(--border); padding: 0.5rem 1rem;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-                    Excel
+                    Exportar Excel
                 </button>
-                <button id="btn-export-pdf" class="btn-ghost" title="Exportar tabla a PDF">
+                <button id="btn-export-pdf" class="btn-outline" title="Exportar tabla a PDF" style="border-color: var(--border); padding: 0.5rem 1rem;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                    PDF
+                    Exportar PDF
                 </button>
             </div>
+            ${!isMecanico ? `
             <button id="btn-gestion-new" class="btn-primary">
                 ${ICONS.plus}
                 ${newBtnLabels[entityType] || 'Registrar'}
             </button>
+            ` : ''}
         </div>
 
         <!-- TABLE CARD -->
@@ -149,13 +158,16 @@ export async function initGestionView(entityType = 'vehiculos', router) {
 
     const loadTableData = async () => {
         try {
+            let res;
             if (entityType === 'vehiculos') {
-                rawData = await API.vehiculos.list();
+                res = await API.vehiculos.list();
             } else if (entityType === 'conductores') {
-                rawData = await API.conductores.list();
+                res = await API.conductores.list();
             } else {
-                rawData = await API.usuarios.list();
+                res = await API.usuarios.list();
             }
+            // Handle PaginatedResponse {items:[...]} or plain array
+            rawData = Array.isArray(res) ? res : (res?.items || []);
             applyFiltersAndRender();
         } catch (err) {
             console.error(`Error loading ${entityType}:`, err);
@@ -164,6 +176,7 @@ export async function initGestionView(entityType = 'vehiculos', router) {
             if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#dc2626; padding:2rem;">Error al obtener datos del servidor.</td></tr>`;
         }
     };
+
 
     const applyFiltersAndRender = () => {
         const query = document.getElementById('gestion-search-input')?.value.toLowerCase().trim() || '';
@@ -342,10 +355,59 @@ function openDetailsModal(entityType, item) {
                 <div class="detail-item"><span class="detail-label">Número de Chasis / VIN</span><span class="detail-value">${item.vin || item.chasis || 'N/A'}</span></div>
                 <div class="detail-item"><span class="detail-label">Vencimiento SOAT</span><span class="detail-value">${item.soat_vencimiento || 'Vigente'}</span></div>
             </div>
+            <div style="margin-top: 1.5rem;">
+                <h4 style="font-size:1.1rem; color:var(--primary); font-weight:700; margin-bottom:0.5rem;">Comentarios / Notas</h4>
+                <textarea class="form-input" id="veh-comentarios" rows="3" style="width:100%; padding:0.6rem;">${item.comentarios || ''}</textarea>
+                <div style="text-align:right; margin-top:0.5rem;">
+                    <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.85rem;" id="btn-save-veh-comments">Guardar Comentarios</button>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem;">
+                <h4 style="font-size:1.1rem; color:var(--primary); font-weight:700; margin-bottom:0.5rem;">Historial de Mantenimientos</h4>
+                <div id="veh-history-container" style="max-height: 200px; overflow-y: auto; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem; font-size: 0.85rem;">
+                    Cargando historial...
+                </div>
+            </div>
         `;
         openModal('Detalles del Vehículo', body, [
             { text: 'Cerrar', className: 'btn-secondary', onClick: (e, close) => close() }
         ]);
+
+        setTimeout(() => {
+            const btnSave = document.getElementById('btn-save-veh-comments');
+            if (btnSave) {
+                btnSave.addEventListener('click', async () => {
+                    const notas = document.getElementById('veh-comentarios').value;
+                    try {
+                        await API.vehiculos.update(item.id, { comentarios: notas });
+                        showToast('Comentarios actualizados', 'success');
+                    } catch (e) {
+                        showToast('Error al actualizar comentarios', 'error');
+                    }
+                });
+            }
+
+            const histContainer = document.getElementById('veh-history-container');
+            if (histContainer) {
+                API.mantenimientos.list().then(res => {
+                    const allMants = Array.isArray(res) ? res : (res?.items || []);
+                    const vehMants = allMants.filter(m => m.vehiculo_id === item.id || m.vehiculo_placa === item.placa || (m.vehiculo && m.vehiculo.placa === item.placa));
+                    if (vehMants.length === 0) {
+                        histContainer.innerHTML = '<span style="color:var(--text-muted);">No hay mantenimientos registrados.</span>';
+                    } else {
+                        vehMants.sort((a,b) => new Date(b.fecha_creacion || 0) - new Date(a.fecha_creacion || 0));
+                        histContainer.innerHTML = vehMants.map(m => `
+                            <div style="margin-bottom:0.5rem; padding-bottom:0.5rem; border-bottom:1px solid var(--border-color);">
+                                <strong style="color:var(--primary);">ORD-${m.id} (${m.estado})</strong> - ${new Date(m.fecha_creacion || Date.now()).toLocaleDateString()}<br>
+                                <span style="color:var(--text-muted);">${m.descripcion || 'Sin descripción'}</span>
+                            </div>
+                        `).join('');
+                    }
+                }).catch(() => {
+                    histContainer.innerHTML = '<span style="color:var(--danger);">Error al cargar historial.</span>';
+                });
+            }
+        }, 100);
     } else if (entityType === 'conductores') {
         const body = `
             <div class="detail-header-block">
@@ -540,11 +602,11 @@ function openCreateModal(entityType, onSuccess) {
                     <div class="form-group">
                         <label class="form-label">Rol del Usuario</label>
                         <select class="filter-select" id="inp-user-rol" style="width:100%;">
-                            <option value="ADMIN">ADMIN</option>
-                            <option value="OPERARIO_DESPACHO">OPERARIO_DESPACHO</option>
-                            <option value="OPERARIO_CHEQUEO">OPERARIO_CHEQUEO</option>
-                            <option value="MECANICO">MECANICO</option>
-                            <option value="JEFE_MECANICOS">JEFE_MECANICOS</option>
+                            <option value="admin">ADMINISTRADOR</option>
+                            <option value="operario_movimientos">OPERARIO MOVIMIENTOS</option>
+                            <option value="operario_chequeo">OPERARIO CHEQUEO</option>
+                            <option value="mecanico">MECÁNICO</option>
+                            <option value="jefe_mecanicos">JEFE DE MECÁNICOS</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -612,6 +674,16 @@ function openEditModal(entityType, item, onSuccess) {
                         <input type="number" class="form-input" id="edit-veh-cap" value="${item.capacidad_carga_kg || ''}" style="padding-left:1rem;">
                     </div>
                 </div>
+                <div class="details-grid" style="padding:0; background:transparent; border:none;">
+                    <div class="form-group">
+                        <label class="form-label">Marca</label>
+                        <input type="text" class="form-input" id="edit-veh-marca" value="${item.marca || ''}" style="padding-left:1rem;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Modelo / Año</label>
+                        <input type="text" class="form-input" id="edit-veh-modelo" value="${item.modelo || ''}" style="padding-left:1rem;">
+                    </div>
+                </div>
             </form>
         `;
         openModal(`Editar Vehículo: ${item.placa}`, body, [
@@ -622,10 +694,14 @@ function openEditModal(entityType, item, onSuccess) {
                 onClick: async (e, close) => {
                     const estado = document.getElementById('edit-veh-estado')?.value;
                     const cap = parseFloat(document.getElementById('edit-veh-cap')?.value) || item.capacidad_carga_kg;
+                    const marca = document.getElementById('edit-veh-marca')?.value.trim();
+                    const modelo = document.getElementById('edit-veh-modelo')?.value.trim();
                     try {
-                        await API.vehiculos.update(item.id, { estado, capacidad_carga_kg: cap });
+                        await API.vehiculos.update(item.id, { estado, capacidad_carga_kg: cap, marca, modelo });
                         item.estado = estado;
                         item.capacidad_carga_kg = cap;
+                        item.marca = marca;
+                        item.modelo = modelo;
                         showToast('Vehículo actualizado', 'success');
                         close();
                         if (onSuccess) onSuccess();
@@ -635,8 +711,138 @@ function openEditModal(entityType, item, onSuccess) {
                 }
             }
         ]);
+    } else if (entityType === 'conductores') {
+        const body = `
+            <form id="modal-form-edit-conductor">
+                <div class="form-group">
+                    <label class="form-label">Nombre Completo *</label>
+                    <input type="text" class="form-input" id="edit-con-nombre" value="${item.nombre || ''}" required style="padding-left:1rem;">
+                </div>
+                <div class="details-grid" style="padding:0; background:transparent; border:none; margin-bottom:1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Cédula / Documento</label>
+                        <input type="text" class="form-input" id="edit-con-cedula" value="${item.cedula || ''}" style="padding-left:1rem;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Teléfono</label>
+                        <input type="tel" class="form-input" id="edit-con-telefono" value="${item.telefono || ''}" style="padding-left:1rem;">
+                    </div>
+                </div>
+                <div class="details-grid" style="padding:0; background:transparent; border:none; margin-bottom:1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Nro. Licencia</label>
+                        <input type="text" class="form-input" id="edit-con-licencia" value="${item.numero_licencia || ''}" style="padding-left:1rem;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Categoría Licencia</label>
+                        <select class="filter-select" id="edit-con-categoria" style="width:100%;">
+                            <option value="B1" ${item.categoria_licencia === 'B1' ? 'selected' : ''}>B1</option>
+                            <option value="B2" ${item.categoria_licencia === 'B2' ? 'selected' : ''}>B2</option>
+                            <option value="B3" ${item.categoria_licencia === 'B3' ? 'selected' : ''}>B3</option>
+                            <option value="C1" ${item.categoria_licencia === 'C1' ? 'selected' : ''}>C1</option>
+                            <option value="C2" ${item.categoria_licencia === 'C2' ? 'selected' : ''}>C2</option>
+                            <option value="C3" ${item.categoria_licencia === 'C3' ? 'selected' : ''}>C3</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Estado</label>
+                    <select class="filter-select" id="edit-con-activo" style="width:100%;">
+                        <option value="true" ${item.activo !== false ? 'selected' : ''}>Activo</option>
+                        <option value="false" ${item.activo === false ? 'selected' : ''}>Inactivo</option>
+                    </select>
+                </div>
+            </form>
+        `;
+        openModal(`Editar Conductor: ${item.nombre || 'Conductor'}`, body, [
+            { text: 'Cancelar', className: 'btn-secondary', onClick: (e, close) => close() },
+            {
+                text: 'Actualizar Conductor',
+                className: 'btn-primary',
+                onClick: async (e, close) => {
+                    const nombre = document.getElementById('edit-con-nombre')?.value.trim();
+                    if (!nombre) { showToast('El nombre es obligatorio', 'warning'); return; }
+                    const cedula = document.getElementById('edit-con-cedula')?.value.trim();
+                    const telefono = document.getElementById('edit-con-telefono')?.value.trim();
+                    const numero_licencia = document.getElementById('edit-con-licencia')?.value.trim();
+                    const categoria_licencia = document.getElementById('edit-con-categoria')?.value;
+                    const activo = document.getElementById('edit-con-activo')?.value === 'true';
+                    try {
+                        await API.conductores.update(item.id, {
+                            nombre, cedula, telefono, numero_licencia, categoria_licencia, activo
+                        });
+                        Object.assign(item, { nombre, cedula, telefono, numero_licencia, categoria_licencia, activo });
+                        showToast('Conductor actualizado correctamente', 'success');
+                        close();
+                        if (onSuccess) onSuccess();
+                    } catch (err) {
+                        showToast(err.message || 'Error al actualizar conductor', 'error');
+                    }
+                }
+            }
+        ]);
+    } else {
+        // Usuarios
+        const rolesOptions = [
+            'admin', 'operario_movimientos', 'operario_chequeo', 'mecanico', 'jefe_mecanicos'
+        ];
+        const body = `
+            <form id="modal-form-edit-usuario">
+                <div class="form-group">
+                    <label class="form-label">Nombre *</label>
+                    <input type="text" class="form-input" id="edit-usr-nombre" value="${item.nombre || ''}" required style="padding-left:1rem;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email (Solo lectura)</label>
+                    <input type="email" class="form-input" value="${item.email || ''}" disabled style="padding-left:1rem; background:#f1f5f9;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Rol</label>
+                    <select class="filter-select" id="edit-usr-rol" style="width:100%;">
+                        ${rolesOptions.map(r => `<option value="${r}" ${item.rol === r ? 'selected' : ''}>${r}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Estado</label>
+                    <select class="filter-select" id="edit-usr-activo" style="width:100%;">
+                        <option value="true" ${item.activo !== false ? 'selected' : ''}>Activo</option>
+                        <option value="false" ${item.activo === false ? 'selected' : ''}>Inactivo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nueva Contraseña (opcional)</label>
+                    <input type="password" class="form-input" id="edit-usr-password" placeholder="Dejar vacío para no cambiar" style="padding-left:1rem;">
+                </div>
+            </form>
+        `;
+        openModal(`Editar Usuario: ${item.nombre || item.email}`, body, [
+            { text: 'Cancelar', className: 'btn-secondary', onClick: (e, close) => close() },
+            {
+                text: 'Actualizar Usuario',
+                className: 'btn-primary',
+                onClick: async (e, close) => {
+                    const nombre = document.getElementById('edit-usr-nombre')?.value.trim();
+                    if (!nombre) { showToast('El nombre es obligatorio', 'warning'); return; }
+                    const rol = document.getElementById('edit-usr-rol')?.value;
+                    const activo = document.getElementById('edit-usr-activo')?.value === 'true';
+                    const password = document.getElementById('edit-usr-password')?.value.trim();
+                    const payload = { nombre, rol, activo };
+                    if (password) payload.password = password;
+                    try {
+                        await API.usuarios.update(item.id, payload);
+                        Object.assign(item, { nombre, rol, activo });
+                        showToast('Usuario actualizado correctamente', 'success');
+                        close();
+                        if (onSuccess) onSuccess();
+                    } catch (err) {
+                        showToast(err.message || 'Error al actualizar usuario', 'error');
+                    }
+                }
+            }
+        ]);
     }
 }
+
 
 function openDeleteConfirmModal(entityType, id, onSuccess) {
     const body = `

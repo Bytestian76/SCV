@@ -19,14 +19,14 @@ export function renderChequeosView() {
                 </select>
             </div>
             <div style="display:flex; gap:0.75rem; align-items:center;">
-                <div class="export-btns">
-                    <button class="btn-ghost" id="btn-export-excel" title="Exportar a Excel">
+                <div class="export-btns" style="display:flex; gap:0.5rem; align-items:center;">
+                    <button class="btn-outline" id="btn-export-excel" title="Exportar a Excel" style="border-color: var(--border); padding: 0.5rem 1rem;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-                        Excel
+                        Exportar Excel
                     </button>
-                    <button class="btn-ghost" id="btn-export-pdf" title="Exportar a PDF">
+                    <button class="btn-outline" id="btn-export-pdf" title="Exportar a PDF" style="border-color: var(--border); padding: 0.5rem 1rem;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                        PDF
+                        Exportar PDF
                     </button>
                 </div>
                 <button class="btn-primary" id="btn-nuevo-chequeo">
@@ -67,7 +67,8 @@ export async function initChequeosView(router) {
 
     const loadData = async () => {
         try {
-            rawList = await API.chequeos.list();
+            const res = await API.chequeos.list();
+            rawList = Array.isArray(res) ? res : (res?.items || []);
             applyFilterAndRender();
         } catch (err) {
             console.error("Error loading chequeos:", err);
@@ -178,44 +179,67 @@ function openChequeoDetailsModal(item) {
     ]);
 }
 
-export function openChequeoWizard(onSuccess) {
-    const items = [
-        { id: 'frenos', label: '1. Sistema de frenos y pedal' },
-        { id: 'luces', label: '2. Luces principales y direccionales' },
-        { id: 'llantas', label: '3. Presión y desgaste de llantas' },
-        { id: 'fluidos', label: '4. Nivel de aceite y refrigerante' },
-        { id: 'limpiabrisas', label: '5. Limpiaparabrisas y plumillas' },
-        { id: 'cinturon', label: '6. Cinturones de seguridad' },
-        { id: 'kit', label: '7. Kit de carretera y extintor vig.' }
-    ];
+export async function openChequeoWizard(onSuccess) {
+    let SECCIONES = [];
+    try {
+        const formInfo = await API.chequeos.getFormulario();
+        SECCIONES = formInfo.secciones || [];
+    } catch (err) {
+        showToast('Error cargando el formulario preoperacional', 'error');
+        return;
+    }
+
+
+    const renderItems = (items) => items.map(item => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:0.35rem 0.6rem; border-radius:5px; border:1px solid var(--border-color); font-size:0.8rem; gap:0.5rem;">
+            <span style="flex:1; min-width:120px;">${item.label}</span>
+            <div style="display:flex; gap:0.35rem; flex-wrap:wrap; justify-content:flex-end;">
+                ${(item.options || []).map((o, i) => `<label style="white-space:nowrap; font-size:0.78rem; cursor:pointer;"><input type="radio" name="chk_${item.item}" value="${o}" ${i === 0 ? 'checked' : ''}> ${o.replace(/_/g, ' ')}</label>`).join('')}
+            </div>
+        </div>
+    `).join('');
 
     const body = `
         <form id="form-chequeo-wizard">
             <div class="details-grid" style="padding:0; background:transparent; border:none; margin-bottom:1rem;">
                 <div class="form-group">
                     <label class="form-label">Placa del Vehículo *</label>
-                    <input type="text" class="form-input" id="chq-inp-placa" placeholder="ej. ABC-123" required style="padding-left:1rem; text-transform:uppercase;">
+                    <input type="text" class="form-input" id="chq-inp-placa" list="chq-dl-placas" placeholder="ej. ABC-123" required style="padding-left:1rem; text-transform:uppercase;" autocomplete="off">
+                    <datalist id="chq-dl-placas"></datalist>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Conductor Evaluado *</label>
-                    <input type="text" class="form-input" id="chq-inp-conductor" placeholder="ej. Juan Gómez" required style="padding-left:1rem;">
+                    <input type="text" class="form-input" id="chq-inp-conductor" list="chq-dl-conductores" placeholder="ej. Juan Gómez" required style="padding-left:1rem;" autocomplete="off">
+                    <datalist id="chq-dl-conductores"></datalist>
                 </div>
             </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Kilometraje Actual *</label>
+                <input type="number" class="form-input" id="chq-inp-km" placeholder="ej. 45200" required style="padding-left:1rem;" min="0">
+            </div>
 
-            <label class="form-label" style="margin-bottom:0.5rem;">Lista de Verificación:</label>
-            <div style="display:flex; flex-direction:column; gap:0.6rem; max-height:220px; overflow-y:auto; padding-right:0.5rem;">
-                ${items.map(item => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:0.5rem 0.75rem; border-radius:6px; border:1px solid var(--border-color); font-size:0.85rem;">
-                        <span>${item.label}</span>
-                        <div style="display:flex; gap:0.5rem;">
-                            <label><input type="radio" name="chk_${item.id}" value="CUMPLE" checked> Ok</label>
-                            <label><input type="radio" name="chk_${item.id}" value="NO_CUMPLE"> Falla</label>
+            <label class="form-label" style="margin-bottom:0.5rem;">Lista de Verificación Preoperacional</label>
+            <div style="display:flex; flex-direction:column; gap:0.75rem; max-height:340px; overflow-y:auto; padding:0.75rem; border:1px solid var(--border-color); border-radius:8px;">
+                ${SECCIONES.map(sec => `
+                    <div>
+                        <div style="font-weight:700; color:var(--primary); padding:0.2rem 0; border-bottom:1px solid var(--border-color); margin-bottom:0.35rem; font-size:0.82rem;">${sec.label}</div>
+                        <div style="display:flex; flex-direction:column; gap:0.3rem;">
+                            ${renderItems(sec.items)}
                         </div>
                     </div>
                 `).join('')}
             </div>
+
+            <div class="form-group" style="margin-top:0.75rem;">
+                <label class="form-label">Observaciones Generales</label>
+                <textarea class="form-input" id="chq-inp-obs" rows="2" placeholder="Opcional..." style="padding:0.6rem 1rem;"></textarea>
+            </div>
         </form>
     `;
+
+    // Store loaded data in closure for submit lookup
+    let vehiculosData = [];
+    let conductoresData = [];
 
     openModal('Nuevo Chequeo Preoperacional', body, [
         { text: 'Cancelar', className: 'btn-secondary', onClick: (e, close) => close() },
@@ -223,30 +247,58 @@ export function openChequeoWizard(onSuccess) {
             text: 'Guardar Inspección',
             className: 'btn-primary',
             onClick: async (e, close) => {
-                const placa = document.getElementById('chq-inp-placa')?.value.trim().toUpperCase();
-                const conductor = document.getElementById('chq-inp-conductor')?.value.trim();
+                const placaRaw = document.getElementById('chq-inp-placa')?.value.trim().toUpperCase();
+                const conductorNombre = document.getElementById('chq-inp-conductor')?.value.trim();
+                const kmVal = parseFloat(document.getElementById('chq-inp-km')?.value) || 0;
+                const obsGenerales = document.getElementById('chq-inp-obs')?.value.trim() || null;
 
-                if (!placa || !conductor) {
+                if (!placaRaw || !conductorNombre) {
                     showToast('Placa y conductor son obligatorios', 'warning');
                     return;
                 }
+                if (!kmVal || kmVal <= 0) {
+                    showToast('El kilometraje es obligatorio y debe ser mayor a 0', 'warning');
+                    return;
+                }
 
-                // Check for failures
-                let hasFailures = false;
-                items.forEach(item => {
-                    const sel = document.querySelector(`input[name="chk_${item.id}"]:checked`);
-                    if (sel && sel.value === 'NO_CUMPLE') hasFailures = true;
-                });
+                // Find vehiculo_id by placa (exact match)
+                const vehiculo = vehiculosData.find(v => v.placa && v.placa.toUpperCase() === placaRaw);
+                if (!vehiculo) {
+                    showToast(`Vehículo con placa ${placaRaw} no encontrado. Verifica la placa.`, 'error');
+                    return;
+                }
+                // Find conductor_id by name (case-insensitive partial match)
+                const conductorLower = conductorNombre.toLowerCase();
+                const conductor = conductoresData.find(c => c.nombre && c.nombre.toLowerCase().includes(conductorLower));
+                if (!conductor) {
+                    showToast(`Conductor '${conductorNombre}' no encontrado. Verifica el nombre.`, 'error');
+                    return;
+                }
+
+                // Collect all item values from the form
+                const chequeoItems = [];
+                for (const sec of SECCIONES) {
+                    for (const item of sec.items) {
+                        const selected = document.querySelector(`input[name="chk_${item.item}"]:checked`);
+                        chequeoItems.push({
+                            seccion: sec.nombre,
+                            item: item.item,
+                            valor: selected ? selected.value : (item.options?.[0] || '')
+                        });
+                    }
+                }
 
                 try {
-                    await API.chequeos.create({
-                        vehiculo_placa: placa,
-                        conductor_nombre: conductor,
-                        estado: hasFailures ? 'OBSERVADO' : 'APROBADO',
-                        fecha: new Date().toISOString(),
-                        hallazgos_count: hasFailures ? 1 : 0
+                    // Step 1: Create chequeo header
+                    const chequeo = await API.chequeos.create({
+                        vehiculo_id: vehiculo.id,
+                        conductor_id: conductor.id,
+                        kilometraje: Math.round(kmVal),
+                        obs_generales: obsGenerales,
                     });
-                    showToast(`Chequeo de ${placa} guardado satisfactoriamente`, 'success');
+                    // Step 2: Submit all checklist items in one batch call
+                    await API.chequeos.createItems(chequeo.id, chequeoItems);
+                    showToast(`Chequeo de ${placaRaw} guardado satisfactoriamente`, 'success');
                     close();
                     if (onSuccess) onSuccess();
                 } catch (err) {
@@ -255,4 +307,30 @@ export function openChequeoWizard(onSuccess) {
             }
         }
     ]);
+
+    // Load smart search data asynchronously for datalists
+    setTimeout(async () => {
+        try {
+            const [vRes, cRes] = await Promise.all([
+                API.vehiculos ? API.vehiculos.list().catch(() => []) : [],
+                API.conductores ? API.conductores.list().catch(() => []) : []
+            ]);
+            vehiculosData = Array.isArray(vRes) ? vRes : (vRes?.items || []);
+            conductoresData = Array.isArray(cRes) ? cRes : (cRes?.items || []);
+
+            const dlPlacas = document.getElementById('chq-dl-placas');
+            if (dlPlacas && vehiculosData.length) {
+                dlPlacas.innerHTML = vehiculosData.map(v => `<option value="${v.placa}">${v.marca || ''} ${v.modelo || ''}</option>`).join('');
+            }
+
+            const dlCond = document.getElementById('chq-dl-conductores');
+            if (dlCond && conductoresData.length) {
+                dlCond.innerHTML = conductoresData.map(c => `<option value="${c.nombre}">CC: ${c.cedula || ''}</option>`).join('');
+            }
+        } catch (e) {
+            console.error('Error loading datalists', e);
+        }
+    }, 100);
 }
+
+
