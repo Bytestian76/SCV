@@ -119,8 +119,8 @@ def crear_orden(
         hallazgo = db.query(Hallazgo).filter(Hallazgo.id == data.hallazgo_id).first()
         if not hallazgo:
             raise HTTPException(status_code=404, detail="Hallazgo no encontrado")
-        if hallazgo.estado not in ["abierto", "evaluado"]:
-            raise HTTPException(status_code=400, detail="El hallazgo debe estar abierto o evaluado antes de crear una orden")
+        # if hallazgo.estado not in ["abierto", "evaluado"]:
+        #     raise HTTPException(status_code=400, detail="El hallazgo debe estar abierto o evaluado antes de crear una orden")
 
     o = OrdenTrabajo(
         hallazgo_id=data.hallazgo_id,

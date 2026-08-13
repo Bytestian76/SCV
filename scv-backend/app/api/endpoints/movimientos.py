@@ -109,7 +109,7 @@ def listar_movimientos(
     usuario_id: int = None,
     search: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user = Depends(require_role(["admin", "operario_movimientos"])),
+    current_user = Depends(require_role(["admin", "operario_movimientos", "jefe_mecanicos"])),
 ):
     """Listar movimientos con filtros (admin y operario_movimientos)"""
     if tipo and tipo not in TIPOS_MOVIMIENTO:
@@ -185,7 +185,7 @@ def obtener_movimiento(
 def crear_movimiento(
     movimiento: MovimientoCreate,
     db: Session = Depends(get_db),
-    current_user = Depends(require_role(["admin", "operario_movimientos"]))
+    current_user = Depends(require_role(["admin", "operario_movimientos", "jefe_mecanicos"]))
 ):
     """Registrar entrada o salida de vehículo"""
     if movimiento.tipo not in TIPOS_MOVIMIENTO:
