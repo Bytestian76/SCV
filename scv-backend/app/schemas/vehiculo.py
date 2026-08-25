@@ -9,12 +9,17 @@ class VehiculoBase(BaseModel):
     placa: str
     marca: str
     modelo: str
-    año: int
+    año: Optional[int] = None
     empresa: Optional[str] = None
     kilometraje: int = 0
     fecha_venc_soat: Optional[date] = None
     fecha_venc_rtm: Optional[date] = None
     especificaciones: Optional[str] = None
+    tipo_vehiculo: Optional[str] = None
+    capacidad_carga_kg: Optional[int] = None
+    chasis: Optional[str] = None
+    comentarios: Optional[str] = None
+    estado: Optional[str] = None
 
 
 class VehiculoCreate(VehiculoBase):

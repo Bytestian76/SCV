@@ -1,0 +1,59 @@
+<!-- Pantalla Dashboard Mecánico -->
+<div id="dashboard-mecanico" class="screen" data-module="dashboard-mecanico">
+    <header class="app-header">
+        <div class="header-brand">
+            <p>Panel Mecánico</p>
+        </div>
+        <button class="btn-logout" onclick="logout()">
+            <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+            <span>Cerrar Sesión</span>
+        </button>
+    </header>
+    <div class="dashboard-content">
+        <div class="ops-layout">
+            <section class="ops-command">
+                <p class="section-kicker">Mis tareas</p>
+                <h2>Órdenes de trabajo asignadas</h2>
+                <div class="ops-kpi-rack">
+                    <div class="stat-card">
+                        <span class="stat-number" id="mec-stat-pendientes">0</span>
+                        <span class="stat-label">Pendientes</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="mec-stat-en-proceso">0</span>
+                        <span class="stat-label">En proceso</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="mec-stat-completadas-hoy">0</span>
+                        <span class="stat-label">Completadas hoy</span>
+                    </div>
+                </div>
+                <article class="user-credential-card" data-user-credential>
+                    <div class="user-credential-icon-wrap">
+                        <img data-user-avatar src="assets/icons/people.svg" alt="Perfil de usuario" class="user-credential-icon">
+                    </div>
+                    <div class="user-credential-content">
+                        <p class="user-credential-name" data-user-name>Usuario</p>
+                        <p class="user-credential-row"><span>Rol:</span> <strong data-user-rol>Sin rol</strong></p>
+                        <p class="user-credential-row"><span>Correo:</span> <strong data-user-email>Sin correo</strong></p>
+                    </div>
+                </article>
+            </section>
+            <section class="quick-actions">
+                <h3>Acciones rápidas</h3>
+                <div class="actions-grid">
+                    <button class="action-btn" onclick="navigate('admin-ordenes')">
+                        <img src="assets/icons/tools.svg" alt="" class="action-icon" aria-hidden="true">
+                        <span>Ver Órdenes</span>
+                    </button>
+                </div>
+            </section>
+        </div>
+        <section class="admin-analytics-panel">
+            <div class="management-toolbar">
+                <h3>Mis órdenes activas</h3>
+            </div>
+            <div id="mec-ordenes-activas" class="list-container"></div>
+        </section>
+    </div>
+</div>

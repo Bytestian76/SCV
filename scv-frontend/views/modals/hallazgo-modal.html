@@ -1,0 +1,88 @@
+<!-- Modal Hallazgo (Crear/Editar) -->
+<div id="hallazgo-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="hallazgo-form-title">
+        <div class="modal-header">
+            <h3 id="hallazgo-form-title">Nuevo Hallazgo</h3>
+            <button id="hallazgo-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+        </div>
+        <form id="hallazgo-form" class="management-form">
+            <div class="form-group selector-search-group">
+                <label for="hallazgo-vehiculo-search">Vehículo *</label>
+                <input type="search" id="hallazgo-vehiculo-search" placeholder="Escribe placa, marca o modelo" autocomplete="off">
+                <input type="hidden" id="hallazgo-vehiculo-id" name="vehiculo_id">
+                <div id="hallazgo-vehiculo-results" class="selector-results" role="listbox" aria-label="Resultados de vehiculos"></div>
+                <p id="hallazgo-vehiculo-selected" class="selector-selected">Sin vehículo seleccionado.</p>
+            </div>
+             <div class="form-group" style="display:none">
+                <input type="hidden" id="hallazgo-tipo" name="tipo" value="operacion">
+            </div>
+            <div class="form-group">
+                <label for="hallazgo-categoria">Categoría *</label>
+                <select id="hallazgo-categoria" name="categoria" required>
+                    <option value="">Seleccione categoría</option>
+                    <option value="motor">Motor</option>
+                    <option value="transmision">Transmisión</option>
+                    <option value="frenos">Frenos</option>
+                    <option value="suspension">Suspensión</option>
+                    <option value="electrico">Eléctrico</option>
+                    <option value="carroceria">Carrocería</option>
+                    <option value="neumaticos">Neumáticos</option>
+                    <option value="neumatica">Neumática</option>
+                    <option value="varias">Varias</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="hallazgo-prioridad">Prioridad *</label>
+                <select id="hallazgo-prioridad" name="prioridad" required>
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                    <option value="critica">Crítica</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="hallazgo-descripcion">Descripción *</label>
+                <textarea id="hallazgo-descripcion" name="descripcion" rows="3" required placeholder="Describe el hallazgo"></textarea>
+            </div>
+            <input type="hidden" id="hallazgo-id" name="hallazgo_id">
+            <div class="form-actions">
+                <button id="hallazgo-export-pdf-single-btn" type="button" class="btn-sm btn-export-pdf" style="display: none; margin-right: auto;">Exportar PDF</button>
+                <button id="hallazgo-export-excel-single-btn" type="button" class="btn-sm btn-export-excel" style="display: none; margin-right: 10px;">Exportar Excel</button>
+                <button type="submit" class="btn-primary btn-form-action">Guardar</button>
+                <button id="hallazgo-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Evaluar Hallazgo -->
+<div id="hallazgo-evaluar-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="hallazgo-evaluar-title">
+        <div class="modal-header">
+            <h3 id="hallazgo-evaluar-title">Evaluar Hallazgo</h3>
+            <button id="hallazgo-evaluar-close-btn" type="button" class="modal-close" aria-label="Cerrar">×</button>
+        </div>
+        <form id="hallazgo-evaluar-form" class="management-form">
+            <div id="hallazgo-evaluar-info" class="chequeo-detalle-content"></div>
+            <div class="form-group">
+                <label for="hallazgo-evaluar-estado">Decisión *</label>
+                <select id="hallazgo-evaluar-estado" name="estado" required>
+                    <option value="">Seleccione decisión</option>
+                    <option value="evaluado">Marcar como Evaluado</option>
+                    <option value="convertido_orden">Convertir a Orden de Trabajo</option>
+                    <option value="descartado">Descartar</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="hallazgo-evaluar-observaciones">Observaciones</label>
+                <textarea id="hallazgo-evaluar-observaciones" name="observaciones" rows="3" placeholder="Observaciones de la evaluación"></textarea>
+            </div>
+            <input type="hidden" id="hallazgo-evaluar-id" name="hallazgo_id">
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-form-action">Guardar Evaluación</button>
+                <button id="hallazgo-evaluar-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>

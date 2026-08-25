@@ -1,0 +1,42 @@
+<!-- Pantalla Dashboard Operario Chequeo -->
+<div id="dashboard-chequeo" class="screen" data-module="dashboard-chequeo">
+    <header class="app-header">
+        <h2>Lista de Chequeo</h2>
+        <button class="btn-logout" onclick="logout()">
+            <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+            <span>Cerrar Sesión</span>
+        </button>
+    </header>
+    <div class="dashboard-content">
+        <div class="operations-layout single-action-layout">
+            <section class="operations-panel">
+                <p class="section-kicker">Preoperacional</p>
+                <h3>Inicia una inspección de seguridad</h3>
+                <div class="main-actions">
+                    <button class="btn-large btn-chequeo" onclick="showForm('chequeo')">
+                        <img src="assets/icons/search.svg" alt="" class="btn-large-icon" aria-hidden="true">
+                        <span>Lista de Chequeo</span>
+                    </button>
+                    <button class="btn-large btn-entrada" onclick="openChequeosPanel()">
+                        <img src="assets/icons/bar-chart-line.svg" alt="" class="btn-large-icon" aria-hidden="true">
+                        <span>Ver Historial</span>
+                    </button>
+                </div>
+                <article class="user-credential-card" data-user-credential>
+                    <div class="user-credential-icon-wrap">
+                        <img data-user-avatar src="assets/icons/clipboard-check.svg" alt="Perfil de usuario" class="user-credential-icon">
+                    </div>
+                    <div class="user-credential-content">
+                        <p class="user-credential-name" data-user-name>Usuario</p>
+                        <p class="user-credential-row"><span>Rol:</span> <strong data-user-rol>Sin rol</strong></p>
+                        <p class="user-credential-row"><span>Correo:</span> <strong data-user-email>Sin correo</strong></p>
+                    </div>
+                </article>
+            </section>
+            <section class="recent-section">
+                <h3>Últimos chequeos</h3>
+                <div id="chequeos-recientes" class="list-container"></div>
+            </section>
+        </div>
+    </div>
+</div>

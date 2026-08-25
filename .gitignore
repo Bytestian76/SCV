@@ -6,3 +6,12 @@ release/
 # Local artifacts outside deploy scope
 Documentacion/
 boton.png
+SCV/
+scratch/
+*.bak
+scv.db*
+*.pdf
+*key*.pem
+*audit*.md
+plandesarrollo.md
+.env

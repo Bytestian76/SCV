@@ -1,0 +1,63 @@
+<!-- Pantalla Historial de Movimientos (Admin) -->
+<div id="admin-movimientos" class="screen" data-module="admin-movimientos">
+    <header class="app-header">
+        <button class="btn-back" onclick="goBack()">← Volver</button>
+        <h2>Historial de Movimientos</h2>
+        <button class="btn-logout" onclick="logout()">
+            <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+            <span>Cerrar Sesión</span>
+        </button>
+    </header>
+    <div class="dashboard-content admin-management-layout">
+        <section class="management-panel">
+            <div class="management-toolbar">
+                <h3>Entradas y salidas registradas</h3>
+                <div class="toolbar-actions">
+                    <button type="button" class="btn-secondary" onclick="showForm('salida')">Nueva salida</button>
+                    <button type="button" class="btn-secondary" onclick="showForm('entrada')">Nueva entrada</button>
+                    <button id="movimientos-export-btn" type="button" class="btn-ghost">Exportar Excel</button>
+                    <button id="movimientos-export-pdf-btn" type="button" class="btn-ghost">Exportar PDF</button>
+                </div>
+            </div>
+            <p id="movimientos-feedback" class="helper-text" aria-live="polite"></p>
+            <div class="management-filters">
+                <div class="form-group filter-search-group">
+                    <label for="movimientos-search">Buscar movimientos</label>
+                    <input id="movimientos-search" type="search" placeholder="Placa, conductor, auxiliar, proveedor o observaciones">
+                </div>
+                <div class="filter-row">
+                    <div class="form-group">
+                        <label for="movimientos-tipo">Tipo</label>
+                        <select id="movimientos-tipo">
+                            <option value="todos">Todos</option>
+                            <option value="entrada">Entradas</option>
+                            <option value="salida">Salidas</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="movimientos-fecha-inicio">Fecha inicio</label>
+                        <input id="movimientos-fecha-inicio" type="date">
+                    </div>
+                    <div class="form-group">
+                        <label for="movimientos-fecha-fin">Fecha fin</label>
+                        <input id="movimientos-fecha-fin" type="date">
+                    </div>
+                    <button id="movimientos-clear-filters" type="button" class="btn-ghost filter-clear-btn">Limpiar filtros</button>
+                </div>
+                <div class="filter-row filter-row-secondary">
+                    <div class="form-group">
+                        <label for="movimientos-orden">Ordenar por</label>
+                        <select id="movimientos-orden">
+                            <option value="fecha_desc">Recientes primero</option>
+                            <option value="fecha_asc">Antiguos primero</option>
+                            <option value="km_desc">Mayor kilometraje</option>
+                            <option value="km_asc">Menor kilometraje</option>
+                        </select>
+                    </div>
+                </div>
+                <p id="movimientos-results" class="helper-text filter-results" aria-live="polite"></p>
+            </div>
+            <div id="movimientos-list" class="management-list"></div>
+        </section>
+    </div>
+</div>

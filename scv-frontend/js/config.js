@@ -40,8 +40,12 @@ const CONFIG = {
     },
 
     // Web Push (VAPID public key — es pública, segura para el frontend)
-    VAPID_PUBLIC_KEY: 'BJpbFxN3FZBDCIgvdKUHS3nPCeMBwklO1yYeQW9vBBNrRQee8u9IMN7IBZULhwJdFhIOFNaVNF-3ySri8KEEdOA'
+    VAPID_PUBLIC_KEY: 'BOf2u5sAS3d6w-kz84ZlKpn1RVouKuZtSrm4n_RhD3nfN6COIntgrvvYmB5V_p8wypfSL4BS_lbDEhokvCRa1e8'
 };
 
 // URL completa de la API
 const API_BASE = CONFIG.API_URL + CONFIG.API_VERSION;
+
+export { CONFIG, API_BASE };
+window.CONFIG = CONFIG;
+window.API_BASE = API_BASE;

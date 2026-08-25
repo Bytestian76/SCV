@@ -10,6 +10,7 @@ from app.schemas.orden_trabajo import (
     OrdenTrabajoCreate, OrdenTrabajoUpdate, OrdenTrabajoResponse,
     ESTADOS_ORDEN
 )
+from app.schemas.pagination import PaginatedResponse
 
 router = APIRouter(prefix="/ordenes-trabajo", tags=["Órdenes de Trabajo"])
 
@@ -38,7 +39,7 @@ def _build_orden_response(o: OrdenTrabajo) -> dict:
     }
 
 
-@router.get("/", response_model=List[OrdenTrabajoResponse])
+@router.get("/", response_model=PaginatedResponse[OrdenTrabajoResponse])
 def listar_ordenes(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
@@ -75,9 +76,15 @@ def listar_ordenes(
             (OrdenTrabajo.descripcion.ilike(search_term)) |
             (Vehiculo.placa.ilike(search_term))
         )
+    total = query.count()
     query = query.order_by(OrdenTrabajo.fecha_creacion.desc())
     query = query.offset(skip).limit(limit)
-    return [_build_orden_response(o) for o in query.all()]
+    return {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "items": [_build_orden_response(o) for o in query.all()]
+    }
 
 
 @router.get("/{orden_id}", response_model=OrdenTrabajoResponse)
@@ -112,8 +119,8 @@ def crear_orden(
         hallazgo = db.query(Hallazgo).filter(Hallazgo.id == data.hallazgo_id).first()
         if not hallazgo:
             raise HTTPException(status_code=404, detail="Hallazgo no encontrado")
-        if hallazgo.estado != "evaluado":
-            raise HTTPException(status_code=400, detail="El hallazgo debe estar evaluado antes de crear una orden")
+        # if hallazgo.estado not in ["abierto", "evaluado"]:
+        #     raise HTTPException(status_code=400, detail="El hallazgo debe estar abierto o evaluado antes de crear una orden")
 
     o = OrdenTrabajo(
         hallazgo_id=data.hallazgo_id,

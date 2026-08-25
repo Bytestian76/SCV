@@ -1,0 +1,49 @@
+<!-- Pantalla Dashboard Operario Movimientos -->
+<div id="dashboard-movimientos" class="screen" data-module="dashboard-movimientos">
+    <header class="app-header">
+        <h2>Registro de Movimientos</h2>
+        <button class="btn-logout" onclick="logout()">
+            <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+            <span>Cerrar Sesión</span>
+        </button>
+    </header>
+    <div class="dashboard-content">
+        <div class="operations-layout">
+            <section class="operations-panel movimientos-ops-panel">
+                <p class="section-kicker">Flujo del patio</p>
+                <h3>Centro de despacho y recepción</h3>
+                <p class="movimientos-help">Todas las entradas y salidas se registran desde este panel para mantener trazabilidad operativa.</p>
+                <div class="movement-action-grid">
+                    <button class="btn-large btn-salida" onclick="showForm('salida')">
+                        <img src="assets/icons/box-arrow-up-right.svg" alt="" class="btn-large-icon" aria-hidden="true">
+                        <span>Registrar Salida</span>
+                    </button>
+                    <button class="btn-large btn-entrada" onclick="showForm('entrada')">
+                        <img src="assets/icons/box-arrow-in-left.svg" alt="" class="btn-large-icon" aria-hidden="true">
+                        <span>Registrar Entrada</span>
+                    </button>
+                </div>
+                <div class="movement-secondary-actions">
+                    <button class="btn-large btn-historial" onclick="openMovimientosPanel()">
+                        <img src="assets/icons/bar-chart-line.svg" alt="" class="btn-large-icon" aria-hidden="true">
+                        <span>Ver Historial</span>
+                    </button>
+                </div>
+                <article class="user-credential-card" data-user-credential>
+                    <div class="user-credential-icon-wrap">
+                        <img data-user-avatar src="assets/icons/truck.svg" alt="Perfil de usuario" class="user-credential-icon">
+                    </div>
+                    <div class="user-credential-content">
+                        <p class="user-credential-name" data-user-name>Usuario</p>
+                        <p class="user-credential-row"><span>Rol:</span> <strong data-user-rol>Sin rol</strong></p>
+                        <p class="user-credential-row"><span>Correo:</span> <strong data-user-email>Sin correo</strong></p>
+                    </div>
+                </article>
+            </section>
+            <section class="recent-section">
+                <h3>Movimientos recientes</h3>
+                <div id="movimientos-recientes" class="list-container"></div>
+            </section>
+        </div>
+    </div>
+</div>

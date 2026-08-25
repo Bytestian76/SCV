@@ -1,0 +1,202 @@
+<!-- Modal Orden de Trabajo (Crear/Editar) -->
+<div id="orden-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="orden-form-title">
+        <div class="modal-header">
+            <h3 id="orden-form-title">Nueva Orden de Trabajo</h3>
+            <button id="orden-close-btn" type="button" class="modal-close" aria-label="Cerrar formulario">×</button>
+        </div>
+        <form id="orden-form" class="management-form">
+            <div class="form-group selector-search-group">
+                <label for="orden-vehiculo-search">Vehículo *</label>
+                <input type="search" id="orden-vehiculo-search" placeholder="Escribe placa, marca o modelo" autocomplete="off">
+                <input type="hidden" id="orden-vehiculo-id" name="vehiculo_id">
+                <div id="orden-vehiculo-results" class="selector-results" role="listbox" aria-label="Resultados de vehiculos"></div>
+                <p id="orden-vehiculo-selected" class="selector-selected">Sin vehículo seleccionado.</p>
+            </div>
+            <div class="form-group">
+                <label for="orden-titulo">Título *</label>
+                <input type="text" id="orden-titulo" name="titulo" required maxlength="200" placeholder="Título de la orden">
+            </div>
+            <div class="form-group">
+                <label for="orden-descripcion">Descripción</label>
+                <textarea id="orden-descripcion" name="descripcion" rows="3" placeholder="Descripción de la orden"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="orden-prioridad">Prioridad *</label>
+                <select id="orden-prioridad" name="prioridad" required>
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                    <option value="urgente">Urgente</option>
+                </select>
+            </div>
+            <div class="form-group selector-search-group">
+                <label for="orden-mecanico-search">Asignar a Mecánico</label>
+                <input type="search" id="orden-mecanico-search" placeholder="Buscar mecánico..." autocomplete="off">
+                <input type="hidden" id="orden-mecanico-id" name="mecanico_id">
+                <div id="orden-mecanico-results" class="selector-results" role="listbox" aria-label="Resultados de mecanicos"></div>
+                <p id="orden-mecanico-selected" class="selector-selected">Sin mecánico asignado.</p>
+            </div>
+            <div class="form-group" style="margin-top: -10px; margin-bottom: 15px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="orden-es-tercero" style="width: auto; margin: 0;"> Es responsable externo / tercero (Otro)
+                </label>
+            </div>
+            <div class="form-group" id="orden-responsable-externo-group" style="display: none;">
+                <label for="orden-responsable-externo">Nombre del Responsable Externo</label>
+                <input type="text" id="orden-responsable-externo" placeholder="Ej: Taller Mecánico Externo, Juan Pérez, etc.">
+            </div>
+            <div class="form-group">
+                <label for="orden-hallazgo-id">Hallazgo relacionado</label>
+                <input type="hidden" id="orden-hallazgo-id" name="hallazgo_id">
+                <p id="orden-hallazgo-selected" class="selector-selected">Ninguno.</p>
+            </div>
+            <div class="form-group">
+                <label for="orden-fecha-estimada">Fecha estimada de finalización</label>
+                <input type="date" id="orden-fecha-estimada" name="fecha_estimada">
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="orden-hora-inicio">Hora inicio estim. (e.g. 08:00)</label>
+                    <input type="time" id="orden-hora-inicio" name="hora_inicio">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="orden-hora-fin">Hora fin estim. (e.g. 17:00)</label>
+                    <input type="time" id="orden-hora-fin" name="hora_fin">
+                </div>
+            </div>
+            <input type="hidden" id="orden-id" name="orden_id">
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-form-action">Guardar</button>
+                <button id="orden-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Detalle de Orden -->
+<div id="orden-detalle-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal orden-detalle-window" role="dialog" aria-modal="true" aria-labelledby="orden-detalle-title">
+        <div class="modal-header">
+            <h3 id="orden-detalle-title">Detalle de Orden</h3>
+            <button id="orden-detalle-close" type="button" class="modal-close" aria-label="Cerrar detalle">×</button>
+        </div>
+        <!-- Información general de la orden -->
+        <div id="orden-detalle-info" style="padding: 15px 20px 5px 20px;"></div>
+        <div class="orden-detalle-tabs">
+            <button class="orden-tab-btn active" data-tab="actividades">Actividades</button>
+            <button class="orden-tab-btn" data-tab="costos">Costos</button>
+            <button class="orden-tab-btn" data-tab="evidencias">Evidencias</button>
+            <button class="orden-tab-btn" data-tab="historial">Historial</button>
+        </div>
+        <div id="orden-detalle-content" class="chequeo-detalle-content">
+            <div id="orden-detalle-actividades" class="orden-tab-content active">
+                <div class="management-toolbar">
+                    <h4>Actividades</h4>
+                    <button id="actividad-nuevo-btn" type="button" class="btn-primary btn-sm">Agregar</button>
+                </div>
+                <div id="orden-actividades-list" class="list-container"></div>
+            </div>
+            <div id="orden-detalle-costos" class="orden-tab-content">
+                <div class="management-toolbar">
+                    <h4>Costos</h4>
+                    <button id="costo-nuevo-btn" type="button" class="btn-primary btn-sm">Agregar</button>
+                </div>
+                <div id="orden-costos-list" class="list-container"></div>
+            </div>
+            <div id="orden-detalle-evidencias" class="orden-tab-content">
+                <div id="orden-evidencias-list" class="list-container"></div>
+            </div>
+            <div id="orden-detalle-historial" class="orden-tab-content">
+                <div id="orden-vehiculo-especificaciones-resumen" style="margin-bottom: 15px; padding: 12px; background: #eaf3ed; border-left: 4px solid #1f6a43; border-radius: 4px; display: none;">
+                    <strong>Especificaciones del Vehículo:</strong>
+                    <p id="orden-vh-especificaciones-texto" style="margin: 5px 0 0 0; color: #333; font-style: italic; white-space: pre-line; font-size: 0.95em;"></p>
+                </div>
+                <h4 style="margin: 15px 0 10px 0; font-size: 1.05em; font-weight: bold;">Historial de Mantenimientos del Vehículo</h4>
+                <div id="orden-vehiculo-historial-timeline" class="timeline-container" style="margin-bottom: 20px; max-height: 250px; overflow-y: auto;">
+                    <!-- Carga dinámica del historial del carro -->
+                </div>
+                <h4 style="margin: 15px 0 10px 0; font-size: 1.05em; font-weight: bold;">Historial de Cambios de esta Orden</h4>
+                <div id="orden-historial-list" class="list-container"></div>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button id="orden-export-pdf-single-btn" type="button" class="btn-sm btn-export-pdf" style="margin-right: auto;">Exportar PDF</button>
+            <button id="orden-export-excel-single-btn" type="button" class="btn-sm btn-export-excel" style="margin-right: 10px;">Exportar Excel</button>
+            <button id="orden-detalle-accept" type="button" class="btn-ghost btn-form-action">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Actividad -->
+<div id="actividad-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="actividad-form-title">
+        <div class="modal-header">
+            <h3 id="actividad-form-title">Agregar Actividad</h3>
+            <button id="actividad-close-btn" type="button" class="modal-close" aria-label="Cerrar">×</button>
+        </div>
+        <form id="actividad-form" class="management-form">
+            <div class="form-group">
+                <label for="actividad-descripcion">Descripción *</label>
+                <textarea id="actividad-descripcion" name="descripcion" rows="3" required placeholder="Describe la actividad realizada"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="actividad-estado">Estado</label>
+                <select id="actividad-estado" name="estado">
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en_curso">En curso</option>
+                    <option value="completada">Completada</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="actividad-observaciones">Observaciones</label>
+                <textarea id="actividad-observaciones" name="observaciones" rows="2" placeholder="Observaciones"></textarea>
+            </div>
+            <input type="hidden" id="actividad-id" name="actividad_id">
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-form-action">Guardar</button>
+                <button id="actividad-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Costo -->
+<div id="costo-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-window management-modal" role="dialog" aria-modal="true" aria-labelledby="costo-form-title">
+        <div class="modal-header">
+            <h3 id="costo-form-title">Agregar Costo</h3>
+            <button id="costo-close-btn" type="button" class="modal-close" aria-label="Cerrar">×</button>
+        </div>
+        <form id="costo-form" class="management-form">
+            <div class="form-group">
+                <label for="costo-concepto">Concepto *</label>
+                <input type="text" id="costo-concepto" name="concepto" required maxlength="200" placeholder="Ej: Cambio de frenos">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="costo-tipo">Tipo</label>
+                    <select id="costo-tipo" name="tipo">
+                        <option value="repuesto">Repuesto</option>
+                        <option value="mano_de_obra">Mano de Obra</option>
+                        <option value="servicio_externo">Servicio Externo</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="costo-monto">Monto *</label>
+                    <input type="number" id="costo-monto" name="monto" required min="0" step="0.01" placeholder="0.00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="costo-observaciones">Observaciones</label>
+                <textarea id="costo-observaciones" name="observaciones" rows="2" placeholder="Observaciones"></textarea>
+            </div>
+            <input type="hidden" id="costo-id" name="costo_id">
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-form-action">Guardar</button>
+                <button id="costo-cancel-btn" type="button" class="btn-ghost">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>

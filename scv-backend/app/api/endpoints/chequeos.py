@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional, Dict, Any
 
 from app.core.dependencies import require_role
 from app.db.database import get_db
@@ -18,6 +18,7 @@ from app.schemas.chequeo import (
     ChequeoItemResponse,
     ChequeoResponse,
 )
+from app.schemas.pagination import PaginatedResponse
 
 router = APIRouter(prefix="/chequeos", tags=["Chequeos"])
 
@@ -513,7 +514,7 @@ def crear_chequeo_items(
     )
 
 
-@router.get("/", response_model=List[ChequeoListResponse])
+@router.get("/", response_model=PaginatedResponse[ChequeoListResponse])
 def listar_chequeos(
     skip: int = 0,
     limit: int = 50,
@@ -522,14 +523,12 @@ def listar_chequeos(
     usuario_id: int = None,
     fecha_inicio: date = None,
     fecha_fin: date = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["admin", "operario_chequeo"])),
 ):
     """Listar chequeos con filtros (S5-03)"""
     query = db.query(Chequeo)
-
-    if current_user.rol == "operario_chequeo":
-        query = query.filter(Chequeo.usuario_id == current_user.id)
 
     if vehiculo_id:
         query = query.filter(Chequeo.vehiculo_id == vehiculo_id)
@@ -541,47 +540,61 @@ def listar_chequeos(
         query = query.filter(Chequeo.fecha_hora >= datetime.combine(fecha_inicio, datetime.min.time()))
     if fecha_fin:
         query = query.filter(Chequeo.fecha_hora <= datetime.combine(fecha_fin, datetime.max.time()))
+        
+    if search:
+        from app.models.models import Vehiculo, Conductor
+        search_term = f"%{search}%"
+        query = query.join(Chequeo.vehiculo, isouter=True).join(Chequeo.conductor, isouter=True).filter(
+            (Vehiculo.placa.ilike(search_term)) |
+            (Conductor.nombre.ilike(search_term))
+        )
 
+    total = query.count()
     chequeos = query.order_by(Chequeo.fecha_hora.desc()).offset(skip).limit(limit).all()
 
-    return [
-        ChequeoListResponse(
-            id=c.id,
-            vehiculo_id=c.vehiculo_id,
-            conductor_id=c.conductor_id,
-            usuario_id=c.usuario_id,
-            kilometraje=c.kilometraje,
-            fecha_venc_soat=c.fecha_venc_soat,
-            fecha_venc_rtm=c.fecha_venc_rtm,
-            fecha_venc_extintor=c.fecha_venc_extintor,
-            obs_generales=c.obs_generales,
-            fecha_hora=c.fecha_hora,
-            total_items=len(c.items),
-            vehiculo={
-                "id": c.vehiculo.id,
-                "placa": c.vehiculo.placa,
-                "marca": c.vehiculo.marca,
-                "modelo": c.vehiculo.modelo,
-            }
-            if c.vehiculo
-            else None,
-            conductor={
-                "id": c.conductor.id,
-                "nombre": c.conductor.nombre,
-                "cedula": c.conductor.cedula,
-            }
-            if c.conductor
-            else None,
-            usuario={
-                "id": c.usuario.id,
-                "nombre": c.usuario.nombre,
-                "email": c.usuario.email,
-            }
-            if c.usuario
-            else None,
-        )
-        for c in chequeos
-    ]
+    return {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "items": [
+            ChequeoListResponse(
+                id=c.id,
+                vehiculo_id=c.vehiculo_id,
+                conductor_id=c.conductor_id,
+                usuario_id=c.usuario_id,
+                kilometraje=c.kilometraje,
+                fecha_venc_soat=c.fecha_venc_soat,
+                fecha_venc_rtm=c.fecha_venc_rtm,
+                fecha_venc_extintor=c.fecha_venc_extintor,
+                obs_generales=c.obs_generales,
+                fecha_hora=c.fecha_hora,
+                total_items=len(c.items),
+                vehiculo={
+                    "id": c.vehiculo.id,
+                    "placa": c.vehiculo.placa,
+                    "marca": c.vehiculo.marca,
+                    "modelo": c.vehiculo.modelo,
+                }
+                if c.vehiculo
+                else None,
+                conductor={
+                    "id": c.conductor.id,
+                    "nombre": c.conductor.nombre,
+                    "cedula": c.conductor.cedula,
+                }
+                if c.conductor
+                else None,
+                usuario={
+                    "id": c.usuario.id,
+                    "nombre": c.usuario.nombre,
+                    "email": c.usuario.email,
+                }
+                if c.usuario
+                else None,
+            )
+            for c in chequeos
+        ]
+    }
 
 
 @router.get("/{chequeo_id}", response_model=ChequeoDetailResponse)

@@ -10,7 +10,8 @@ class ConductorBase(BaseModel):
     cedula: str
     licencia: str
     fecha_venc_licencia: Optional[date] = None
-    categoria: str
+    categoria: Optional[str] = None
+    telefono: Optional[str] = None
 
 
 class ConductorCreate(ConductorBase):
@@ -23,6 +24,7 @@ class ConductorUpdate(BaseModel):
     licencia: Optional[str] = None
     fecha_venc_licencia: Optional[date] = None
     categoria: Optional[str] = None
+    telefono: Optional[str] = None
     activo: Optional[bool] = None
 
 

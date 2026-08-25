@@ -19,6 +19,7 @@ from app.db.database import Base, engine, apply_schema_updates
 from app.models import models
 from app.api.endpoints import auth, vehiculos, conductores, usuarios, mecanicos, selectores, movimientos, chequeos, dashboard, notificaciones, push
 from app.api.endpoints import hallazgos, ordenes_trabajo, ordenes_actividades, ordenes_costos, ordenes_evidencias, ordenes_historial
+from app.api.endpoints import debug
 from app.core.config import settings
 
 
@@ -101,33 +102,9 @@ def ping():
     return {"status": "ok", "message": "El servidor está funcionando"}
 
 
-if settings.ENABLE_TEST_DB_ENDPOINT:
-    @app.get("/test-db")
-    def test_db():
-        """Verificar conexión a la base de datos"""
-        from app.db.database import engine
-        from sqlalchemy import inspect
-
-        inspector = inspect(engine)
-        tablas = inspector.get_table_names()
-
-        from app.db.database import SessionLocal
-        from app.models import models
-
-        db = SessionLocal()
-        try:
-            return {
-                "status": "ok",
-                "database": "connected",
-                "tables": tablas,
-                "counts": {
-                    "usuarios": db.query(models.Usuario).count(),
-                    "vehiculos": db.query(models.Vehiculo).count(),
-                    "conductores": db.query(models.Conductor).count(),
-                }
-            }
-        finally:
-            db.close()
+# Agregar endpoints de debug solo en modo desarrollo o si se habilita explícitamente
+if settings.ENV == "development" or settings.ENABLE_TEST_DB_ENDPOINT:
+    app.include_router(debug.router, prefix=API_V1)
 
 
 if __name__ == "__main__":

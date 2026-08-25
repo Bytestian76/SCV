@@ -1,0 +1,117 @@
+<!-- Pantalla de Dashboard Admin -->
+<div id="dashboard-admin" class="screen" data-module="dashboard-admin">
+    <header class="app-header">
+        <div class="header-brand">
+            <p>Tablero de despacho</p>
+        </div>
+        <button class="btn-logout" onclick="logout()">
+            <img src="assets/icons/box-arrow-right.svg" alt="" class="btn-icon" aria-hidden="true">
+            <span>Cerrar Sesión</span>
+        </button>
+    </header>
+    <div class="dashboard-content">
+        <div class="ops-layout">
+            <section class="ops-command">
+                <p class="section-kicker">Estado del turno</p>
+                <h2>Centro de mando de movilidad</h2>
+                <div class="ops-critical">
+                    <span class="stat-number" id="stat-movimientos">0</span>
+                    <span class="stat-label">Movimientos reportados hoy</span>
+                </div>
+                <div class="ops-kpi-rack">
+                    <div class="stat-card">
+                        <span class="stat-number" id="stat-vehiculos">0</span>
+                        <span class="stat-label">Vehículos Activos</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="stat-conductores">0</span>
+                        <span class="stat-label">Conductores en línea</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="stat-chequeos">0</span>
+                        <span class="stat-label">Chequeos del día</span>
+                    </div>
+                </div>
+                <article class="user-credential-card" data-user-credential>
+                    <div class="user-credential-icon-wrap">
+                        <img data-user-avatar src="assets/icons/people.svg" alt="Perfil de usuario" class="user-credential-icon">
+                    </div>
+                    <div class="user-credential-content">
+                        <p class="user-credential-name" data-user-name>Usuario</p>
+                        <p class="user-credential-row"><span>Rol:</span> <strong data-user-rol>Sin rol</strong></p>
+                        <p class="user-credential-row"><span>Correo:</span> <strong data-user-email>Sin correo</strong></p>
+                    </div>
+                </article>
+            </section>
+            <section class="quick-actions">
+                <h3>Acciones rápidas</h3>
+                <div class="actions-grid">
+                    <button class="action-btn" onclick="navigate('vehiculos')">
+                        <img src="assets/icons/truck.svg" alt="" class="action-icon" aria-hidden="true">
+                        <span>Gestionar Vehículos</span>
+                    </button>
+                    <button class="action-btn" onclick="navigate('conductores')">
+                        <img src="assets/icons/people.svg" alt="" class="action-icon" aria-hidden="true">
+                        <span>Gestionar Conductores</span>
+                    </button>
+                    <button class="action-btn" onclick="navigate('usuarios')">
+                        <img src="assets/icons/people.svg" alt="" class="action-icon" aria-hidden="true">
+                        <span>Gestionar Usuarios</span>
+                    </button>
+                    <button class="action-btn" onclick="navigate('movimientos')">
+                        <img src="assets/icons/bar-chart-line.svg" alt="" class="action-icon" aria-hidden="true">
+                        <span>Ver Movimientos</span>
+                    </button>
+                    <button class="action-btn" onclick="navigate('chequeos')">
+                        <img src="assets/icons/clipboard-check.svg" alt="" class="action-icon" aria-hidden="true">
+                        <span>Ver Chequeos</span>
+                    </button>
+                    <button class="action-btn" onclick="navigate('admin-estadisticas')">
+                        <img src="assets/icons/bar-chart-line.svg" alt="" class="action-icon" aria-hidden="true">
+                        <span>Estadísticas Mantenimiento</span>
+                    </button>
+                </div>
+            </section>
+        </div>
+        <section class="admin-analytics-panel">
+            <div class="management-toolbar">
+                <h3>Lectura dinamica de operaciones</h3>
+                <div class="toolbar-actions">
+                    <div class="form-group compact-control">
+                        <label for="admin-chart-range">Rango</label>
+                        <select id="admin-chart-range">
+                            <option value="7">Ultimos 7 dias</option>
+                            <option value="15">Ultimos 15 dias</option>
+                            <option value="30">Ultimos 30 dias</option>
+                            <option value="60">Ultimos 60 dias</option>
+                        </select>
+                    </div>
+                    <button id="admin-refresh-btn" type="button" class="btn-ghost">Actualizar grafica</button>
+                </div>
+            </div>
+            <div class="analytics-grid">
+                <article class="analytics-card analytics-card-wide">
+                    <div class="chart-panel-head">Tendencia diaria</div>
+                    <div class="chart-holder">
+                        <p class="analytics-caption">Movimientos y chequeos por dia</p>
+                        <div id="admin-trend-chart" class="trend-chart"></div>
+                    </div>
+                </article>
+                <article class="analytics-card">
+                    <div class="chart-panel-head">Distribucion por tipo</div>
+                    <div class="chart-holder">
+                        <p class="analytics-caption">Entradas vs salidas</p>
+                        <div id="admin-tipo-chart" class="donut-chart"></div>
+                    </div>
+                </article>
+                <article class="analytics-card">
+                    <div class="chart-panel-head">Vehiculos con mas actividad</div>
+                    <div class="chart-holder">
+                        <p class="analytics-caption">Top en el rango seleccionado</p>
+                        <div id="admin-top-vehiculos-chart" class="bars-chart"></div>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </div>
+</div>

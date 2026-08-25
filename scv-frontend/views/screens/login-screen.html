@@ -1,0 +1,59 @@
+<!-- Pantalla de Login -->
+<div id="login-screen" class="screen active">
+    <div class="login-shell">
+        <section class="login-identity">
+            <p class="identity-kicker">Centro de operaciones</p>
+            <h1>Control vehicular para jornada industrial</h1>
+            <p class="identity-copy">Monitorea entradas, salidas e inspecciones con trazabilidad en tiempo real para el patio de carga.</p>
+            <div class="identity-markers" aria-hidden="true">
+                <span>Despacho</span>
+                <span>Chequeo</span>
+                <span>Turnos</span>
+            </div>
+        </section>
+        <section class="login-box">
+            <div class="logo">
+                <div class="login-brand">
+                    <img src="images/icon-1024.png" alt="Icono SCV" class="login-brand-icon">
+                    <p class="login-title">Sistema de Control Vehicular</p>
+                </div>
+            </div>
+            <form id="login-form" method="POST">
+                <div class="form-group">
+                    <label for="email">Usuario</label>
+                    <input 
+                        type="text" 
+                        id="email" 
+                        name="email" 
+                        placeholder="usuario o correo"
+                        required
+                        autocomplete="username"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="••••••••"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+                <div class="form-group remember-me">
+                    <label>
+                        <input type="checkbox" id="remember" name="remember">
+                        Recordar sesión
+                    </label>
+                </div>
+                <button type="submit" class="btn-primary btn-login-submit">
+                    <span class="btn-text">Iniciar Sesión</span>
+                    <span class="btn-loading" style="display:none;">Cargando...</span>
+                </button>
+                <div id="login-error" class="error-message" style="display:none;"></div>
+            </form>
+        </section>
+    </div>
+    <p class="footer">Comercializadora Normetales S.A.S</p>
+</div>
