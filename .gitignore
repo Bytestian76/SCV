@@ -1,0 +1,52 @@
+﻿# ========================
+# Python / Backend
+# ========================
+__pycache__/
+*.py[cod]
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Alembic cache
+alembic/versions/__pycache__/
+
+# Base de datos SQLite (no subir datos reales)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs del servidor
+backend_stdout.log
+backend_stderr.log
+frontend_stdout.log
+frontend_stderr.log
+
+# Variables de entorno (sensibles)
+.env
+!.env.example
+
+# ========================
+# Node / Frontend
+# ========================
+node_modules/
+.vite/
+*.local
+
+# ========================
+# OS / IDE
+# ========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.sw?
+
+# ========================
+# Misc
+# ========================
+*.log
+*.tmp
+*.bak

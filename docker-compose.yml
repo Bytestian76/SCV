@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # Base de datos relacional PostgreSQL 16
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: scv-postgres-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-scv_database}
+      POSTGRES_USER: ${POSTGRES_USER:-scv_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scv_password_2026}
+    volumes:
+      - scv_pgdata:/var/lib/postgresql/data
+      - ./db-scripts:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - scv-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scv_user} -d ${POSTGRES_DB:-scv_database}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend REST API (FastAPI + SQLAlchemy + Alembic)
+  api-services:
+    build:
+      context: ./api-services
+      dockerfile: Dockerfile
+    container_name: scv-api-backend
+    restart: unless-stopped
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-scv_user}:${POSTGRES_PASSWORD:-scv_password_2026}@postgres-db:5432/${POSTGRES_DB:-scv_database}
+      SECRET_KEY: ${SECRET_KEY:-scv_super_secret_jwt_key_2026_change_in_production}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      ENABLE_API_DOCS: ${ENABLE_API_DOCS:-False}
+    networks:
+      - scv-network
+    expose:
+      - "8000"
+
+  # Frontend Client App (React + PWA)
+  client-app:
+    build:
+      context: ./client-app
+      dockerfile: Dockerfile
+    container_name: scv-client-frontend
+    restart: unless-stopped
+    networks:
+      - scv-network
+    expose:
+      - "80"
+
+  # Proxy Inverso y API Gateway (Nginx + WAF Filter)
+  nginx-gateway:
+    build:
+      context: ./nginx-gateway
+      dockerfile: Dockerfile
+    container_name: scv-nginx-gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api-services
+      - client-app
+    volumes:
+      - ./nginx-gateway/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - scv-network
+
+volumes:
+  scv_pgdata:
+    driver: local
+
+networks:
+  scv-network:
+    driver: bridge
