@@ -1,0 +1,16 @@
+{
+  "short_name": "SCV",
+  "name": "Normetales - Sistema de Control Vehicular",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0d382c",
+  "theme_color": "#0d382c",
+  "display": "standalone",
+  "orientation": "portrait"
+}

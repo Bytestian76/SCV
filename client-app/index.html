@@ -1,0 +1,3683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Normetales - Centro de Mando de Movilidad (SCV)</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- React & Babel Standalone -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Global Styles -->
+  <link rel="stylesheet" href="./src/index.css">
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    const API_BASE = "http://127.0.0.1:8000/api/v1";
+
+    // --- FORMATEADORES DE FECHA Y HORA UNIFICADOS ---
+    function formatDateTime(dateStr) {
+      if (!dateStr) return '—';
+      try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return String(dateStr);
+        return d.toLocaleDateString('es-CO', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        }) + ', ' + d.toLocaleTimeString('es-CO', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }).toLowerCase();
+      } catch (e) {
+        return String(dateStr);
+      }
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '—';
+      try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return String(dateStr);
+        return d.toLocaleDateString('es-CO', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+      } catch (e) {
+        return String(dateStr);
+      }
+    }
+
+    function getRelativeTime(dateStr) {
+      if (!dateStr) return '';
+      try {
+        const d = new Date(dateStr);
+        const diffMs = Date.now() - d.getTime();
+        const diffMin = Math.floor(diffMs / 60000);
+        if (diffMin < 1) return 'Hace un momento';
+        if (diffMin < 60) return `Hace ${diffMin} min`;
+        const diffHours = Math.floor(diffMin / 60);
+        if (diffHours < 24) return `Hace ${diffHours} h`;
+        const diffDays = Math.floor(diffHours / 24);
+        return `Hace ${diffDays} d`;
+      } catch (e) {
+        return '';
+      }
+    }
+
+    // --- ICON HELPER ---
+    function Icon({ name, size = 16, color = "currentColor", style = {} }) {
+      return <i data-lucide={name} style={{ width: size, height: size, color: color, display: 'inline-flex', verticalAlign: 'middle', flexShrink: 0, ...style }}></i>;
+    }
+
+    // --- UTILIDAD EXPORTACIÓN CSV UNIFICADA ---
+    function downloadCSV(filename, headers, rows) {
+      const escapeCell = (val) => {
+        if (val === null || val === undefined) return '""';
+        const str = String(val).replace(/"/g, '""');
+        return `"${str}"`;
+      };
+
+      const csvContent = '\uFEFF' + [
+        headers.map(escapeCell).join(';'),
+        ...rows.map(row => row.map(escapeCell).join(';'))
+      ].join('\r\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    // --- COMPONENTE BÚSQUEDA INTELIGENTE / SMART SEARCH ---
+    function SmartSearchSelect({
+      label,
+      required = false,
+      placeholder = "Buscar...",
+      items = [],
+      selectedId,
+      onSelect,
+      searchKeys = ['nombre'],
+      renderOption,
+      renderSelected,
+      icon = "search"
+    }) {
+      const [isOpen, setIsOpen] = useState(false);
+      const [searchTerm, setSearchTerm] = useState('');
+      const containerRef = useRef(null);
+
+      const selectedItem = items.find(it => String(it.id) === String(selectedId));
+
+      useEffect(() => {
+        const handleClickOutside = (event) => {
+          if (containerRef.current && !containerRef.current.contains(event.target)) {
+            setIsOpen(false);
+          }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }, []);
+
+      const filteredItems = items.filter(item => {
+        if (!searchTerm.trim()) return true;
+        const q = searchTerm.toLowerCase().trim();
+        return searchKeys.some(key => {
+          const val = item[key];
+          return val !== null && val !== undefined && String(val).toLowerCase().includes(q);
+        });
+      });
+
+      const handleSelect = (item) => {
+        onSelect(item);
+        setSearchTerm('');
+        setIsOpen(false);
+      };
+
+      return (
+        <div className="form-group" ref={containerRef} style={{ position: 'relative' }}>
+          {label && <label>{label} {required && '*'}</label>}
+          
+          <div
+            onClick={() => setIsOpen(!isOpen)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              border: isOpen ? '1px solid #059669' : '1px solid #cbd5e1',
+              borderRadius: '6px',
+              background: '#ffffff',
+              padding: '7px 11px',
+              cursor: 'pointer',
+              minHeight: '36px',
+              boxShadow: isOpen ? '0 0 0 3px rgba(5, 150, 105, 0.12)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+              <Icon name={icon} size={14} color="#64748b" style={{ flexShrink: 0 }} />
+              <div style={{ flex: 1, fontSize: '12.5px', color: selectedItem ? '#0f172a' : '#94a3b8', fontWeight: selectedItem ? '600' : '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {selectedItem ? (renderSelected ? renderSelected(selectedItem) : selectedItem.nombre) : placeholder}
+              </div>
+            </div>
+            <Icon name={isOpen ? "chevron-up" : "chevron-down"} size={13} color="#94a3b8" style={{ flexShrink: 0, marginLeft: '4px' }} />
+          </div>
+
+          {isOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: 0,
+                right: 0,
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                boxShadow: '0 10px 25px rgba(15, 23, 42, 0.18)',
+                zIndex: 10000,
+                maxHeight: '240px',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ padding: '6px 8px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Icon name="search" size={13} color="#94a3b8" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder="Escribe para buscar..."
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    width: '100%',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    color: '#0f172a'
+                  }}
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setSearchTerm(''); }}
+                    style={{ border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                  >
+                    <Icon name="x" size={12} />
+                  </button>
+                )}
+              </div>
+
+              <div style={{ overflowY: 'auto', flex: 1, padding: '4px' }}>
+                {filteredItems.length === 0 ? (
+                  <div style={{ padding: '12px', textAlign: 'center', fontSize: '11.5px', color: '#94a3b8' }}>
+                    No se encontraron coincidencias
+                  </div>
+                ) : (
+                  filteredItems.map(item => {
+                    const isSelected = String(selectedId) === String(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={(e) => { e.stopPropagation(); handleSelect(item); }}
+                        style={{
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          background: isSelected ? '#ecfdf5' : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          transition: 'background 0.1s ease',
+                          fontSize: '12px'
+                        }}
+                        onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = '#f8fafc'; }}
+                        onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        {renderOption ? renderOption(item, isSelected) : (
+                          <span style={{ fontWeight: isSelected ? '700' : '400', color: isSelected ? '#047857' : '#0f172a' }}>
+                            {item.nombre || item.placa}
+                          </span>
+                        )}
+                        {isSelected && <Icon name="check" size={13} color="#059669" />}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- PANTALLA DE LOGIN ---
+    function LoginView({ onLoginSuccess, notice }) {
+      const [email, setEmail] = useState('sebas.urenasilva@gmail.com');
+      const [password, setPassword] = useState('admin123');
+      const [showPassword, setShowPassword] = useState(false);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(null);
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        try {
+          const res = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim(), password: password })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            onLoginSuccess(data);
+          } else {
+            const errData = await res.json();
+            setError(errData.detail || "Credenciales incorrectas");
+          }
+        } catch (err) {
+          console.error("Error al autenticar:", err);
+          setError("No se pudo conectar con el servidor API");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const fillDemo = (demoEmail, demoPass) => {
+        setEmail(demoEmail);
+        setPassword(demoPass);
+      };
+
+      return (
+        <div className="login-screen-container">
+          <div className="login-card">
+            <div className="login-brand">
+              <div className="login-brand-logo">N</div>
+              <div className="login-brand-info">
+                <h2>Normetales</h2>
+                <span>Control vehicular</span>
+              </div>
+            </div>
+
+            <div className="login-header-title">
+              <h3>Iniciar sesión</h3>
+              <p>Centro de Mando de Movilidad (SCV)</p>
+            </div>
+
+            {notice && (
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', padding: '8px 12px', borderRadius: '6px', fontSize: '11.5px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Icon name="info" size={14} color="#1d4ed8" />
+                <span>{notice}</span>
+              </div>
+            )}
+
+            {error && (
+              <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', color: '#be123c', padding: '8px 12px', borderRadius: '6px', fontSize: '11.5px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Icon name="alert-circle" size={14} color="#be123c" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="form-group">
+                <label>Correo electrónico</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="correo@normetales.com"
+                    className="form-input"
+                    style={{ paddingLeft: '32px' }}
+                  />
+                  <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', pointerEvents: 'none' }}>
+                    <Icon name="mail" size={14} color="#94a3b8" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Contraseña</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="form-input"
+                    style={{ paddingLeft: '32px', paddingRight: '32px' }}
+                  />
+                  <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', pointerEvents: 'none' }}>
+                    <Icon name="lock" size={14} color="#94a3b8" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px', display: 'flex' }}
+                  >
+                    <Icon name={showPassword ? "eye-off" : "eye"} size={14} />
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary"
+                style={{ width: '100%', padding: '9px', fontSize: '13px', marginTop: '6px' }}
+              >
+                {loading ? (
+                  <>
+                    <Icon name="loader-2" size={15} style={{ animation: 'spin 1s linear infinite' }} />
+                    <span>Verificando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="log-in" size={15} />
+                    <span>Ingresar</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="demo-credentials-box">
+              <div className="title">Accesos rápidos de prueba</div>
+              <div className="demo-chips">
+                <div className="demo-chip" onClick={() => fillDemo('admin@normetales.com', 'admin123')}>
+                  <Icon name="shield" size={11} color="#059669" />
+                  <span>Admin</span>
+                </div>
+                <div className="demo-chip" onClick={() => fillDemo('sebas.urenasilva@gmail.com', 'admin123')}>
+                  <Icon name="user" size={11} color="#2563eb" />
+                  <span>Sebas (Admin)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- APP PRINCIPAL ---
+    function App() {
+      const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000;
+      const [activeTab, setActiveTab] = useState('dashboard');
+      const [token, setToken] = useState(() => localStorage.getItem('scv_token') || null);
+      const [currentUser, setCurrentUser] = useState(null);
+      const [authChecking, setAuthChecking] = useState(true);
+      const [sessionNotice, setSessionNotice] = useState(null);
+      const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+      // Data States
+      const [data, setData] = useState(null);
+      const [vehiculos, setVehiculos] = useState([]);
+      const [conductores, setConductores] = useState([]);
+      const [usuariosList, setUsuariosList] = useState([]);
+      const [movimientos, setMovimientos] = useState([]);
+      const [chequeos, setChequeos] = useState([]);
+      const [ordenes, setOrdenes] = useState([]);
+      const [hallazgos, setHallazgos] = useState([]);
+
+      // Taller / Mantenimiento
+      const [subTabTaller, setSubTabTaller] = useState('hallazgos');
+      const [filtroEstadoHallazgo, setFiltroEstadoHallazgo] = useState('todos');
+      const [modalEvaluarHallazgo, setModalEvaluarHallazgo] = useState(null);
+      const [formEvaluar, setFormEvaluar] = useState({
+        categoria: 'mecanica',
+        prioridad: 'alta',
+        responsable_id: '',
+        descripcion_trabajo: ''
+      });
+      const [modalHojaVida, setModalHojaVida] = useState(null);
+      const [loadingHojaVida, setLoadingHojaVida] = useState(false);
+
+      // Modales CRUD
+      const [modalVehiculo, setModalVehiculo] = useState(false);
+      const [modalMovimiento, setModalMovimiento] = useState(false);
+      const [modalOT, setModalOT] = useState(false);
+      const [modalChequeo, setModalChequeo] = useState(false);
+      const [modalUsuario, setModalUsuario] = useState(false);
+      const [detalleChequeo, setDetalleChequeo] = useState(null);
+      const [toastMsg, setToastMsg] = useState(null);
+      const [confirmDialog, setConfirmDialog] = useState(null); // { message, onConfirm }
+
+      // Filtros CRUD y Búsqueda Inteligente
+      const [filtroMovBusqueda, setFiltroMovBusqueda] = useState('');
+      const [filtroMovTipo, setFiltroMovTipo] = useState('todos');
+      const [filtroMovOrden, setFiltroMovOrden] = useState('recientes');
+      const [filtroMovFechaInicio, setFiltroMovFechaInicio] = useState('');
+      const [filtroMovFechaFin, setFiltroMovFechaFin] = useState('');
+
+      const [filtroVehBusqueda, setFiltroVehBusqueda] = useState('');
+      const [filtroVehEstado, setFiltroVehEstado] = useState('todos');
+      const [filtroVehOrden, setFiltroVehOrden] = useState('recientes');
+
+      const [filtroCheqBusqueda, setFiltroCheqBusqueda] = useState('');
+      const [filtroCheqEstado, setFiltroCheqEstado] = useState('todos');
+      const [filtroCheqOrden, setFiltroCheqOrden] = useState('recientes');
+      const [filtroCheqFechaInicio, setFiltroCheqFechaInicio] = useState('');
+      const [filtroCheqFechaFin, setFiltroCheqFechaFin] = useState('');
+
+      const [filtroUserBusqueda, setFiltroUserBusqueda] = useState('');
+      const [filtroUserRol, setFiltroUserRol] = useState('todos');
+      const [filtroUserOrden, setFiltroUserOrden] = useState('nombre_asc');
+
+      // Edit IDs
+      const [editingVehiculoId, setEditingVehiculoId] = useState(null);
+      const [editingMovimientoId, setEditingMovimientoId] = useState(null);
+      const [editingUsuarioId, setEditingUsuarioId] = useState(null);
+      const [editingOTId, setEditingOTId] = useState(null);
+
+      // Forms
+      const [formVehiculo, setFormVehiculo] = useState({
+        placa: '', marca: '', modelo: '', año: 2024, kilometraje: 0,
+        fecha_venc_soat: '2027-12-31', fecha_venc_rtm: '2027-12-31', estado: 'activo'
+      });
+
+      const [formMovimiento, setFormMovimiento] = useState({
+        tipo: 'salida', vehiculo_id: '', usuario_id: '', auxiliar: '', proveedor: '',
+        kilometraje: '', bascula_peso: '', cantidad_sacas: '', estado_cajon: '', observaciones: ''
+      });
+
+      const [formOT, setFormOT] = useState({
+        vehiculo_id: '', prioridad: 'media', estado: 'pendiente', descripcion: '', responsable_id: ''
+      });
+
+      const [formUsuario, setFormUsuario] = useState({
+        nombre: '', email: '', password: '', rol: 'operario_chequeo', cedula: '',
+        licencia: '', categoria: 'C2', fecha_venc_licencia: '2028-12-31'
+      });
+
+      // Wizard Chequeo Preoperacional
+      const [chequeoForm, setChequeoForm] = useState({
+        vehiculo_id: '', usuario_id: '', kilometraje: 0, observaciones_generales: '',
+        items: [
+          { seccion: 'frenos', item: 'Nivel de líquido y pedal de freno', valor: 'conforme', observacion: '' },
+          { seccion: 'frenos', item: 'Freno de estacionamiento (mano)', valor: 'conforme', observacion: '' },
+          { seccion: 'luces', item: 'Luces altas, medias y bajas', valor: 'conforme', observacion: '' },
+          { seccion: 'luces', item: 'Direccionales y luces de parqueo', valor: 'conforme', observacion: '' },
+          { seccion: 'luces', item: 'Luces de reversa y stop', valor: 'conforme', observacion: '' },
+          { seccion: 'llantas', item: 'Presión y profundidad de labrado', valor: 'conforme', observacion: '' },
+          { seccion: 'llantas', item: 'Llanta de repuesto y tuercas', valor: 'conforme', observacion: '' },
+          { seccion: 'fluidos', item: 'Nivel de aceite de motor', valor: 'conforme', observacion: '' },
+          { seccion: 'fluidos', item: 'Nivel de líquido refrigerante', valor: 'conforme', observacion: '' },
+          { seccion: 'cabina', item: 'Cinturones de seguridad y espejos', valor: 'conforme', observacion: '' },
+          { seccion: 'cabina', item: 'Extintor vigente y botiquín', valor: 'conforme', observacion: '' },
+        ]
+      });
+
+      const showToast = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(null), 3500);
+      };
+
+      const showConfirm = (message, onConfirm) => {
+        setConfirmDialog({ message, onConfirm });
+      };
+
+      useEffect(() => {
+        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+      });
+
+      // Tecla Escape para cerrar modales
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (e.key === 'Escape') {
+            setModalVehiculo(false);
+            setModalMovimiento(false);
+            setModalOT(false);
+            setModalChequeo(false);
+            setModalUsuario(false);
+            setDetalleChequeo(null);
+            setModalEvaluarHallazgo(null);
+            setModalHojaVida(null);
+          }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, []);
+
+      // Logout
+      const handleLogout = (reason = "Sesión finalizada") => {
+        localStorage.removeItem('scv_token');
+        localStorage.removeItem('scv_user');
+        localStorage.removeItem('scv_last_activity');
+        setToken(null);
+        setCurrentUser(null);
+        setData(null);
+        setVehiculos([]);
+        setMovimientos([]);
+        setChequeos([]);
+        setOrdenes([]);
+        setUsuariosList([]);
+        setConductores([]);
+        setSessionNotice(reason);
+        showToast(reason);
+      };
+
+      // Authenticated fetch
+      const authFetch = async (url, options = {}) => {
+        const curToken = localStorage.getItem('scv_token');
+        if (!curToken) {
+          handleLogout("Debes iniciar sesión para continuar.");
+          throw new Error("No token");
+        }
+        localStorage.setItem('scv_last_activity', Date.now().toString());
+
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            ...(options.headers || {}),
+            'Authorization': `Bearer ${curToken}`
+          }
+        });
+
+        if (response.status === 401) {
+          handleLogout("Tu sesión ha expirado en el servidor.");
+          throw new Error("401 Unauthorized");
+        }
+        return response;
+      };
+
+      // Validar sesión inicial
+      useEffect(() => {
+        const verifyAuth = async () => {
+          const storedToken = localStorage.getItem('scv_token');
+          if (!storedToken) {
+            setAuthChecking(false);
+            return;
+          }
+
+          const lastAct = parseInt(localStorage.getItem('scv_last_activity') || '0', 10);
+          if (lastAct && (Date.now() - lastAct > INACTIVITY_TIMEOUT_MS)) {
+            handleLogout("Tu sesión expiró por inactividad.");
+            setAuthChecking(false);
+            return;
+          }
+
+          try {
+            const res = await fetch(`${API_BASE}/auth/me`, {
+              headers: { 'Authorization': `Bearer ${storedToken}` }
+            });
+
+            if (res.ok) {
+              const user = await res.json();
+              setCurrentUser(user);
+              setToken(storedToken);
+              localStorage.setItem('scv_last_activity', Date.now().toString());
+              loadAllData(storedToken);
+            } else {
+              handleLogout("Sesión no válida o expirada.");
+            }
+          } catch (err) {
+            console.error("Error al validar sesión:", err);
+            handleLogout("No se pudo conectar con el servidor.");
+          } finally {
+            setAuthChecking(false);
+          }
+        };
+
+        verifyAuth();
+      }, []);
+
+      // Inactivity monitor
+      useEffect(() => {
+        if (!token) return;
+
+        const updateActivity = () => {
+          localStorage.setItem('scv_last_activity', Date.now().toString());
+        };
+
+        window.addEventListener('mousemove', updateActivity, { passive: true });
+        window.addEventListener('keydown', updateActivity, { passive: true });
+        window.addEventListener('click', updateActivity, { passive: true });
+
+        const interval = setInterval(() => {
+          const lastAct = parseInt(localStorage.getItem('scv_last_activity') || '0', 10);
+          if (lastAct && (Date.now() - lastAct > INACTIVITY_TIMEOUT_MS)) {
+            handleLogout("Sesión finalizada por inactividad (20 min).");
+          }
+        }, 15000);
+
+        return () => {
+          window.removeEventListener('mousemove', updateActivity);
+          window.removeEventListener('keydown', updateActivity);
+          window.removeEventListener('click', updateActivity);
+          clearInterval(interval);
+        };
+      }, [token]);
+
+      const handleLoginSuccess = (authData) => {
+        localStorage.setItem('scv_token', authData.access_token);
+        localStorage.setItem('scv_user', JSON.stringify({
+          nombre: authData.nombre || 'Sebastian Ureña',
+          email: authData.email,
+          rol: authData.rol,
+          id: authData.user_id
+        }));
+        localStorage.setItem('scv_last_activity', Date.now().toString());
+        setToken(authData.access_token);
+        setCurrentUser({
+          nombre: authData.nombre || 'Sebastian Ureña',
+          email: authData.email,
+          rol: authData.rol
+        });
+        setSessionNotice(null);
+        showToast("Sesión iniciada");
+        loadAllData(authData.access_token);
+      };
+
+      const loadAllData = async (authToken) => {
+        const t = authToken || token;
+        if (!t) return;
+
+        try {
+          const resDash = await authFetch(`${API_BASE}/dashboard/summary`);
+          if (resDash.ok) setData(await resDash.json());
+
+          const resVeh = await authFetch(`${API_BASE}/vehiculos/`);
+          if (resVeh.ok) setVehiculos(await resVeh.json());
+
+          const resUsers = await authFetch(`${API_BASE}/usuarios/`);
+          if (resUsers.ok) {
+            const users = await resUsers.json();
+            setUsuariosList(users);
+            const conds = users.filter(u => u.rol && u.rol.includes('operario'));
+            setConductores(conds);
+          }
+
+          const resMov = await authFetch(`${API_BASE}/movimientos/`);
+          if (resMov.ok) setMovimientos(await resMov.json());
+
+          const resCh = await authFetch(`${API_BASE}/chequeos/`);
+          if (resCh.ok) setChequeos(await resCh.json());
+
+          const resOt = await authFetch(`${API_BASE}/mantenimiento/ordenes`);
+          if (resOt.ok) setOrdenes(await resOt.json());
+
+          const resHal = await authFetch(`${API_BASE}/mantenimiento/hallazgos`);
+          if (resHal.ok) setHallazgos(await resHal.json());
+        } catch (e) {
+          console.error("Error al sincronizar datos:", e);
+        }
+      };
+
+      // Auto-refresh Dashboard y Sincronización entre pestañas
+      useEffect(() => {
+        if (!token) return;
+        
+        // Refresco automático cada 30 segundos si estamos en el dashboard
+        const refreshInterval = setInterval(() => {
+          if (activeTab === 'dashboard') {
+            loadAllData(token);
+          }
+        }, 30000);
+        
+        // Sincronización entre pestañas (escucha eventos de localStorage)
+        const handleStorageChange = (e) => {
+          if (e.key === 'scv_data_sync') {
+            loadAllData(token);
+          }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        
+        return () => {
+          clearInterval(refreshInterval);
+          window.removeEventListener('storage', handleStorageChange);
+        };
+      }, [token, activeTab]);
+
+      // Taller Handlers
+      const openEvaluarHallazgo = (h) => {
+        setModalEvaluarHallazgo(h);
+        const mecs = usuariosList.filter(u => u.rol === 'mecanico' || u.rol === 'jefe_mecanicos');
+        setFormEvaluar({
+          categoria: h.categoria || 'mecanica',
+          prioridad: h.criticidad || 'alta',
+          responsable_id: mecs[0]?.id || '',
+          descripcion_trabajo: `Atención técnica requerida: ${h.descripcion}`
+        });
+      };
+
+      const handleConvertirOT = async (e) => {
+        e.preventDefault();
+        if (!modalEvaluarHallazgo) return;
+        try {
+          const res = await authFetch(`${API_BASE}/mantenimiento/hallazgos/${modalEvaluarHallazgo.id}/evaluar-y-convertir-ot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              categoria: formEvaluar.categoria,
+              prioridad: formEvaluar.prioridad,
+              responsable_id: formEvaluar.responsable_id ? Number(formEvaluar.responsable_id) : null,
+              descripcion_trabajo: formEvaluar.descripcion_trabajo
+            })
+          });
+          if (res.ok) {
+            const otData = await res.json();
+            showToast(`Orden ${otData.codigo} creada`);
+            setModalEvaluarHallazgo(null);
+            loadAllData(token);
+          } else {
+            const err = await res.json();
+            alert("Error: " + (err.detail || "No se pudo convertir a OT"));
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      const handleCompletarOT = async (ot) => {
+        showConfirm(`¿Completar la orden ${ot.codigo} y devolver el vehículo a estado activo?`, async () => {
+          try {
+            const res = await authFetch(`${API_BASE}/mantenimiento/ordenes/${ot.id}/completar`, { method: 'PUT' });
+            if (res.ok) {
+              showToast(`Orden ${ot.codigo} completada`);
+              loadAllData(token);
+            } else {
+              const err = await res.json();
+              alert("Error: " + (err.detail || "No se pudo completar la orden"));
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      };
+
+      const openHojaDeVida = async (vehiculoId) => {
+        setLoadingHojaVida(true);
+        try {
+          const res = await authFetch(`${API_BASE}/mantenimiento/vehiculos/${vehiculoId}/hoja-de-vida`);
+          if (res.ok) {
+            const hdData = await res.json();
+            setModalHojaVida(hdData);
+          } else {
+            alert("No se pudo cargar la hoja de vida.");
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoadingHojaVida(false);
+        }
+      };
+
+      // CRUD Openers
+      const openCrearVehiculo = () => {
+        setEditingVehiculoId(null);
+        setFormVehiculo({ placa: '', marca: '', modelo: '', año: 2024, kilometraje: 0, fecha_venc_soat: '2027-12-31', fecha_venc_rtm: '2027-12-31', estado: 'activo' });
+        setModalVehiculo(true);
+      };
+
+      const openEditarVehiculo = (v) => {
+        setEditingVehiculoId(v.id);
+        setFormVehiculo({
+          placa: v.placa, marca: v.marca, modelo: v.modelo, año: v.año,
+          kilometraje: v.kilometraje, fecha_venc_soat: v.fecha_venc_soat || '2027-12-31',
+          fecha_venc_rtm: v.fecha_venc_rtm || '2027-12-31', estado: v.estado
+        });
+        setModalVehiculo(true);
+      };
+
+      const handleEliminarVehiculo = async (id, placa) => {
+        showConfirm(`¿Eliminar el vehículo ${placa}?`, async () => {
+          try {
+            const res = await authFetch(`${API_BASE}/vehiculos/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+              showToast(`Vehículo ${placa} eliminado`);
+              loadAllData(token);
+            } else {
+              const err = await res.json();
+              alert("Error: " + (err.detail || "No se pudo eliminar el vehículo"));
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      };
+
+      const openCrearMovimiento = () => {
+        setEditingMovimientoId(null);
+        setFormMovimiento({
+          tipo: 'salida', vehiculo_id: '', usuario_id: '', auxiliar: '', proveedor: '',
+          kilometraje: '', bascula_peso: '', cantidad_sacas: '', estado_cajon: '', observaciones: ''
+        });
+        setModalMovimiento(true);
+      };
+
+      const openEditarMovimiento = (m) => {
+        setEditingMovimientoId(m.id);
+        setFormMovimiento({
+          tipo: m.tipo || 'salida',
+          vehiculo_id: m.vehiculo_id,
+          usuario_id: m.usuario_id,
+          auxiliar: m.auxiliar || '',
+          proveedor: m.proveedor || '',
+          kilometraje: m.kilometraje !== null && m.kilometraje !== undefined ? m.kilometraje : '',
+          bascula_peso: m.bascula_peso !== null && m.bascula_peso !== undefined ? m.bascula_peso : '',
+          cantidad_sacas: m.cantidad_sacas !== null && m.cantidad_sacas !== undefined ? m.cantidad_sacas : '',
+          estado_cajon: m.estado_cajon || '',
+          observaciones: m.observaciones || ''
+        });
+        setModalMovimiento(true);
+      };
+
+      const handleEliminarMovimiento = async (id) => {
+        showConfirm(`¿Eliminar el registro de movimiento #${id}?`, async () => {
+          try {
+            const res = await authFetch(`${API_BASE}/movimientos/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+              showToast(`Movimiento #${id} eliminado`);
+              loadAllData(token);
+            } else {
+              const err = await res.json();
+              alert("Error: " + (err.detail || "No se pudo eliminar el movimiento"));
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      };
+
+      const openCrearUsuario = () => {
+        setEditingUsuarioId(null);
+        setFormUsuario({ nombre: '', email: '', password: '', rol: 'operario_chequeo', cedula: '', licencia: '', categoria: 'C2', fecha_venc_licencia: '2028-12-31' });
+        setModalUsuario(true);
+      };
+
+      const openEditarUsuario = (u) => {
+        setEditingUsuarioId(u.id);
+        setFormUsuario({
+          nombre: u.nombre, email: u.email, password: '', rol: u.rol,
+          cedula: u.cedula || '', licencia: u.licencia || '', categoria: u.categoria || 'C2',
+          fecha_venc_licencia: u.fecha_venc_licencia || '2028-12-31'
+        });
+        setModalUsuario(true);
+      };
+
+      const handleEliminarUsuario = async (id, nombre) => {
+        showConfirm(`¿Desactivar al usuario ${nombre}?`, async () => {
+          try {
+            const res = await authFetch(`${API_BASE}/usuarios/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+              showToast(`Usuario ${nombre} desactivado`);
+              loadAllData(token);
+            } else {
+              const err = await res.json();
+              alert("Error: " + (err.detail || "No se pudo desactivar el usuario"));
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      };
+
+      const handleEliminarChequeo = async (id) => {
+        showConfirm(`¿Eliminar la inspección #${id}?`, async () => {
+          try {
+            const res = await authFetch(`${API_BASE}/chequeos/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+              showToast(`Inspección #${id} eliminada`);
+              loadAllData(token);
+            } else {
+              const err = await res.json();
+              alert("Error: " + (err.detail || "No se pudo eliminar el chequeo"));
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      };
+
+      const openCrearOT = () => {
+        setEditingOTId(null);
+        setFormOT({ vehiculo_id: '', prioridad: 'media', estado: 'pendiente', descripcion: '', responsable_id: '' });
+        setModalOT(true);
+      };
+
+      const openEditarOT = (ot) => {
+        setEditingOTId(ot.id);
+        setFormOT({
+          vehiculo_id: ot.vehiculo_id,
+          prioridad: ot.prioridad,
+          estado: ot.estado,
+          descripcion: ot.descripcion,
+          responsable_id: ot.responsable_id || ''
+        });
+        setModalOT(true);
+      };
+
+      const handleEliminarOT = async (id, codigo) => {
+        showConfirm(`¿Eliminar la orden ${codigo}?`, async () => {
+          try {
+            const res = await authFetch(`${API_BASE}/mantenimiento/ordenes/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+              showToast(`Orden ${codigo} eliminada`);
+              loadAllData(token);
+            } else {
+              const err = await res.json();
+              alert("Error: " + (err.detail || "No se pudo eliminar la OT"));
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      };
+
+      // Form Submit Handlers
+      const handleCrearVehiculo = async (e) => {
+        e.preventDefault();
+        try {
+          const url = editingVehiculoId ? `${API_BASE}/vehiculos/${editingVehiculoId}` : `${API_BASE}/vehiculos/`;
+          const method = editingVehiculoId ? 'PUT' : 'POST';
+
+          const res = await authFetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...formVehiculo,
+              kilometraje: Number(formVehiculo.kilometraje),
+              año: Number(formVehiculo.año)
+            })
+          });
+          if (res.ok) {
+            showToast(editingVehiculoId ? "Vehículo actualizado" : "Vehículo guardado");
+            setModalVehiculo(false);
+            setEditingVehiculoId(null);
+            setFormVehiculo({ placa: '', marca: '', modelo: '', año: 2024, kilometraje: 0, fecha_venc_soat: '2027-12-31', fecha_venc_rtm: '2027-12-31', estado: 'activo' });
+            loadAllData(token);
+          } else {
+            const err = await res.json();
+            alert("Error: " + (err.detail || "No se pudo guardar el vehículo"));
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      const handleCrearUsuario = async (e) => {
+        e.preventDefault();
+        try {
+          const url = editingUsuarioId ? `${API_BASE}/usuarios/${editingUsuarioId}` : `${API_BASE}/usuarios/`;
+          const method = editingUsuarioId ? 'PUT' : 'POST';
+
+          const bodyData = { ...formUsuario, estado_activo: true };
+          if (editingUsuarioId && !bodyData.password) {
+            delete bodyData.password;
+          }
+
+          const res = await authFetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyData)
+          });
+          if (res.ok) {
+            showToast(editingUsuarioId ? "Usuario actualizado" : "Usuario guardado");
+            setModalUsuario(false);
+            setEditingUsuarioId(null);
+            setFormUsuario({ nombre: '', email: '', password: '', rol: 'operario_chequeo', cedula: '', licencia: '', categoria: 'C2', fecha_venc_licencia: '2028-12-31' });
+            loadAllData(token);
+          } else {
+            const err = await res.json();
+            alert("Error: " + (err.detail || "No se pudo guardar el usuario"));
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      const handleCrearMovimiento = async (e) => {
+        e.preventDefault();
+        try {
+          const vId = Number(formMovimiento.vehiculo_id);
+          const uId = Number(formMovimiento.usuario_id);
+          if (!vId) { alert("Selecciona el vehículo"); return; }
+          if (!uId) { alert("Selecciona el conductor"); return; }
+
+          const url = editingMovimientoId ? `${API_BASE}/movimientos/${editingMovimientoId}` : `${API_BASE}/movimientos/`;
+          const method = editingMovimientoId ? 'PUT' : 'POST';
+
+          const res = await authFetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tipo: formMovimiento.tipo || 'salida',
+              vehiculo_id: vId,
+              usuario_id: uId,
+              auxiliar: formMovimiento.auxiliar ? formMovimiento.auxiliar.trim() : null,
+              proveedor: formMovimiento.proveedor ? formMovimiento.proveedor.trim() : null,
+              kilometraje: formMovimiento.kilometraje !== '' && !isNaN(Number(formMovimiento.kilometraje)) ? Number(formMovimiento.kilometraje) : null,
+              bascula_peso: formMovimiento.bascula_peso !== '' && !isNaN(Number(formMovimiento.bascula_peso)) ? Number(formMovimiento.bascula_peso) : null,
+              cantidad_sacas: formMovimiento.cantidad_sacas !== '' && !isNaN(Number(formMovimiento.cantidad_sacas)) ? Number(formMovimiento.cantidad_sacas) : null,
+              estado_cajon: formMovimiento.estado_cajon ? formMovimiento.estado_cajon.trim() : null,
+              observaciones: formMovimiento.observaciones ? formMovimiento.observaciones.trim() : null
+            })
+          });
+          if (res.ok) {
+            showToast(editingMovimientoId ? "Movimiento actualizado" : "Movimiento registrado");
+            setModalMovimiento(false);
+            setEditingMovimientoId(null);
+            loadAllData(token);
+          } else {
+            const err = await res.json();
+            alert("Error: " + (err.detail || "No se pudo guardar el movimiento"));
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      const handleCrearOT = async (e) => {
+        e.preventDefault();
+        try {
+          const vId = Number(formOT.vehiculo_id) || (vehiculos[0]?.id);
+          const respId = Number(formOT.responsable_id) || (usuariosList.find(u => u.rol === 'mecanico')?.id) || 1;
+          const url = editingOTId ? `${API_BASE}/mantenimiento/ordenes/${editingOTId}` : `${API_BASE}/mantenimiento/ordenes`;
+          const method = editingOTId ? 'PUT' : 'POST';
+
+          const res = await authFetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              vehiculo_id: vId,
+              responsable_id: respId,
+              prioridad: formOT.prioridad,
+              estado: formOT.estado || 'pendiente',
+              descripcion: formOT.descripcion
+            })
+          });
+          if (res.ok) {
+            showToast(editingOTId ? "Orden actualizada" : "Orden creada");
+            setModalOT(false);
+            setEditingOTId(null);
+            setFormOT({ vehiculo_id: '', prioridad: 'media', estado: 'pendiente', descripcion: '', responsable_id: '' });
+            loadAllData(token);
+          } else {
+            const err = await res.json();
+            alert("Error: " + (err.detail || "No se pudo guardar la OT"));
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      const handleCrearChequeo = async (e) => {
+        e.preventDefault();
+        try {
+          const vId = Number(chequeoForm.vehiculo_id) || (vehiculos[0]?.id);
+          const uId = Number(chequeoForm.usuario_id) || (conductores[0]?.id) || 1;
+          const res = await authFetch(`${API_BASE}/chequeos/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              vehiculo_id: vId,
+              usuario_id: uId,
+              kilometraje: Number(chequeoForm.kilometraje),
+              observaciones_generales: chequeoForm.observaciones_generales,
+              items: chequeoForm.items
+            })
+          });
+          if (res.ok) {
+            const dataRes = await res.json();
+            showToast(dataRes.aprobado ? "Inspección aprobada" : "Inspección registrada con novedades");
+            setModalChequeo(false);
+            loadAllData(token);
+          } else {
+            const err = await res.json();
+            alert("Error: " + (err.detail || "No se pudo registrar la inspección"));
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      const handleItemToggle = (idx, valor) => {
+        setChequeoForm(prev => {
+          const items = [...prev.items];
+          items[idx].valor = valor;
+          return { ...prev, items };
+        });
+      };
+
+      // Feed de Actividad Reciente combinada (Dashboard)
+      const recentActivities = useMemo(() => {
+        const list = [];
+        
+        movimientos.forEach(m => {
+          list.push({
+            id: `mov-${m.id}`,
+            icon: 'arrow-left-right',
+            color: m.tipo === 'salida' ? '#059669' : '#2563eb',
+            bg: m.tipo === 'salida' ? 'var(--emerald-50)' : 'var(--blue-50)',
+            title: `${m.vehiculo ? m.vehiculo.placa : `Vehículo #${m.vehiculo_id}`} • ${m.tipo === 'salida' ? 'Salida' : 'Entrada'}`,
+            desc: `${m.usuario?.nombre || 'Operario'}`,
+            tag: m.tipo ? m.tipo.toUpperCase() : 'MOV',
+            tagClass: m.tipo === 'salida' ? 'in-motion' : 'completed',
+            date: new Date(m.fecha_registro)
+          });
+        });
+
+        chequeos.forEach(ch => {
+          list.push({
+            id: `ch-${ch.id}`,
+            icon: 'clipboard-check',
+            color: ch.aprobado ? '#059669' : '#e11d48',
+            bg: ch.aprobado ? 'var(--emerald-50)' : 'var(--rose-50)',
+            title: `${ch.vehiculo?.placa || `Vehículo #${ch.vehiculo_id}`} • Inspección pre-op`,
+            desc: `${ch.usuario?.nombre || 'Inspector'}`,
+            tag: ch.aprobado ? 'CONFORME' : 'NOVEDAD',
+            tagClass: ch.aprobado ? 'completed' : 'critical',
+            date: new Date(ch.fecha_registro)
+          });
+        });
+
+        ordenes.forEach(ot => {
+          list.push({
+            id: `ot-${ot.id}`,
+            icon: 'wrench',
+            color: '#7c3aed',
+            bg: 'var(--purple-50)',
+            title: `Orden ${ot.codigo} • ${ot.vehiculo?.placa || `Vehículo #${ot.vehiculo_id}`}`,
+            desc: `${ot.responsable?.nombre || 'Taller'}`,
+            tag: ot.estado.replace('_', ' ').toUpperCase(),
+            tagClass: ot.estado === 'completada' ? 'completed' : 'warning',
+            date: new Date(ot.fecha_creacion)
+          });
+        });
+
+        return list
+          .filter(a => !isNaN(a.date.getTime()))
+          .sort((a, b) => b.date.getTime() - a.date.getTime())
+          .slice(0, 3);
+      }, [movimientos, chequeos, ordenes]);
+
+      // Métricas Dashboard
+      const fleetStats = useMemo(() => {
+        const total = vehiculos.length;
+        const activos = vehiculos.filter(v => v.estado === 'activo').length;
+        const enTaller = vehiculos.filter(v => v.estado === 'en_taller').length;
+        const inactivos = vehiculos.filter(v => v.estado === 'inactivo').length;
+        const activosPct = total > 0 ? Math.round((activos / total) * 100) : 0;
+        const enTallerPct = total > 0 ? Math.round((enTaller / total) * 100) : 0;
+        return { total, activos, enTaller, inactivos, activosPct, enTallerPct };
+      }, [vehiculos]);
+
+      const hallazgosAbiertos = useMemo(() => {
+        return hallazgos.filter(h => h.estado === 'abierto');
+      }, [hallazgos]);
+
+      // Listas Filtradas y Ordenadas
+      const movimientosFiltrados = useMemo(() => {
+        let list = [...movimientos];
+
+        // 1. Tipo
+        if (filtroMovTipo !== 'todos') {
+          list = list.filter(m => m.tipo === filtroMovTipo);
+        }
+
+        // 2. Búsqueda inteligente (placa, conductor, auxiliar, proveedor, observaciones, cajón)
+        if (filtroMovBusqueda.trim()) {
+          const q = filtroMovBusqueda.toLowerCase().trim();
+          list = list.filter(m => {
+            const placa = (m.vehiculo?.placa || `vehiculo #${m.vehiculo_id}`).toLowerCase();
+            const cond = (m.usuario?.nombre || '').toLowerCase();
+            const aux = (m.auxiliar || '').toLowerCase();
+            const prov = (m.proveedor || '').toLowerCase();
+            const obs = (m.observaciones || '').toLowerCase();
+            const caj = (m.estado_cajon || '').toLowerCase();
+            return placa.includes(q) || cond.includes(q) || aux.includes(q) || prov.includes(q) || obs.includes(q) || caj.includes(q);
+          });
+        }
+
+        // 3. Rango de fechas
+        if (filtroMovFechaInicio) {
+          const dIni = new Date(filtroMovFechaInicio + 'T00:00:00');
+          list = list.filter(m => new Date(m.fecha_registro) >= dIni);
+        }
+        if (filtroMovFechaFin) {
+          const dFin = new Date(filtroMovFechaFin + 'T23:59:59');
+          list = list.filter(m => new Date(m.fecha_registro) <= dFin);
+        }
+
+        // 4. Ordenamiento
+        list.sort((a, b) => {
+          if (filtroMovOrden === 'recientes') return new Date(b.fecha_registro) - new Date(a.fecha_registro);
+          if (filtroMovOrden === 'antiguos') return new Date(a.fecha_registro) - new Date(b.fecha_registro);
+          if (filtroMovOrden === 'alfabetico_asc') {
+            const pA = (a.vehiculo?.placa || '').toLowerCase();
+            const pB = (b.vehiculo?.placa || '').toLowerCase();
+            return pA.localeCompare(pB);
+          }
+          if (filtroMovOrden === 'alfabetico_desc') {
+            const pA = (a.vehiculo?.placa || '').toLowerCase();
+            const pB = (b.vehiculo?.placa || '').toLowerCase();
+            return pB.localeCompare(pA);
+          }
+          if (filtroMovOrden === 'peso_desc') {
+            return (Number(b.bascula_peso) || 0) - (Number(a.bascula_peso) || 0);
+          }
+          return 0;
+        });
+
+        return list;
+      }, [movimientos, filtroMovBusqueda, filtroMovTipo, filtroMovOrden, filtroMovFechaInicio, filtroMovFechaFin]);
+
+      const vehiculosFiltrados = useMemo(() => {
+        let list = [...vehiculos];
+
+        if (filtroVehEstado !== 'todos') {
+          list = list.filter(v => v.estado === filtroVehEstado);
+        }
+
+        if (filtroVehBusqueda.trim()) {
+          const q = filtroVehBusqueda.toLowerCase().trim();
+          list = list.filter(v => {
+            const placa = (v.placa || '').toLowerCase();
+            const marca = (v.marca || '').toLowerCase();
+            const modelo = (v.modelo || '').toLowerCase();
+            return placa.includes(q) || marca.includes(q) || modelo.includes(q);
+          });
+        }
+
+        list.sort((a, b) => {
+          if (filtroVehOrden === 'recientes') return (b.id || 0) - (a.id || 0);
+          if (filtroVehOrden === 'placa_asc') return (a.placa || '').localeCompare(b.placa || '');
+          if (filtroVehOrden === 'placa_desc') return (b.placa || '').localeCompare(a.placa || '');
+          if (filtroVehOrden === 'km_desc') return (Number(b.kilometraje) || 0) - (Number(a.kilometraje) || 0);
+          return 0;
+        });
+
+        return list;
+      }, [vehiculos, filtroVehBusqueda, filtroVehEstado, filtroVehOrden]);
+
+      const chequeosFiltrados = useMemo(() => {
+        let list = [...chequeos];
+
+        if (filtroCheqEstado === 'aprobado') list = list.filter(ch => ch.aprobado === true);
+        if (filtroCheqEstado === 'novedad') list = list.filter(ch => ch.aprobado === false);
+
+        if (filtroCheqBusqueda.trim()) {
+          const q = filtroCheqBusqueda.toLowerCase().trim();
+          list = list.filter(ch => {
+            const placa = (ch.vehiculo?.placa || `vehiculo #${ch.vehiculo_id}`).toLowerCase();
+            const insp = (ch.usuario?.nombre || '').toLowerCase();
+            const obs = (ch.observaciones_generales || '').toLowerCase();
+            return placa.includes(q) || insp.includes(q) || obs.includes(q);
+          });
+        }
+
+        if (filtroCheqFechaInicio) {
+          const dIni = new Date(filtroCheqFechaInicio + 'T00:00:00');
+          list = list.filter(ch => new Date(ch.fecha_registro) >= dIni);
+        }
+        if (filtroCheqFechaFin) {
+          const dFin = new Date(filtroCheqFechaFin + 'T23:59:59');
+          list = list.filter(ch => new Date(ch.fecha_registro) <= dFin);
+        }
+
+        list.sort((a, b) => {
+          if (filtroCheqOrden === 'recientes') return new Date(b.fecha_registro) - new Date(a.fecha_registro);
+          if (filtroCheqOrden === 'antiguos') return new Date(a.fecha_registro) - new Date(b.fecha_registro);
+          if (filtroCheqOrden === 'placa_asc') {
+            const pA = (a.vehiculo?.placa || '').toLowerCase();
+            const pB = (b.vehiculo?.placa || '').toLowerCase();
+            return pA.localeCompare(pB);
+          }
+          return 0;
+        });
+
+        return list;
+      }, [chequeos, filtroCheqBusqueda, filtroCheqEstado, filtroCheqOrden, filtroCheqFechaInicio, filtroCheqFechaFin]);
+
+      const usuariosFiltrados = useMemo(() => {
+        let list = [...(activeTab === 'conductores' ? conductores : usuariosList)];
+
+        if (filtroUserRol !== 'todos') {
+          list = list.filter(u => u.rol === filtroUserRol);
+        }
+
+        if (filtroUserBusqueda.trim()) {
+          const q = filtroUserBusqueda.toLowerCase().trim();
+          list = list.filter(u => {
+            const nom = (u.nombre || '').toLowerCase();
+            const em = (u.email || '').toLowerCase();
+            const ced = (u.cedula || '').toLowerCase();
+            const lic = (u.licencia || '').toLowerCase();
+            return nom.includes(q) || em.includes(q) || ced.includes(q) || lic.includes(q);
+          });
+        }
+
+        list.sort((a, b) => {
+          if (filtroUserOrden === 'nombre_asc') return (a.nombre || '').localeCompare(b.nombre || '');
+          if (filtroUserOrden === 'nombre_desc') return (b.nombre || '').localeCompare(a.nombre || '');
+          if (filtroUserOrden === 'recientes') return (b.id || 0) - (a.id || 0);
+          return 0;
+        });
+
+        return list;
+      }, [activeTab, conductores, usuariosList, filtroUserBusqueda, filtroUserRol, filtroUserOrden]);
+
+      // Handlers de Exportación CSV Unificada con Filtros
+      const handleExportarMovimientosCSV = () => {
+        if (!movimientosFiltrados || movimientosFiltrados.length === 0) {
+          showToast('No hay movimientos para exportar con los filtros actuales');
+          return;
+        }
+        const headers = [
+          'ID',
+          'FECHA_HORA',
+          'TIPO',
+          'PLACA',
+          'CONDUCTOR',
+          'AUXILIAR',
+          'PROVEEDOR',
+          'KILOMETRAJE_KM',
+          'PESO_BASCULA_KG',
+          'CANTIDAD_SACAS',
+          'ESTADO_CAJON',
+          'OBSERVACIONES'
+        ];
+        const rows = movimientosFiltrados.map(m => [
+          m.id,
+          m.fecha_registro ? formatDateTime(m.fecha_registro) : '',
+          m.tipo ? m.tipo.toUpperCase() : '',
+          m.vehiculo?.placa || `#${m.vehiculo_id}`,
+          m.usuario?.nombre || 'Operario',
+          m.auxiliar || '',
+          m.proveedor || '',
+          m.kilometraje !== null && m.kilometraje !== undefined ? m.kilometraje : '',
+          m.bascula_peso !== null && m.bascula_peso !== undefined ? m.bascula_peso : '',
+          m.cantidad_sacas !== null && m.cantidad_sacas !== undefined ? m.cantidad_sacas : '',
+          m.estado_cajon || '',
+          m.observaciones || ''
+        ]);
+        const fechaStr = new Date().toISOString().slice(0, 10);
+        downloadCSV(`reporte_movimientos_scv_${fechaStr}.csv`, headers, rows);
+        showToast(`Exportados ${rows.length} movimientos a CSV`);
+      };
+
+      const handleExportarVehiculosCSV = () => {
+        if (!vehiculosFiltrados || vehiculosFiltrados.length === 0) {
+          showToast('No hay vehículos para exportar con los filtros actuales');
+          return;
+        }
+        const headers = [
+          'ID',
+          'PLACA',
+          'MARCA',
+          'MODELO',
+          'AÑO',
+          'KILOMETRAJE_KM',
+          'VENC_SOAT',
+          'VENC_RTM',
+          'ESTADO'
+        ];
+        const rows = vehiculosFiltrados.map(v => [
+          v.id,
+          v.placa || '',
+          v.marca || '',
+          v.modelo || '',
+          v.año || '',
+          v.kilometraje !== null && v.kilometraje !== undefined ? v.kilometraje : '',
+          v.fecha_venc_soat ? formatDate(v.fecha_venc_soat) : '',
+          v.fecha_venc_rtm ? formatDate(v.fecha_venc_rtm) : '',
+          v.estado || ''
+        ]);
+        const fechaStr = new Date().toISOString().slice(0, 10);
+        downloadCSV(`flota_vehiculos_scv_${fechaStr}.csv`, headers, rows);
+        showToast(`Exportados ${rows.length} vehículos a CSV`);
+      };
+
+      const handleExportarChequeosCSV = () => {
+        if (!chequeosFiltrados || chequeosFiltrados.length === 0) {
+          showToast('No hay chequeos para exportar con los filtros actuales');
+          return;
+        }
+        const headers = [
+          'ID',
+          'FECHA_HORA',
+          'PLACA',
+          'INSPECTOR_CONDUCTOR',
+          'KILOMETRAJE_KM',
+          'ESTADO',
+          'OBSERVACIONES'
+        ];
+        const rows = chequeosFiltrados.map(ch => [
+          ch.id,
+          ch.fecha_registro ? formatDateTime(ch.fecha_registro) : '',
+          ch.vehiculo?.placa || `#${ch.vehiculo_id}`,
+          ch.usuario?.nombre || 'Inspector',
+          ch.kilometraje !== null && ch.kilometraje !== undefined ? ch.kilometraje : '',
+          ch.aprobado ? 'APROBADO' : 'CON NOVEDAD',
+          ch.observaciones_generales || ''
+        ]);
+        const fechaStr = new Date().toISOString().slice(0, 10);
+        downloadCSV(`inspecciones_preop_scv_${fechaStr}.csv`, headers, rows);
+        showToast(`Exportadas ${rows.length} inspecciones a CSV`);
+      };
+
+      const handleExportarUsuariosCSV = () => {
+        const list = usuariosFiltrados;
+        if (!list || list.length === 0) {
+          showToast('No hay registros para exportar con los filtros actuales');
+          return;
+        }
+        const isConductores = activeTab === 'conductores';
+        const headers = [
+          'ID',
+          'NOMBRE',
+          'EMAIL',
+          'CEDULA',
+          'ROL',
+          'LICENCIA',
+          'CATEGORIA',
+          'ESTADO'
+        ];
+        const rows = list.map(u => [
+          u.id,
+          u.nombre || '',
+          u.email || '',
+          u.cedula || '',
+          u.rol || '',
+          u.licencia || '',
+          u.categoria || '',
+          u.estado_activo ? 'Activo' : 'Inactivo'
+        ]);
+        const fechaStr = new Date().toISOString().slice(0, 10);
+        const filename = isConductores ? `conductores_scv_${fechaStr}.csv` : `usuarios_scv_${fechaStr}.csv`;
+        downloadCSV(filename, headers, rows);
+        showToast(`Exportados ${rows.length} registros a CSV`);
+      };
+
+      // Cargando
+      if (authChecking) {
+        return (
+          <div className="login-screen-container" style={{ background: '#0f172a' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: '#ffffff' }}>
+              <div className="login-brand-logo" style={{ width: '46px', height: '46px', fontSize: '22px' }}>N</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8' }}>Cargando sistema...</div>
+            </div>
+          </div>
+        );
+      }
+
+      if (!token || !currentUser) {
+        return <LoginView onLoginSuccess={handleLoginSuccess} notice={sessionNotice} />;
+      }
+
+      // Menú con nombres cortos y profesionales (Regla 2 y 5)
+      const allMenuItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', roles: ['admin', 'jefe_mecanicos', 'mecanico', 'operario_chequeo', 'operario_movimientos'] },
+        { id: 'mantenimiento', label: 'Mantenimiento', icon: 'wrench', roles: ['admin', 'jefe_mecanicos', 'mecanico'], badge: hallazgosAbiertos.length },
+        { id: 'vehiculos', label: 'Flota', icon: 'truck', roles: ['admin', 'jefe_mecanicos', 'mecanico', 'operario_chequeo', 'operario_movimientos'] },
+        { id: 'chequeos', label: 'Chequeos', icon: 'clipboard-check', roles: ['admin', 'jefe_mecanicos', 'operario_chequeo'] },
+        { id: 'movimientos', label: 'Movimientos', icon: 'arrow-left-right', roles: ['admin', 'operario_movimientos'] },
+        { id: 'conductores', label: 'Conductores', icon: 'user-check', roles: ['admin', 'jefe_mecanicos'] },
+        { id: 'usuarios', label: 'Usuarios', icon: 'users', roles: ['admin'] },
+        { id: 'reportes', label: 'Reportes', icon: 'file-text', roles: ['admin', 'jefe_mecanicos'] },
+        { id: 'alertas', label: 'Alertas', icon: 'bell', roles: ['admin', 'jefe_mecanicos', 'mecanico'] },
+      ];
+
+      const userRole = currentUser?.rol || 'admin';
+      const menuItems = allMenuItems.filter(item => !item.roles || item.roles.includes(userRole));
+
+      return (
+        <div className="app-container">
+          {/* TOAST FLOTANTE */}
+          {toastMsg && (
+            <div style={{ position: 'fixed', top: '16px', right: '16px', background: '#064e3b', color: '#ffffff', padding: '10px 16px', borderRadius: '8px', boxShadow: '0 8px 20px rgba(0,0,0,0.2)', zIndex: 99999, fontWeight: '600', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #059669', animation: 'fadeIn 0.2s ease' }}>
+              <Icon name="check-circle" size={15} color="#34d399" />
+              <span>{toastMsg}</span>
+            </div>
+          )}
+
+          {/* CONFIRM DIALOG PERSONALIZADO */}
+          {confirmDialog && (
+            <div
+              style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(3px)', zIndex: 99998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+              onClick={() => setConfirmDialog(null)}
+            >
+              <div
+                style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 20px 50px rgba(15,23,42,0.25)', maxWidth: '400px', width: '100%', overflow: 'hidden', animation: 'fadeIn 0.15s ease' }}
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '18px 20px 14px', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon name="alert-triangle" size={17} color="#dc2626" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#0f172a' }}>Confirmar acción</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500', marginTop: '1px' }}>Esta acción puede ser irreversible</div>
+                  </div>
+                </div>
+                {/* Body */}
+                <div style={{ padding: '16px 20px', fontSize: '13px', color: '#334155', lineHeight: '1.55', fontWeight: '500' }}>
+                  {confirmDialog.message}
+                </div>
+                {/* Footer */}
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', padding: '12px 20px 16px', borderTop: '1px solid #f1f5f9' }}>
+                  <button
+                    onClick={() => setConfirmDialog(null)}
+                    style={{ padding: '7px 16px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: '12.5px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+                    style={{ padding: '7px 16px', borderRadius: '6px', border: 'none', background: '#dc2626', color: '#fff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#b91c1c'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#dc2626'}
+                  >
+                    <Icon name="check" size={13} color="#fff" />
+                    Confirmar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MOBILE OVERLAY */}
+          {mobileMenuOpen && (
+            <div className="mobile-overlay" onClick={() => setMobileMenuOpen(false)}></div>
+          )}
+
+          {/* SIDEBAR */}
+          <aside className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+            <div className="brand-section">
+              <div className="brand-logo-icon">N</div>
+              <div className="brand-info">
+                <h2>Normetales</h2>
+                <span>Movilidad</span>
+              </div>
+            </div>
+
+            <nav className="nav-menu">
+              {menuItems.map((item) => (
+                <button
+                  key={item.id}
+                  className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                    if (token) loadAllData(token);
+                  }}
+                >
+                  <Icon name={item.icon} size={17} />
+                  <span>{item.label}</span>
+                  {item.badge > 0 && <span className="nav-badge">{item.badge}</span>}
+                </button>
+              ))}
+            </nav>
+
+            <div className="user-profile-card">
+              <div className="user-avatar">{currentUser.nombre ? currentUser.nombre.charAt(0) : 'U'}</div>
+              <div className="user-details">
+                <div className="user-name">{currentUser.nombre}</div>
+                <div className="user-email">{currentUser.email}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleLogout()}
+                title="Cerrar sesión"
+                className="logout-btn"
+              >
+                <Icon name="log-out" size={13} />
+              </button>
+            </div>
+          </aside>
+
+          {/* ÁREA PRINCIPAL */}
+          <main className="main-content">
+            {/* HEADER COMPACTO */}
+            <header className="top-header">
+              <div className="header-left">
+                <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                  <Icon name="menu" size={18} />
+                </button>
+                <div className="header-title">
+                  <h1>Centro de Mando de Movilidad</h1>
+                  <div className="header-title-sub">
+                    <span>Control vehicular</span>
+                    <span className="status-live-badge">
+                      <span className="status-dot"></span>
+                      Sistema operativo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="header-actions">
+                <button className="btn-secondary" onClick={() => { loadAllData(token); showToast("Datos sincronizados"); }}>
+                  <Icon name="refresh-cw" size={13} />
+                  <span>Sincronizar</span>
+                </button>
+                <div className="date-pill">
+                  <Icon name="calendar" size={13} color="var(--text-secondary)" />
+                  <span>{formatDate(new Date())}</span>
+                </div>
+                <div className="avatar-badge" title={currentUser.nombre}>
+                  {currentUser.nombre ? currentUser.nombre.charAt(0) : 'A'}
+                </div>
+              </div>
+            </header>
+
+            {/* TAB: DASHBOARD */}
+            {activeTab === 'dashboard' && (
+              <div className="page-body">
+                {/* 1. KPIS GRID COMPACTO Y SIN AMBIGÜEDAD */}
+                <div className="kpi-grid">
+                  {/* Flota Activa: admin, jefe_mecanicos, operario_movimientos, mecanico */}
+                  {['admin', 'jefe_mecanicos', 'operario_movimientos', 'mecanico'].includes(currentUser?.rol) && (
+                    <div className="kpi-card" onClick={() => setActiveTab('vehiculos')}>
+                      <div className="kpi-icon-circle green"><Icon name="truck" size={18} /></div>
+                      <div className="kpi-content">
+                        <div className="kpi-title">Flota activa</div>
+                        <div className="kpi-value">{fleetStats.activos} / {fleetStats.total}</div>
+                        <div className="kpi-delta up">
+                          <Icon name="check-circle-2" size={11} />
+                          <span>{fleetStats.activosPct}% operativa</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* En Taller: admin, jefe_mecanicos, mecanico */}
+                  {['admin', 'jefe_mecanicos', 'mecanico'].includes(currentUser?.rol) && (
+                    <div className="kpi-card" onClick={() => { setActiveTab('mantenimiento'); setSubTabTaller('ordenes'); }}>
+                      <div className="kpi-icon-circle amber"><Icon name="wrench" size={18} /></div>
+                      <div className="kpi-content">
+                        <div className="kpi-title">En taller</div>
+                        <div className="kpi-value">
+                          {ordenes.filter(o => o.estado === 'en_progreso' || o.estado === 'pendiente').length}
+                        </div>
+                        <div className="kpi-delta neutral">
+                          <span>Órdenes activas</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Inspecciones: admin, operario_chequeo, jefe_mecanicos */}
+                  {['admin', 'operario_chequeo', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                    <div className="kpi-card" onClick={() => setActiveTab('chequeos')}>
+                      <div className="kpi-icon-circle amber"><Icon name="clipboard-check" size={18} /></div>
+                      <div className="kpi-content">
+                        <div className="kpi-title">Inspecciones pre-op</div>
+                        <div className="kpi-value">{chequeos.length}</div>
+                        <div className="kpi-delta neutral">
+                          <span>Realizadas hoy</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Movimientos: admin, operario_movimientos */}
+                  {['admin', 'operario_movimientos'].includes(currentUser?.rol) && (
+                    <div className="kpi-card" onClick={() => setActiveTab('movimientos')}>
+                      <div className="kpi-icon-circle purple"><Icon name="arrow-left-right" size={18} /></div>
+                      <div className="kpi-content">
+                        <div className="kpi-title">Movimientos</div>
+                        <div className="kpi-value">{movimientos.length}</div>
+                        <div className="kpi-delta neutral">
+                          <span>Entradas / salidas</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. FILA MEDIA: ESTADO DE LA FLOTA + REQUIERE ATENCIÓN */}
+                <div className="dashboard-main-grid">
+                  {/* Estado de la flota: admin, jefe_mecanicos */}
+                  {['admin', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                    <div className="dash-card">
+                      <div className="card-header">
+                        <h3><Icon name="pie-chart" size={15} color="var(--emerald-600)" /> Estado de la flota</h3>
+                        <span className="card-action-link" onClick={() => setActiveTab('vehiculos')}>
+                          Ver flota <Icon name="arrow-right" size={12} />
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '6px 0' }}>
+                        <div style={{ position: 'relative', width: '110px', height: '110px', flexShrink: 0 }}>
+                          <svg viewBox="0 0 160 160" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
+                            <circle cx="80" cy="80" r="55" fill="transparent" stroke="#f1f5f9" strokeWidth="16" />
+                            <circle
+                              cx="80"
+                              cy="80"
+                              r="55"
+                              fill="transparent"
+                              stroke="#059669"
+                              strokeWidth="16"
+                              strokeDasharray={`${Math.round((fleetStats.activos / (fleetStats.total || 1)) * 345)} 377`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                            <div style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1' }}>{fleetStats.total}</div>
+                            <div style={{ fontSize: '9.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: '2px' }}>Total</div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, fontSize: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '5px', borderBottom: '1px solid var(--surface-border-subtle)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#059669' }}></span>
+                              <span>Activos</span>
+                            </div>
+                            <strong>{fleetStats.activos} — {fleetStats.activosPct}%</strong>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '5px', borderBottom: '1px solid var(--surface-border-subtle)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d97706' }}></span>
+                              <span>En taller</span>
+                            </div>
+                            <strong>{fleetStats.enTaller} — {fleetStats.enTallerPct}%</strong>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#94a3b8' }}></span>
+                              <span>Inactivos</span>
+                            </div>
+                            <strong>{fleetStats.inactivos}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Requiere Atención: admin, jefe_mecanicos */}
+                  {['admin', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                    <div className="dash-card">
+                      <div className="card-header">
+                        <h3>
+                          <Icon name="alert-triangle" size={15} color={hallazgosAbiertos.length > 0 ? "var(--rose-600)" : "var(--emerald-600)"} />
+                          Requiere atención
+                        </h3>
+                        {hallazgosAbiertos.length > 0 && (
+                          <span className="card-action-link" onClick={() => { setActiveTab('mantenimiento'); setSubTabTaller('hallazgos'); }}>
+                            Gestionar <Icon name="arrow-right" size={12} />
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, justifyContent: 'center' }}>
+                        {hallazgosAbiertos.length > 0 ? (
+                          hallazgosAbiertos.slice(0, 2).map((h) => (
+                            <div
+                              key={h.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '10px',
+                                padding: '10px 12px',
+                                background: 'var(--rose-50)',
+                                border: '1px solid var(--rose-100)',
+                                borderRadius: '8px'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                <Icon name="alert-triangle" size={14} color="var(--rose-600)" />
+                                <span style={{ fontSize: '12px', color: 'var(--gray-700)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {h.descripcion || h.tipo || 'Hallazgo pendiente'}
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '11px', color: 'var(--rose-600)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                {h.vehiculo_placa || ''}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ textAlign: 'center', color: 'var(--gray-400)', fontSize: '13px', padding: '16px 0' }}>
+                            <Icon name="check-circle" size={20} color="var(--emerald-500)" />
+                            <p style={{ margin: '4px 0 0' }}>Sin hallazgos pendientes</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. FILA INFERIOR: ACTIVIDAD RECIENTE + ACCIONES RÁPIDAS */}
+                <div className="dashboard-bottom-grid">
+                  {/* Actividad reciente */}
+                  <div className="dash-card">
+                    <div className="card-header">
+                      <h3><Icon name="clock" size={15} color="var(--emerald-600)" /> Actividad reciente</h3>
+                    </div>
+                    <div className="activity-feed">
+                      {recentActivities.length > 0 ? (
+                        recentActivities.map((act) => (
+                          <div key={act.id} className="activity-row">
+                            <div className="activity-left">
+                              <div className="activity-icon" style={{ background: act.bg, color: act.color }}>
+                                <Icon name={act.icon} size={14} />
+                              </div>
+                              <div className="activity-info">
+                                <h4>{act.title}</h4>
+                                <p>{act.desc}</p>
+                              </div>
+                            </div>
+                            <div className="activity-meta">
+                              <span className={`status-pill ${act.tagClass}`}>{act.tag}</span>
+                              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                {getRelativeTime(act.date)}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="empty-state-box">
+                          <div className="empty-state-icon"><Icon name="activity" size={18} /></div>
+                          <div className="empty-state-text">Sin actividad reciente</div>
+                          <div className="empty-state-sub">Los eventos del sistema aparecerán aquí</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Acciones rápidas compactas */}
+                  <div className="dash-card">
+                    <div className="card-header">
+                      <h3><Icon name="zap" size={15} color="var(--amber-600)" /> Acciones</h3>
+                    </div>
+                    <div className="quick-actions-grid">
+                      {['admin', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                        <button className="quick-action-btn featured" onClick={() => { setActiveTab('mantenimiento'); setSubTabTaller('hallazgos'); }}>
+                          <div className="qa-icon-wrap"><Icon name="wrench" size={15} /></div>
+                          <div>
+                            <div className="qa-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>Gestionar hallazgos</span>
+                              {hallazgosAbiertos.length > 0 && (
+                                <span style={{ background: '#e11d48', color: '#fff', fontSize: '9.5px', padding: '1px 5px', borderRadius: '8px', fontWeight: '800' }}>
+                                  {hallazgosAbiertos.length}
+                                </span>
+                              )}
+                            </div>
+                            <div className="qa-desc">{hallazgosAbiertos.length > 0 ? `${hallazgosAbiertos.length} pendiente(s)` : 'Al día'}</div>
+                          </div>
+                        </button>
+                      )}
+
+                      {['admin', 'operario_movimientos', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                        <button className="quick-action-btn" onClick={openCrearMovimiento}>
+                          <div className="qa-icon-wrap"><Icon name="arrow-left-right" size={15} /></div>
+                          <div>
+                            <div className="qa-title">Movimiento</div>
+                            <div className="qa-desc">Entrada / salida</div>
+                          </div>
+                        </button>
+                      )}
+
+                      {['admin', 'operario_chequeo', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                        <button className="quick-action-btn" onClick={() => setModalChequeo(true)}>
+                          <div className="qa-icon-wrap"><Icon name="clipboard-check" size={15} /></div>
+                          <div>
+                            <div className="qa-title">Inspección pre-op</div>
+                            <div className="qa-desc">Chequeo diario</div>
+                          </div>
+                        </button>
+                      )}
+
+                      {['admin', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                        <button className="quick-action-btn" onClick={openCrearVehiculo}>
+                          <div className="qa-icon-wrap"><Icon name="truck" size={15} /></div>
+                          <div>
+                            <div className="qa-title">Nuevo vehículo</div>
+                            <div className="qa-desc">Registrar en flota</div>
+                          </div>
+                        </button>
+                      )}
+
+                      {['admin', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                        <button className="quick-action-btn" onClick={openCrearOT}>
+                          <div className="qa-icon-wrap"><Icon name="plus-circle" size={15} /></div>
+                          <div>
+                            <div className="qa-title">Nueva orden</div>
+                            <div className="qa-desc">Taller manual</div>
+                          </div>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: VEHÍCULOS / FLOTA */}
+            {activeTab === 'vehiculos' && (
+              <div className="page-body">
+                <div className="crud-table-container">
+                  <div className="table-header-bar">
+                    <div className="table-header-title">
+                      <h3>Flota vehicular ({vehiculosFiltrados.length} de {vehiculos.length})</h3>
+                      <p>Parque automotor y vigencias legales</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="btn-secondary" onClick={handleExportarVehiculosCSV}>
+                        <Icon name="download" size={13} />
+                        <span>Exportar CSV</span>
+                      </button>
+                      <button className="btn-primary" onClick={openCrearVehiculo}>
+                        <Icon name="plus" size={14} />
+                        <span>Nuevo vehículo</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* BARRA DE BÚSQUEDA Y FILTROS */}
+                  <div className="filter-toolbar">
+                    <div className="filter-search-box">
+                      <Icon name="search" size={13} color="#94a3b8" style={{ position: 'absolute', left: '10px' }} />
+                      <input
+                        type="text"
+                        placeholder="Buscar por placa, marca, modelo..."
+                        value={filtroVehBusqueda}
+                        onChange={e => setFiltroVehBusqueda(e.target.value)}
+                        className="form-input"
+                        style={{ paddingLeft: '30px', paddingRight: filtroVehBusqueda ? '28px' : '10px', height: '32px', fontSize: '12px' }}
+                      />
+                      {filtroVehBusqueda && (
+                        <button
+                          onClick={() => setFiltroVehBusqueda('')}
+                          style={{ position: 'absolute', right: '8px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }}
+                          title="Borrar búsqueda"
+                        >
+                          <Icon name="x" size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="filter-group">
+                      {/* Estado */}
+                      <select
+                        value={filtroVehEstado}
+                        onChange={e => setFiltroVehEstado(e.target.value)}
+                        className="filter-select"
+                      >
+                        <option value="todos">Todos los estados</option>
+                        <option value="activo">Solo Activos</option>
+                        <option value="en_taller">En Taller</option>
+                        <option value="inactivo">Inactivos</option>
+                      </select>
+
+                      {/* Ordenamiento */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Icon name="arrow-up-down" size={13} color="var(--text-secondary)" />
+                        <select
+                          value={filtroVehOrden}
+                          onChange={e => setFiltroVehOrden(e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="recientes">Más recientes primero</option>
+                          <option value="placa_asc">Placa (A → Z)</option>
+                          <option value="placa_desc">Placa (Z → A)</option>
+                          <option value="km_desc">Mayor kilometraje</option>
+                        </select>
+                      </div>
+
+                      {/* Limpiar */}
+                      {(filtroVehBusqueda || filtroVehEstado !== 'todos' || filtroVehOrden !== 'recientes') && (
+                        <button
+                          onClick={() => {
+                            setFiltroVehBusqueda('');
+                            setFiltroVehEstado('todos');
+                            setFiltroVehOrden('recientes');
+                          }}
+                          className="btn-ghost"
+                          style={{ fontSize: '11px', padding: '4px 8px', color: '#be123c', height: '32px' }}
+                          title="Restablecer filtros"
+                        >
+                          <Icon name="rotate-ccw" size={12} />
+                          <span>Limpiar</span>
+                        </button>
+                      )}
+
+                      <div className="filter-count-badge">
+                        {vehiculosFiltrados.length} vehículo(s)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="data-table-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>PLACA</th>
+                          <th>MARCA Y MODELO</th>
+                          <th>AÑO</th>
+                          <th>KILOMETRAJE</th>
+                          <th>VENC. SOAT</th>
+                          <th>VENC. RTM</th>
+                          <th>ESTADO</th>
+                          <th style={{ textAlign: 'right' }}>ACCIONES</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vehiculosFiltrados.length > 0 ? vehiculosFiltrados.map(v => (
+                          <tr key={v.id}>
+                            <td style={{ fontWeight: '800', color: 'var(--emerald-800)' }}>{v.placa}</td>
+                            <td>{v.marca} {v.modelo}</td>
+                            <td>{v.año}</td>
+                            <td>{Number(v.kilometraje).toLocaleString()} km</td>
+                            <td>{formatDate(v.fecha_venc_soat)}</td>
+                            <td>{formatDate(v.fecha_venc_rtm)}</td>
+                            <td>
+                              <span className={`status-pill ${v.estado === 'activo' ? 'in-motion' : v.estado === 'en_taller' ? 'critical' : 'warning'}`}>
+                                {v.estado.replace('_', ' ').toUpperCase()}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <div className="action-btn-group" style={{ justifyContent: 'flex-end' }}>
+                                <button onClick={() => openHojaDeVida(v.id)} className="table-action-btn" title="Hoja de vida">
+                                  <Icon name="file-text" size={12} />
+                                  <span>Hoja de vida</span>
+                                </button>
+                                <button onClick={() => openEditarVehiculo(v)} className="table-action-btn edit" title="Editar">
+                                  <Icon name="edit-2" size={12} />
+                                  <span>Editar</span>
+                                </button>
+                                <button onClick={() => handleEliminarVehiculo(v.id, v.placa)} className="table-action-btn delete" title="Eliminar">
+                                  <Icon name="trash-2" size={12} />
+                                  <span>Eliminar</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan="8">
+                              <div className="empty-state-box">
+                                <div className="empty-state-icon"><Icon name="truck" size={18} /></div>
+                                <div className="empty-state-text">No se encontraron vehículos con los filtros aplicados</div>
+                                <div className="empty-state-sub">Prueba cambiando los criterios de búsqueda o estado</div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: MOVIMIENTOS */}
+            {activeTab === 'movimientos' && (
+              <div className="page-body">
+                <div className="crud-table-container">
+                  <div className="table-header-bar">
+                    <div className="table-header-title">
+                      <h3>Movimientos ({movimientosFiltrados.length} de {movimientos.length})</h3>
+                      <p>Entradas y salidas de patio</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="btn-secondary" onClick={handleExportarMovimientosCSV}>
+                        <Icon name="download" size={13} />
+                        <span>Exportar CSV</span>
+                      </button>
+                      <button className="btn-primary" onClick={openCrearMovimiento}>
+                        <Icon name="arrow-left-right" size={13} />
+                        <span>Registrar movimiento</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* BARRA DE BÚSQUEDA INTELIGENTE Y FILTROS */}
+                  <div className="filter-toolbar">
+                    {/* Búsqueda */}
+                    <div className="filter-search-box">
+                      <Icon name="search" size={13} color="#94a3b8" style={{ position: 'absolute', left: '10px' }} />
+                      <input
+                        type="text"
+                        placeholder="Buscar por placa, conductor, auxiliar, proveedor..."
+                        value={filtroMovBusqueda}
+                        onChange={e => setFiltroMovBusqueda(e.target.value)}
+                        className="form-input"
+                        style={{ paddingLeft: '30px', paddingRight: filtroMovBusqueda ? '28px' : '10px', height: '32px', fontSize: '12px' }}
+                      />
+                      {filtroMovBusqueda && (
+                        <button
+                          onClick={() => setFiltroMovBusqueda('')}
+                          style={{ position: 'absolute', right: '8px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }}
+                          title="Borrar búsqueda"
+                        >
+                          <Icon name="x" size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Grupo de Filtros */}
+                    <div className="filter-group">
+                      {/* Tipo */}
+                      <select
+                        value={filtroMovTipo}
+                        onChange={e => setFiltroMovTipo(e.target.value)}
+                        className="filter-select"
+                      >
+                        <option value="todos">Todos los tipos</option>
+                        <option value="salida">Solo Salidas</option>
+                        <option value="entrada">Solo Entradas</option>
+                      </select>
+
+                      {/* Ordenamiento */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Icon name="arrow-up-down" size={13} color="var(--text-secondary)" />
+                        <select
+                          value={filtroMovOrden}
+                          onChange={e => setFiltroMovOrden(e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="recientes">Más recientes primero</option>
+                          <option value="antiguos">Más antiguos primero</option>
+                          <option value="alfabetico_asc">Placa (A → Z)</option>
+                          <option value="alfabetico_desc">Placa (Z → A)</option>
+                          <option value="peso_desc">Mayor peso en báscula</option>
+                        </select>
+                      </div>
+
+                      {/* Rango de Fechas */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Icon name="calendar" size={13} color="var(--text-secondary)" />
+                        <input
+                          type="date"
+                          title="Fecha desde"
+                          value={filtroMovFechaInicio}
+                          onChange={e => setFiltroMovFechaInicio(e.target.value)}
+                          className="filter-date-input"
+                        />
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>a</span>
+                        <input
+                          type="date"
+                          title="Fecha hasta"
+                          value={filtroMovFechaFin}
+                          onChange={e => setFiltroMovFechaFin(e.target.value)}
+                          className="filter-date-input"
+                        />
+                      </div>
+
+                      {/* Limpiar filtros */}
+                      {(filtroMovBusqueda || filtroMovTipo !== 'todos' || filtroMovOrden !== 'recientes' || filtroMovFechaInicio || filtroMovFechaFin) && (
+                        <button
+                          onClick={() => {
+                            setFiltroMovBusqueda('');
+                            setFiltroMovTipo('todos');
+                            setFiltroMovOrden('recientes');
+                            setFiltroMovFechaInicio('');
+                            setFiltroMovFechaFin('');
+                          }}
+                          className="btn-ghost"
+                          style={{ fontSize: '11px', padding: '4px 8px', color: '#be123c', height: '32px' }}
+                          title="Restablecer filtros"
+                        >
+                          <Icon name="rotate-ccw" size={12} />
+                          <span>Limpiar</span>
+                        </button>
+                      )}
+
+                      <div className="filter-count-badge">
+                        {movimientosFiltrados.length} registro(s)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="data-table-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>FECHA / HORA</th>
+                          <th>TIPO</th>
+                          <th>PLACA</th>
+                          <th>CONDUCTOR</th>
+                          <th>AUXILIAR</th>
+                          <th>PROVEEDOR</th>
+                          <th>KILOMETRAJE</th>
+                          <th>BÁSCULA</th>
+                          <th>SACAS</th>
+                          <th>OBSERVACIONES</th>
+                          <th style={{ textAlign: 'right' }}>ACCIONES</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {movimientosFiltrados.length > 0 ? movimientosFiltrados.map(m => (
+                          <tr key={m.id}>
+                            <td style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}>{formatDateTime(m.fecha_registro)}</td>
+                            <td>
+                              <span className={`status-pill ${m.tipo === 'salida' ? 'in-motion' : 'completed'}`}>
+                                {m.tipo ? m.tipo.toUpperCase() : 'SALIDA'}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: '800', color: 'var(--emerald-800)' }}>{m.vehiculo ? m.vehiculo.placa : `#${m.vehiculo_id}`}</td>
+                            <td style={{ fontWeight: '600' }}>{m.usuario?.nombre || 'Operario'}</td>
+                            <td>{m.auxiliar || '—'}</td>
+                            <td>{m.proveedor || '—'}</td>
+                            <td>{m.kilometraje !== null && m.kilometraje !== undefined ? `${Number(m.kilometraje).toLocaleString()} km` : '—'}</td>
+                            <td>{m.bascula_peso !== null && m.bascula_peso !== undefined ? `${Number(m.bascula_peso).toLocaleString()} kg` : '—'}</td>
+                            <td>{m.cantidad_sacas !== null && m.cantidad_sacas !== undefined ? m.cantidad_sacas : '—'}</td>
+                            <td style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.observaciones || '—'}</td>
+                            <td style={{ textAlign: 'right' }}>
+                              <div className="action-btn-group" style={{ justifyContent: 'flex-end' }}>
+                                <button onClick={() => openEditarMovimiento(m)} className="table-action-btn edit" title="Editar">
+                                  <Icon name="edit-2" size={12} />
+                                  <span>Editar</span>
+                                </button>
+                                <button onClick={() => handleEliminarMovimiento(m.id)} className="table-action-btn delete" title="Eliminar">
+                                  <Icon name="trash-2" size={12} />
+                                  <span>Eliminar</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan="11">
+                              <div className="empty-state-box">
+                                <div className="empty-state-icon"><Icon name="search" size={18} /></div>
+                                <div className="empty-state-text">No se encontraron movimientos con los filtros aplicados</div>
+                                <div className="empty-state-sub">Prueba cambiando los términos de búsqueda o el rango de fechas</div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: CONDUCTORES Y USUARIOS */}
+            {(activeTab === 'conductores' || activeTab === 'usuarios') && (
+              <div className="page-body">
+                <div className="crud-table-container">
+                  <div className="table-header-bar">
+                    <div className="table-header-title">
+                      <h3>{activeTab === 'conductores' ? `Conductores (${usuariosFiltrados.length} de ${conductores.length})` : `Usuarios (${usuariosFiltrados.length} de ${usuariosList.length})`}</h3>
+                      <p>{activeTab === 'conductores' ? 'Personal autorizado para operación de vehículos' : 'Cuentas y niveles de acceso'}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="btn-secondary" onClick={handleExportarUsuariosCSV}>
+                        <Icon name="download" size={13} />
+                        <span>Exportar CSV</span>
+                      </button>
+                      <button className="btn-primary" onClick={openCrearUsuario}>
+                        <Icon name="user-plus" size={14} />
+                        <span>Nuevo usuario</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* BARRA DE BÚSQUEDA Y FILTROS */}
+                  <div className="filter-toolbar">
+                    <div className="filter-search-box">
+                      <Icon name="search" size={13} color="#94a3b8" style={{ position: 'absolute', left: '10px' }} />
+                      <input
+                        type="text"
+                        placeholder="Buscar por nombre, cédula, email, licencia..."
+                        value={filtroUserBusqueda}
+                        onChange={e => setFiltroUserBusqueda(e.target.value)}
+                        className="form-input"
+                        style={{ paddingLeft: '30px', paddingRight: filtroUserBusqueda ? '28px' : '10px', height: '32px', fontSize: '12px' }}
+                      />
+                      {filtroUserBusqueda && (
+                        <button
+                          onClick={() => setFiltroUserBusqueda('')}
+                          style={{ position: 'absolute', right: '8px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }}
+                          title="Borrar búsqueda"
+                        >
+                          <Icon name="x" size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="filter-group">
+                      {/* Rol (en usuarios) */}
+                      {activeTab === 'usuarios' && (
+                        <select
+                          value={filtroUserRol}
+                          onChange={e => setFiltroUserRol(e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="todos">Todos los roles</option>
+                          <option value="conductor">Conductor</option>
+                          <option value="supervisor">Supervisor</option>
+                          <option value="administrador">Administrador</option>
+                          <option value="mecanico">Mecánico</option>
+                        </select>
+                      )}
+
+                      {/* Ordenamiento */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Icon name="arrow-up-down" size={13} color="var(--text-secondary)" />
+                        <select
+                          value={filtroUserOrden}
+                          onChange={e => setFiltroUserOrden(e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="nombre_asc">Nombre (A → Z)</option>
+                          <option value="nombre_desc">Nombre (Z → A)</option>
+                          <option value="recientes">Más recientes primero</option>
+                        </select>
+                      </div>
+
+                      {/* Limpiar */}
+                      {(filtroUserBusqueda || (activeTab === 'usuarios' && filtroUserRol !== 'todos') || filtroUserOrden !== 'nombre_asc') && (
+                        <button
+                          onClick={() => {
+                            setFiltroUserBusqueda('');
+                            setFiltroUserRol('todos');
+                            setFiltroUserOrden('nombre_asc');
+                          }}
+                          className="btn-ghost"
+                          style={{ fontSize: '11px', padding: '4px 8px', color: '#be123c', height: '32px' }}
+                          title="Restablecer filtros"
+                        >
+                          <Icon name="rotate-ccw" size={12} />
+                          <span>Limpiar</span>
+                        </button>
+                      )}
+
+                      <div className="filter-count-badge">
+                        {usuariosFiltrados.length} registro(s)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="data-table-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>NOMBRE</th>
+                          <th>EMAIL</th>
+                          <th>CÉDULA</th>
+                          <th>ROL</th>
+                          <th>LICENCIA</th>
+                          <th>CATEGORÍA</th>
+                          <th>ESTADO</th>
+                          <th style={{ textAlign: 'right' }}>ACCIONES</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {usuariosFiltrados.length > 0 ? usuariosFiltrados.map(u => (
+                          <tr key={u.id}>
+                            <td style={{ fontWeight: '700' }}>{u.nombre}</td>
+                            <td>{u.email}</td>
+                            <td>{u.cedula || '—'}</td>
+                            <td>
+                              <span style={{ background: 'var(--purple-50)', color: 'var(--purple-700)', padding: '2px 6px', borderRadius: '4px', fontSize: '10.5px', fontWeight: '700' }}>
+                                {u.rol}
+                              </span>
+                            </td>
+                            <td>{u.licencia || '—'}</td>
+                            <td>{u.categoria || '—'}</td>
+                            <td>
+                              <span className={`status-pill ${u.estado_activo ? 'in-motion' : 'critical'}`}>
+                                {u.estado_activo ? 'Activo' : 'Inactivo'}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <div className="action-btn-group" style={{ justifyContent: 'flex-end' }}>
+                                <button onClick={() => openEditarUsuario(u)} className="table-action-btn edit" title="Editar">
+                                  <Icon name="edit-2" size={12} />
+                                  <span>Editar</span>
+                                </button>
+                                <button onClick={() => handleEliminarUsuario(u.id, u.nombre)} className="table-action-btn delete" title="Desactivar">
+                                  <Icon name="power" size={12} />
+                                  <span>Desactivar</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan="8">
+                              <div className="empty-state-box">
+                                <div className="empty-state-icon"><Icon name="users" size={18} /></div>
+                                <div className="empty-state-text">No se encontraron registros con los filtros aplicados</div>
+                                <div className="empty-state-sub">Prueba modificando los términos de búsqueda</div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: MANTENIMIENTO */}
+            {activeTab === 'mantenimiento' && (
+              <div className="page-body">
+                {/* SUB-TABS */}
+                <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '10px' }}>
+                  <button
+                    onClick={() => setSubTabTaller('hallazgos')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '7px',
+                      padding: '7px 14px',
+                      borderRadius: '6px',
+                      border: subTabTaller === 'hallazgos' ? '1px solid #059669' : '1px solid var(--surface-border)',
+                      background: subTabTaller === 'hallazgos' ? 'var(--emerald-50)' : '#ffffff',
+                      color: subTabTaller === 'hallazgos' ? 'var(--emerald-700)' : 'var(--text-secondary)',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      fontSize: '12.5px',
+                      fontFamily: 'inherit',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Icon name="alert-triangle" size={14} color={subTabTaller === 'hallazgos' ? '#059669' : '#64748b'} />
+                    <span>Hallazgos y anomalías</span>
+                    {hallazgosAbiertos.length > 0 && (
+                      <span style={{ background: '#e11d48', color: '#ffffff', fontSize: '10px', padding: '1px 6px', borderRadius: '10px', fontWeight: '800' }}>
+                        {hallazgosAbiertos.length}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setSubTabTaller('ordenes')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '7px',
+                      padding: '7px 14px',
+                      borderRadius: '6px',
+                      border: subTabTaller === 'ordenes' ? '1px solid #059669' : '1px solid var(--surface-border)',
+                      background: subTabTaller === 'ordenes' ? 'var(--emerald-50)' : '#ffffff',
+                      color: subTabTaller === 'ordenes' ? 'var(--emerald-700)' : 'var(--text-secondary)',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      fontSize: '12.5px',
+                      fontFamily: 'inherit',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Icon name="wrench" size={14} color={subTabTaller === 'ordenes' ? '#059669' : '#64748b'} />
+                    <span>Órdenes de trabajo</span>
+                    <span style={{ background: 'var(--surface-border)', color: 'var(--text-secondary)', fontSize: '10px', padding: '1px 6px', borderRadius: '10px', fontWeight: '700' }}>
+                      {ordenes.length}
+                    </span>
+                  </button>
+                </div>
+
+                {/* SUBTAB 1: HALLAZGOS */}
+                {subTabTaller === 'hallazgos' && (
+                  <div className="crud-table-container">
+                    <div className="table-header-bar">
+                      <div className="table-header-title">
+                        <h3>Hallazgos y anomalías ({hallazgos.length})</h3>
+                        <p>Anomalías detectadas en los chequeos pre-op</p>
+                      </div>
+                      <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '6px', padding: '2px', gap: '2px' }}>
+                        {[
+                          { id: 'todos', label: `Todos ${hallazgos.length}` },
+                          { id: 'abierto', label: `Abiertos ${hallazgos.filter(h => h.estado === 'abierto').length}` },
+                          { id: 'en_orden', label: `En OT ${hallazgos.filter(h => h.estado === 'en_orden').length}` },
+                          { id: 'resuelto', label: `Resueltos ${hallazgos.filter(h => h.estado === 'resuelto').length}` },
+                        ].map(st => (
+                          <button
+                            key={st.id}
+                            onClick={() => setFiltroEstadoHallazgo(st.id)}
+                            style={{
+                              border: 'none',
+                              background: filtroEstadoHallazgo === st.id ? '#ffffff' : 'transparent',
+                              color: filtroEstadoHallazgo === st.id ? '#0f172a' : '#64748b',
+                              padding: '4px 9px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              boxShadow: filtroEstadoHallazgo === st.id ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+                              fontFamily: 'inherit'
+                            }}
+                          >
+                            {st.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="data-table-wrapper">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>FECHA</th>
+                            <th>VEHÍCULO</th>
+                            <th>CATEGORÍA</th>
+                            <th style={{ width: '38%' }}>DESCRIPCIÓN</th>
+                            <th>REPORTADO POR</th>
+                            <th>CRITICIDAD</th>
+                            <th>ESTADO</th>
+                            <th style={{ textAlign: 'right' }}>ACCIONES</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {hallazgos.filter(h => filtroEstadoHallazgo === 'todos' || h.estado === filtroEstadoHallazgo).length > 0 ? (
+                            hallazgos.filter(h => filtroEstadoHallazgo === 'todos' || h.estado === filtroEstadoHallazgo).map(h => (
+                              <tr key={h.id}>
+                                <td style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}>{formatDate(h.fecha_registro)}</td>
+                                <td style={{ fontWeight: '800', color: 'var(--emerald-800)' }}>{h.vehiculo?.placa || `#${h.vehiculo_id}`}</td>
+                                <td>
+                                  <span style={{ background: '#f1f5f9', color: '#334155', padding: '2px 6px', borderRadius: '4px', fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase' }}>
+                                    {h.categoria || h.origen}
+                                  </span>
+                                </td>
+                                <td style={{ fontSize: '12px', color: '#0f172a', lineHeight: '1.4' }}>
+                                  {h.descripcion}
+                                </td>
+                                <td>{h.usuario_reporta?.nombre || 'Inspector'}</td>
+                                <td>
+                                  <span className={`status-pill ${h.criticidad === 'critica' || h.criticidad === 'alta' ? 'critical' : 'warning'}`}>
+                                    {h.criticidad ? h.criticidad.toUpperCase() : 'MEDIA'}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span className={`status-pill ${h.estado === 'abierto' ? 'critical' : h.estado === 'en_orden' ? 'warning' : 'completed'}`}>
+                                    {h.estado === 'abierto' ? 'ABIERTO' : h.estado === 'en_orden' ? 'EN OT' : 'RESUELTO'}
+                                  </span>
+                                </td>
+                                <td style={{ textAlign: 'right' }}>
+                                  <div className="action-btn-group" style={{ justifyContent: 'flex-end' }}>
+                                    {h.estado === 'abierto' ? (
+                                      <button
+                                        onClick={() => openEvaluarHallazgo(h)}
+                                        className="table-action-btn primary-action"
+                                        title="Evaluar y crear OT"
+                                      >
+                                        <Icon name="wrench" size={12} />
+                                        <span>Evaluar y crear OT</span>
+                                      </button>
+                                    ) : (
+                                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                                        {h.estado === 'en_orden' ? 'OT Asignada' : 'Atendido'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan="8">
+                                <div className="empty-state-box">
+                                  <div className="empty-state-icon"><Icon name="check-circle" size={18} /></div>
+                                  <div className="empty-state-text">Sin hallazgos en esta vista</div>
+                                  <div className="empty-state-sub">No hay registros que coincidan con el filtro seleccionado</div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* SUBTAB 2: ÓRDENES */}
+                {subTabTaller === 'ordenes' && (
+                  <div className="crud-table-container">
+                    <div className="table-header-bar">
+                      <div className="table-header-title">
+                        <h3>Órdenes de trabajo ({ordenes.length})</h3>
+                        <p>Seguimiento de intervenciones mecánicas</p>
+                      </div>
+                      <button className="btn-primary" onClick={openCrearOT}>
+                        <Icon name="plus" size={14} />
+                        <span>Nueva orden</span>
+                      </button>
+                    </div>
+                    <div className="data-table-wrapper">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>CÓDIGO</th>
+                            <th>VEHÍCULO</th>
+                            <th>PRIORIDAD</th>
+                            <th>ESTADO</th>
+                            <th style={{ width: '35%' }}>DESCRIPCIÓN</th>
+                            <th>RESPONSABLE</th>
+                            <th style={{ textAlign: 'right' }}>ACCIONES</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ordenes.length > 0 ? ordenes.map(ot => (
+                            <tr key={ot.id}>
+                              <td style={{ fontWeight: '800', color: 'var(--purple-700)' }}>{ot.codigo}</td>
+                              <td style={{ fontWeight: '800' }}>{ot.vehiculo?.placa || `#${ot.vehiculo_id}`}</td>
+                              <td>
+                                <span className={`status-pill ${ot.prioridad === 'alta' || ot.prioridad === 'critica' || ot.prioridad === 'urgente' ? 'critical' : 'warning'}`}>
+                                  {ot.prioridad}
+                                </span>
+                              </td>
+                              <td>
+                                <span className={`status-pill ${ot.estado === 'en_progreso' ? 'in-motion' : ot.estado === 'completada' ? 'completed' : 'warning'}`}>
+                                  {ot.estado.replace('_', ' ').toUpperCase()}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '12px', lineHeight: '1.4' }}>{ot.descripcion}</td>
+                              <td>{ot.responsable?.nombre || 'Sin asignar'}</td>
+                              <td style={{ textAlign: 'right' }}>
+                                <div className="action-btn-group" style={{ justifyContent: 'flex-end' }}>
+                                  {ot.estado !== 'completada' && (
+                                    <button
+                                      onClick={() => handleCompletarOT(ot)}
+                                      className="table-action-btn primary-action"
+                                      title="Completar y cerrar OT"
+                                    >
+                                      <Icon name="check-circle" size={12} />
+                                      <span>Completar</span>
+                                    </button>
+                                  )}
+                                  <button onClick={() => openEditarOT(ot)} className="table-action-btn edit" title="Editar">
+                                    <Icon name="edit-2" size={12} />
+                                    <span>Editar</span>
+                                  </button>
+                                  <button onClick={() => handleEliminarOT(ot.id, ot.codigo)} className="table-action-btn delete" title="Eliminar">
+                                    <Icon name="trash-2" size={12} />
+                                    <span>Eliminar</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )) : (
+                            <tr>
+                              <td colSpan="7">
+                                <div className="empty-state-box">
+                                  <div className="empty-state-icon"><Icon name="wrench" size={18} /></div>
+                                  <div className="empty-state-text">Sin órdenes de trabajo activas</div>
+                                  <div className="empty-state-sub">Crea una orden con el botón superior</div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB: CHEQUEOS */}
+            {activeTab === 'chequeos' && (
+              <div className="page-body">
+                <div className="crud-table-container">
+                  <div className="table-header-bar">
+                    <div className="table-header-title">
+                      <h3>Inspecciones pre-op ({chequeosFiltrados.length} de {chequeos.length})</h3>
+                      <p>Chequeos diarios de seguridad técnico-mecánica</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="btn-secondary" onClick={handleExportarChequeosCSV}>
+                        <Icon name="download" size={13} />
+                        <span>Exportar CSV</span>
+                      </button>
+                      <button className="btn-primary" onClick={() => setModalChequeo(true)}>
+                        <Icon name="clipboard-check" size={13} />
+                        <span>Nueva inspección</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* BARRA DE BÚSQUEDA Y FILTROS */}
+                  <div className="filter-toolbar">
+                    <div className="filter-search-box">
+                      <Icon name="search" size={13} color="#94a3b8" style={{ position: 'absolute', left: '10px' }} />
+                      <input
+                        type="text"
+                        placeholder="Buscar por placa, inspector, observaciones..."
+                        value={filtroCheqBusqueda}
+                        onChange={e => setFiltroCheqBusqueda(e.target.value)}
+                        className="form-input"
+                        style={{ paddingLeft: '30px', paddingRight: filtroCheqBusqueda ? '28px' : '10px', height: '32px', fontSize: '12px' }}
+                      />
+                      {filtroCheqBusqueda && (
+                        <button
+                          onClick={() => setFiltroCheqBusqueda('')}
+                          style={{ position: 'absolute', right: '8px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }}
+                          title="Borrar búsqueda"
+                        >
+                          <Icon name="x" size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="filter-group">
+                      {/* Estado */}
+                      <select
+                        value={filtroCheqEstado}
+                        onChange={e => setFiltroCheqEstado(e.target.value)}
+                        className="filter-select"
+                      >
+                        <option value="todos">Todos los resultados</option>
+                        <option value="aprobado">Solo Aprobados</option>
+                        <option value="novedad">Con Novedad</option>
+                      </select>
+
+                      {/* Ordenamiento */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Icon name="arrow-up-down" size={13} color="var(--text-secondary)" />
+                        <select
+                          value={filtroCheqOrden}
+                          onChange={e => setFiltroCheqOrden(e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="recientes">Más recientes primero</option>
+                          <option value="antiguos">Más antiguos primero</option>
+                          <option value="placa_asc">Placa (A → Z)</option>
+                        </select>
+                      </div>
+
+                      {/* Rango de Fechas */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Icon name="calendar" size={13} color="var(--text-secondary)" />
+                        <input
+                          type="date"
+                          title="Fecha desde"
+                          value={filtroCheqFechaInicio}
+                          onChange={e => setFiltroCheqFechaInicio(e.target.value)}
+                          className="filter-date-input"
+                        />
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>a</span>
+                        <input
+                          type="date"
+                          title="Fecha hasta"
+                          value={filtroCheqFechaFin}
+                          onChange={e => setFiltroCheqFechaFin(e.target.value)}
+                          className="filter-date-input"
+                        />
+                      </div>
+
+                      {/* Limpiar */}
+                      {(filtroCheqBusqueda || filtroCheqEstado !== 'todos' || filtroCheqOrden !== 'recientes' || filtroCheqFechaInicio || filtroCheqFechaFin) && (
+                        <button
+                          onClick={() => {
+                            setFiltroCheqBusqueda('');
+                            setFiltroCheqEstado('todos');
+                            setFiltroCheqOrden('recientes');
+                            setFiltroCheqFechaInicio('');
+                            setFiltroCheqFechaFin('');
+                          }}
+                          className="btn-ghost"
+                          style={{ fontSize: '11px', padding: '4px 8px', color: '#be123c', height: '32px' }}
+                          title="Restablecer filtros"
+                        >
+                          <Icon name="rotate-ccw" size={12} />
+                          <span>Limpiar</span>
+                        </button>
+                      )}
+
+                      <div className="filter-count-badge">
+                        {chequeosFiltrados.length} registro(s)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="data-table-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>FECHA</th>
+                          <th>VEHÍCULO</th>
+                          <th>INSPECTOR</th>
+                          <th>KILOMETRAJE</th>
+                          <th>ESTADO</th>
+                          <th>OBSERVACIONES</th>
+                          <th style={{ textAlign: 'right' }}>ACCIONES</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chequeosFiltrados.length > 0 ? chequeosFiltrados.map(ch => (
+                          <tr key={ch.id}>
+                            <td style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}>{formatDateTime(ch.fecha_registro)}</td>
+                            <td style={{ fontWeight: '800' }}>{ch.vehiculo?.placa || `#${ch.vehiculo_id}`}</td>
+                            <td>{ch.usuario?.nombre || 'Conductor'}</td>
+                            <td>{Number(ch.kilometraje).toLocaleString()} km</td>
+                            <td>
+                              <span className={`status-pill ${ch.aprobado ? 'completed' : 'critical'}`}>
+                                {ch.aprobado ? 'APROBADO' : 'CON NOVEDAD'}
+                              </span>
+                            </td>
+                            <td style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {ch.observaciones_generales || 'Inspección conforme'}
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <div className="action-btn-group" style={{ justifyContent: 'flex-end' }}>
+                                <button onClick={() => setDetalleChequeo(ch)} className="table-action-btn" title="Ver detalle">
+                                  <Icon name="eye" size={12} />
+                                  <span>Ver ({ch.items ? ch.items.length : 11})</span>
+                                </button>
+                                <button onClick={() => handleEliminarChequeo(ch.id)} className="table-action-btn delete" title="Eliminar">
+                                  <Icon name="trash-2" size={12} />
+                                  <span>Eliminar</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan="7">
+                              <div className="empty-state-box">
+                                <div className="empty-state-icon"><Icon name="clipboard-check" size={18} /></div>
+                                <div className="empty-state-text">No se encontraron inspecciones con los filtros aplicados</div>
+                                <div className="empty-state-sub">Prueba modificando los criterios de búsqueda o rango de fechas</div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: REPORTES */}
+            {activeTab === 'reportes' && (
+              <div className="page-body">
+                <div className="crud-table-container">
+                  <div className="table-header-bar">
+                    <div className="table-header-title">
+                      <h3>Reportes</h3>
+                      <p>Descarga de datos operativos en formato CSV / Excel</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', padding: '6px 0' }}>
+                    <div style={{ background: '#fff', border: '1px solid var(--surface-border)', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <Icon name="arrow-left-right" size={16} color="var(--emerald-600)" />
+                          <h4 style={{ fontSize: '14px', fontWeight: '800' }}>Movimientos de patio</h4>
+                        </div>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Historial de entradas y salidas.</p>
+                      </div>
+                      <button className="btn-primary" style={{ alignSelf: 'flex-start' }} onClick={handleExportarMovimientosCSV}>
+                        <Icon name="download" size={13} />
+                        <span>Descargar CSV ({movimientosFiltrados.length})</span>
+                      </button>
+                    </div>
+
+                    <div style={{ background: '#fff', border: '1px solid var(--surface-border)', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <Icon name="clipboard-check" size={16} color="var(--emerald-600)" />
+                          <h4 style={{ fontSize: '14px', fontWeight: '800' }}>Inspecciones</h4>
+                        </div>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Bitácora de chequeos pre-operacionales.</p>
+                      </div>
+                      <button className="btn-primary" style={{ alignSelf: 'flex-start' }} onClick={handleExportarChequeosCSV}>
+                        <Icon name="download" size={13} />
+                        <span>Descargar CSV ({chequeosFiltrados.length})</span>
+                      </button>
+                    </div>
+
+                    <div style={{ background: '#fff', border: '1px solid var(--surface-border)', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <Icon name="truck" size={16} color="var(--emerald-600)" />
+                          <h4 style={{ fontSize: '14px', fontWeight: '800' }}>Flota</h4>
+                        </div>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Listado de vehículos.</p>
+                      </div>
+                      <button className="btn-primary" style={{ alignSelf: 'flex-start' }} onClick={handleExportarVehiculosCSV}>
+                        <Icon name="download" size={13} />
+                        <span>Descargar CSV ({vehiculosFiltrados.length})</span>
+                      </button>
+                    </div>
+
+                    <div style={{ background: '#fff', border: '1px solid var(--surface-border)', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <Icon name="users" size={16} color="var(--emerald-600)" />
+                          <h4 style={{ fontSize: '14px', fontWeight: '800' }}>Conductores</h4>
+                        </div>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Listado de conductores y usuarios.</p>
+                      </div>
+                      <button className="btn-primary" style={{ alignSelf: 'flex-start' }} onClick={handleExportarUsuariosCSV}>
+                        <Icon name="download" size={13} />
+                        <span>Descargar CSV ({usuariosFiltrados.length})</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: ALERTAS */}
+            {activeTab === 'alertas' && (
+              <div className="page-body">
+                <div className="crud-table-container">
+                  <div className="table-header-bar">
+                    <div className="table-header-title">
+                      <h3>Alertas</h3>
+                      <p>Vencimientos legales y avisos técnicos</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '6px 0' }}>
+                    {data?.alertas_activas && data.alertas_activas.length > 0 ? (
+                      data.alertas_activas.map((alt) => (
+                        <div
+                          key={alt.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px 14px',
+                            background: alt.severidad === 'critica' ? 'var(--rose-50)' : 'var(--amber-50)',
+                            borderRadius: '8px',
+                            borderLeft: alt.severidad === 'critica' ? '4px solid var(--rose-600)' : '4px solid var(--amber-600)',
+                            borderTop: '1px solid var(--surface-border-subtle)',
+                            borderRight: '1px solid var(--surface-border-subtle)',
+                            borderBottom: '1px solid var(--surface-border-subtle)'
+                          }}
+                        >
+                          <Icon
+                            name={alt.severidad === 'critica' ? "alert-circle" : "alert-triangle"}
+                            size={18}
+                            color={alt.severidad === 'critica' ? "var(--rose-600)" : "var(--amber-600)"}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '700', fontSize: '13px', color: alt.severidad === 'critica' ? 'var(--rose-700)' : 'var(--amber-700)' }}>
+                              {alt.titulo}
+                            </div>
+                            <div style={{ fontSize: '11.5px', color: alt.severidad === 'critica' ? '#9f1239' : '#92400e', marginTop: '1px' }}>
+                              {alt.descripcion} • {alt.tiempo_relativo}
+                            </div>
+                          </div>
+                          <span className={`status-pill ${alt.severidad === 'critica' ? 'critical' : 'warning'}`}>
+                            {alt.severidad === 'critica' ? 'Crítica' : 'Preventiva'}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'var(--emerald-50)', borderRadius: '8px', borderLeft: '4px solid var(--emerald-600)' }}>
+                        <Icon name="shield-check" size={20} color="var(--emerald-600)" />
+                        <div>
+                          <div style={{ fontWeight: '700', color: 'var(--emerald-800)', fontSize: '13px' }}>Sistema sin alertas pendientes</div>
+                          <div style={{ fontSize: '12px', color: 'var(--emerald-700)' }}>No existen vencimientos legales de SOAT/RTM ni anomalías sin atender.</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* ==========================================================================
+             MODALES GLOBALES (PORTAL POSITIONING, NO OVERFLOW BUGS)
+             ========================================================================== */}
+
+          {/* MODAL: VEHÍCULO */}
+          {modalVehiculo && (
+            <div className="modal-backdrop" onClick={() => setModalVehiculo(false)}>
+              <div className="modal-card" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3><Icon name="truck" size={16} color="var(--emerald-600)" /> {editingVehiculoId ? `Editar vehículo: ${formVehiculo.placa}` : "Nuevo vehículo"}</h3>
+                  <button className="modal-close-btn" onClick={() => setModalVehiculo(false)}>✕</button>
+                </div>
+                <form onSubmit={handleCrearVehiculo}>
+                  <div className="modal-body">
+                    <div className="form-group">
+                      <label>Placa *</label>
+                      <input type="text" required placeholder="Ej: NRM-099" value={formVehiculo.placa} onChange={e => setFormVehiculo({...formVehiculo, placa: e.target.value.toUpperCase()})} className="form-input" />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <label>Marca *</label>
+                        <input type="text" required placeholder="Chevrolet / Hino" value={formVehiculo.marca} onChange={e => setFormVehiculo({...formVehiculo, marca: e.target.value})} className="form-input" />
+                      </div>
+                      <div className="form-group">
+                        <label>Modelo *</label>
+                        <input type="text" required placeholder="NPR Turbo" value={formVehiculo.modelo} onChange={e => setFormVehiculo({...formVehiculo, modelo: e.target.value})} className="form-input" />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <label>Año</label>
+                        <input type="number" value={formVehiculo.año} onChange={e => setFormVehiculo({...formVehiculo, año: e.target.value})} className="form-input" />
+                      </div>
+                      <div className="form-group">
+                        <label>Kilometraje</label>
+                        <input type="number" value={formVehiculo.kilometraje} onChange={e => setFormVehiculo({...formVehiculo, kilometraje: e.target.value})} className="form-input" />
+                      </div>
+                    </div>
+                    {editingVehiculoId && (
+                      <div className="form-group">
+                        <label>Estado *</label>
+                        <select value={formVehiculo.estado} onChange={e => setFormVehiculo({...formVehiculo, estado: e.target.value})} className="form-select">
+                          <option value="activo">Activo</option>
+                          <option value="en_taller">En taller</option>
+                          <option value="inactivo">Inactivo</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" onClick={() => setModalVehiculo(false)} className="btn-secondary">Cancelar</button>
+                    <button type="submit" className="btn-primary">{editingVehiculoId ? "Actualizar" : "Guardar"}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: USUARIO */}
+          {modalUsuario && (
+            <div className="modal-backdrop" onClick={() => setModalUsuario(false)}>
+              <div className="modal-card" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3><Icon name="user-plus" size={16} color="var(--emerald-600)" /> {editingUsuarioId ? `Editar usuario: ${formUsuario.nombre}` : "Nuevo usuario"}</h3>
+                  <button className="modal-close-btn" onClick={() => setModalUsuario(false)}>✕</button>
+                </div>
+                <form onSubmit={handleCrearUsuario}>
+                  <div className="modal-body">
+                    <div className="form-group">
+                      <label>Nombre completo *</label>
+                      <input type="text" required placeholder="Nombre del usuario o conductor" value={formUsuario.nombre} onChange={e => setFormUsuario({...formUsuario, nombre: e.target.value})} className="form-input" />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <label>Email *</label>
+                        <input type="email" required placeholder="correo@normetales.com" value={formUsuario.email} onChange={e => setFormUsuario({...formUsuario, email: e.target.value})} className="form-input" />
+                      </div>
+                      <div className="form-group">
+                        <label>Contraseña {editingUsuarioId ? "(Opcional)" : "*"}</label>
+                        <input type="password" required={!editingUsuarioId} placeholder={editingUsuarioId ? "Dejar en blanco para mantener" : "••••••••"} value={formUsuario.password} onChange={e => setFormUsuario({...formUsuario, password: e.target.value})} className="form-input" />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <label>Rol *</label>
+                        <select value={formUsuario.rol} onChange={e => setFormUsuario({...formUsuario, rol: e.target.value})} className="form-select">
+                          <option value="operario_chequeo">Operario / Conductor</option>
+                          <option value="operario_movimientos">Operario de patio</option>
+                          <option value="mecanico">Mecánico</option>
+                          <option value="jefe_mecanicos">Jefe de mecánicos</option>
+                          <option value="admin">Administrador</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Cédula</label>
+                        <input type="text" placeholder="1020304050" value={formUsuario.cedula} onChange={e => setFormUsuario({...formUsuario, cedula: e.target.value})} className="form-input" />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <label>N° Licencia</label>
+                        <input type="text" placeholder="LIC-123456" value={formUsuario.licencia} onChange={e => setFormUsuario({...formUsuario, licencia: e.target.value})} className="form-input" />
+                      </div>
+                      <div className="form-group">
+                        <label>Categoría</label>
+                        <select value={formUsuario.categoria} onChange={e => setFormUsuario({...formUsuario, categoria: e.target.value})} className="form-select">
+                          <option value="C1">C1 (Livianos)</option>
+                          <option value="C2">C2 (Camiones Rígidos)</option>
+                          <option value="C3">C3 (Articulados)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" onClick={() => setModalUsuario(false)} className="btn-secondary">Cancelar</button>
+                    <button type="submit" className="btn-primary">{editingUsuarioId ? "Actualizar" : "Guardar"}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: CHEQUEO PREOPERACIONAL */}
+          {modalChequeo && (
+            <div className="modal-backdrop" onClick={() => setModalChequeo(false)}>
+              <div className="modal-card" style={{ maxWidth: '580px' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3><Icon name="clipboard-check" size={16} color="var(--emerald-600)" /> Inspección pre-op</h3>
+                  <button className="modal-close-btn" onClick={() => setModalChequeo(false)}>✕</button>
+                </div>
+                <form onSubmit={handleCrearChequeo}>
+                  <div className="modal-body">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+                      <SmartSearchSelect
+                        label="Vehículo"
+                        required={true}
+                        placeholder="Buscar por placa..."
+                        items={vehiculos}
+                        selectedId={chequeoForm.vehiculo_id}
+                        searchKeys={['placa', 'marca', 'modelo', 'año']}
+                        icon="truck"
+                        onSelect={(v) => {
+                          setChequeoForm(prev => ({
+                            ...prev,
+                            vehiculo_id: v.id,
+                            kilometraje: v.kilometraje || prev.kilometraje
+                          }));
+                        }}
+                        renderSelected={(v) => `${v.placa} • ${v.marca} ${v.modelo}`}
+                        renderOption={(v, isSelected) => (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                            <span style={{ fontWeight: '800', color: isSelected ? '#047857' : '#0f172a', background: isSelected ? '#d1fae5' : '#f1f5f9', padding: '2px 5px', borderRadius: '4px', fontSize: '10.5px' }}>{v.placa}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: '700', color: '#0f172a' }}>{v.marca} {v.modelo}</div>
+                            </div>
+                          </div>
+                        )}
+                      />
+
+                      <SmartSearchSelect
+                        label="Inspector / Conductor"
+                        required={true}
+                        placeholder="Buscar conductor..."
+                        items={conductores.length > 0 ? conductores : usuariosList}
+                        selectedId={chequeoForm.usuario_id}
+                        searchKeys={['nombre', 'cedula', 'rol']}
+                        icon="user"
+                        onSelect={(c) => {
+                          setChequeoForm(prev => ({ ...prev, usuario_id: c.id }));
+                        }}
+                        renderSelected={(c) => `${c.nombre}`}
+                        renderOption={(c, isSelected) => (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                            <div style={{ fontWeight: '700', color: '#0f172a' }}>{c.nombre}</div>
+                          </div>
+                        )}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Kilometraje actual *</label>
+                      <input type="number" required value={chequeoForm.kilometraje} onChange={e => setChequeoForm({...chequeoForm, kilometraje: e.target.value})} className="form-input" />
+                    </div>
+
+                    <div className="form-group">
+                      <label style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                        Puntos de control (11 ítems)
+                      </label>
+                      <div className="inspection-scroll-box" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                        {chequeoForm.items.map((it, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderRadius: '6px', background: it.valor === 'conforme' ? '#ffffff' : '#fff1f2', border: `1px solid ${it.valor === 'conforme' ? '#e2e8f0' : '#fecdd3'}` }}>
+                            <div>
+                              <div style={{ fontSize: '12px', fontWeight: '700', color: '#0f172a' }}>{it.item}</div>
+                              <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>{it.seccion}</div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleItemToggle(idx, 'conforme')}
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '11px',
+                                  fontWeight: '700',
+                                  border: it.valor === 'conforme' ? '1px solid #059669' : '1px solid #cbd5e1',
+                                  cursor: 'pointer',
+                                  background: it.valor === 'conforme' ? '#059669' : '#ffffff',
+                                  color: it.valor === 'conforme' ? '#ffffff' : '#475569',
+                                  fontFamily: 'inherit'
+                                }}
+                              >
+                                Conforme
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleItemToggle(idx, 'no_conforme')}
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '11px',
+                                  fontWeight: '700',
+                                  border: it.valor === 'no_conforme' ? '1px solid #e11d48' : '1px solid #cbd5e1',
+                                  cursor: 'pointer',
+                                  background: it.valor === 'no_conforme' ? '#e11d48' : '#ffffff',
+                                  color: it.valor === 'no_conforme' ? '#ffffff' : '#475569',
+                                  fontFamily: 'inherit'
+                                }}
+                              >
+                                Novedad
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Observaciones</label>
+                      <textarea rows={2} placeholder="Observaciones o fallas detectadas..." value={chequeoForm.observaciones_generales} onChange={e => setChequeoForm({...chequeoForm, observaciones_generales: e.target.value})} className="form-textarea" style={{ resize: 'none' }} />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" onClick={() => setModalChequeo(false)} className="btn-secondary">Cancelar</button>
+                    <button type="submit" className="btn-primary">Guardar inspección</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: DETALLE CHEQUEO */}
+          {detalleChequeo && (
+            <div className="modal-backdrop" onClick={() => setDetalleChequeo(null)}>
+              <div className="modal-card" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3><Icon name="search" size={16} color="var(--emerald-600)" /> Detalle de inspección #{detalleChequeo.id}</h3>
+                  <button className="modal-close-btn" onClick={() => setDetalleChequeo(null)}>✕</button>
+                </div>
+                <div className="modal-body">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', background: 'var(--bg-main)', padding: '10px', borderRadius: '6px', border: '1px solid var(--surface-border)', fontSize: '12px' }}>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>Vehículo:</span> <div style={{ fontWeight: '800' }}>{detalleChequeo.vehiculo?.placa || `#${detalleChequeo.vehiculo_id}`}</div></div>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>Inspector:</span> <div style={{ fontWeight: '700' }}>{detalleChequeo.usuario?.nombre || 'Inspector'}</div></div>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>Kilometraje:</span> <div style={{ fontWeight: '700' }}>{Number(detalleChequeo.kilometraje).toLocaleString()} km</div></div>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>Estado:</span> <div><span className={`status-pill ${detalleChequeo.aprobado ? 'completed' : 'critical'}`}>{detalleChequeo.aprobado ? 'APROBADO' : 'CON NOVEDAD'}</span></div></div>
+                  </div>
+
+                  <div>
+                    <h4 style={{ fontSize: '12px', fontWeight: '700', marginBottom: '6px' }}>Puntos inspeccionados</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '180px', overflowY: 'auto' }}>
+                      {detalleChequeo.items && detalleChequeo.items.length > 0 ? detalleChequeo.items.map((it, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', borderRadius: '4px', background: it.valor === 'conforme' ? 'var(--emerald-50)' : 'var(--rose-50)', border: `1px solid ${it.valor === 'conforme' ? 'var(--emerald-200)' : 'var(--rose-200)'}`, fontSize: '11.5px' }}>
+                          <span style={{ fontWeight: '600' }}>{it.item}</span>
+                          <span style={{ fontWeight: '800', color: it.valor === 'conforme' ? 'var(--emerald-700)' : 'var(--rose-700)' }}>{it.valor.toUpperCase()}</span>
+                        </div>
+                      )) : (
+                        <p style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>11 ítems verificados conformes.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Observaciones:</span>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{detalleChequeo.observaciones_generales || 'Sin observaciones.'}</p>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" onClick={() => setDetalleChequeo(null)} className="btn-secondary">Cerrar</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: MOVIMIENTO */}
+          {modalMovimiento && (
+            <div className="modal-backdrop" onClick={() => setModalMovimiento(false)}>
+              <div className="modal-card" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3><Icon name="arrow-left-right" size={16} color="var(--emerald-600)" /> {editingMovimientoId ? `Editar movimiento #${editingMovimientoId}` : "Registrar movimiento"}</h3>
+                  <button className="modal-close-btn" onClick={() => setModalMovimiento(false)}>✕</button>
+                </div>
+                <form onSubmit={handleCrearMovimiento}>
+                  <div className="modal-body">
+                    <div className="form-group">
+                      <label>Tipo de movimiento</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <button type="button" onClick={() => setFormMovimiento({...formMovimiento, tipo: 'salida'})} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px', borderRadius: '6px', border: '2px solid', borderColor: formMovimiento.tipo === 'salida' ? 'var(--emerald-600)' : '#cbd5e1', background: formMovimiento.tipo === 'salida' ? 'var(--emerald-50)' : '#fff', fontWeight: '700', color: formMovimiento.tipo === 'salida' ? 'var(--emerald-700)' : 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px' }}>
+                          <Icon name="arrow-up-right" size={14} />
+                          <span>SALIDA</span>
+                        </button>
+                        <button type="button" onClick={() => setFormMovimiento({...formMovimiento, tipo: 'entrada'})} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px', borderRadius: '6px', border: '2px solid', borderColor: formMovimiento.tipo === 'entrada' ? 'var(--blue-600)' : '#cbd5e1', background: formMovimiento.tipo === 'entrada' ? 'var(--blue-50)' : '#fff', fontWeight: '700', color: formMovimiento.tipo === 'entrada' ? 'var(--blue-700)' : 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px' }}>
+                          <Icon name="arrow-down-left" size={14} />
+                          <span>ENTRADA</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+                      <SmartSearchSelect
+                        label="Vehículo"
+                        required={true}
+                        placeholder="Buscar vehículo..."
+                        items={vehiculos}
+                        selectedId={formMovimiento.vehiculo_id}
+                        searchKeys={['placa', 'marca', 'modelo']}
+                        icon="truck"
+                        onSelect={(v) => {
+                          setFormMovimiento(prev => ({
+                            ...prev,
+                            vehiculo_id: v.id,
+                            kilometraje: prev.kilometraje !== '' ? prev.kilometraje : (v.kilometraje || '')
+                          }));
+                        }}
+                        renderSelected={(v) => `${v.placa} • ${v.marca} ${v.modelo}`}
+                        renderOption={(v, isSelected) => (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontWeight: '800', color: isSelected ? '#047857' : '#0f172a' }}>{v.placa}</span>
+                            <span style={{ color: '#64748b' }}>({v.marca})</span>
+                          </div>
+                        )}
+                      />
+
+                      <SmartSearchSelect
+                        label="Conductor"
+                        required={true}
+                        placeholder="Buscar conductor..."
+                        items={conductores.length > 0 ? conductores : usuariosList}
+                        selectedId={formMovimiento.usuario_id}
+                        searchKeys={['nombre', 'cedula']}
+                        icon="user"
+                        onSelect={(c) => setFormMovimiento(prev => ({ ...prev, usuario_id: c.id }))}
+                        renderSelected={(c) => `${c.nombre}`}
+                        renderOption={(c, isSelected) => (
+                          <div style={{ fontWeight: isSelected ? '700' : '500' }}>{c.nombre}</div>
+                        )}
+                      />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <label>Auxiliar (Opcional)</label>
+                        <input type="text" placeholder="Acompañante" value={formMovimiento.auxiliar} onChange={e => setFormMovimiento({...formMovimiento, auxiliar: e.target.value})} className="form-input" />
+                      </div>
+                      <div className="form-group">
+                        <label>Proveedor / Destino (Opcional)</label>
+                        <input type="text" placeholder="Cliente / Proveedor" value={formMovimiento.proveedor} onChange={e => setFormMovimiento({...formMovimiento, proveedor: e.target.value})} className="form-input" />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <label>Kilometraje (Opcional)</label>
+                        <input type="number" placeholder="Ej: 145000" value={formMovimiento.kilometraje} onChange={e => setFormMovimiento({...formMovimiento, kilometraje: e.target.value})} className="form-input" />
+                      </div>
+                      <div className="form-group">
+                        <label>Peso báscula (kg)</label>
+                        <input type="number" placeholder="Ej: 12500" value={formMovimiento.bascula_peso} onChange={e => setFormMovimiento({...formMovimiento, bascula_peso: e.target.value})} className="form-input" />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <label>Sacas (Opcional)</label>
+                        <input type="number" placeholder="Cantidad" value={formMovimiento.cantidad_sacas} onChange={e => setFormMovimiento({...formMovimiento, cantidad_sacas: e.target.value})} className="form-input" />
+                      </div>
+                      <div className="form-group">
+                        <label>Estado cajón (Opcional)</label>
+                        <input type="text" placeholder="Bueno, regular..." value={formMovimiento.estado_cajon} onChange={e => setFormMovimiento({...formMovimiento, estado_cajon: e.target.value})} className="form-input" />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Observaciones</label>
+                      <input type="text" placeholder="Ruta, destino o notas..." value={formMovimiento.observaciones} onChange={e => setFormMovimiento({...formMovimiento, observaciones: e.target.value})} className="form-input" />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" onClick={() => setModalMovimiento(false)} className="btn-secondary">Cancelar</button>
+                    <button type="submit" className="btn-primary">{editingMovimientoId ? "Actualizar" : "Guardar"}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: ORDEN DE TRABAJO (OT) */}
+          {modalOT && (
+            <div className="modal-backdrop" onClick={() => setModalOT(false)}>
+              <div className="modal-card" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3><Icon name="wrench" size={16} color="var(--purple-600)" /> {editingOTId ? `Editar orden #${editingOTId}` : "Nueva orden de trabajo"}</h3>
+                  <button className="modal-close-btn" onClick={() => setModalOT(false)}>✕</button>
+                </div>
+                <form onSubmit={handleCrearOT}>
+                  <div className="modal-body">
+                    <SmartSearchSelect
+                      label="Vehículo"
+                      required={true}
+                      placeholder="Buscar vehículo..."
+                      items={vehiculos}
+                      selectedId={formOT.vehiculo_id}
+                      searchKeys={['placa', 'marca', 'modelo']}
+                      icon="truck"
+                      onSelect={(v) => setFormOT(prev => ({ ...prev, vehiculo_id: v.id }))}
+                      renderSelected={(v) => `${v.placa} • ${v.marca} ${v.modelo}`}
+                      renderOption={(v, isSelected) => (
+                        <div style={{ fontWeight: isSelected ? '700' : '500' }}>{v.placa} - {v.marca}</div>
+                      )}
+                    />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <label>Prioridad *</label>
+                        <select value={formOT.prioridad} onChange={e => setFormOT({...formOT, prioridad: e.target.value})} className="form-select">
+                          <option value="baja">Baja</option>
+                          <option value="media">Media</option>
+                          <option value="alta">Alta</option>
+                          <option value="critica">Crítica</option>
+                        </select>
+                      </div>
+
+                      {editingOTId ? (
+                        <div className="form-group">
+                          <label>Estado *</label>
+                          <select value={formOT.estado} onChange={e => setFormOT({...formOT, estado: e.target.value})} className="form-select">
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_progreso">En progreso</option>
+                            <option value="completada">Completada</option>
+                            <option value="cancelada">Cancelada</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="form-group">
+                          <label>Mecánico</label>
+                          <select value={formOT.responsable_id} onChange={e => setFormOT({...formOT, responsable_id: e.target.value})} className="form-select">
+                            <option value="">Seleccionar...</option>
+                            {usuariosList.filter(u => u.rol && (u.rol.includes('mecanico') || u.rol.includes('taller'))).map(m => (
+                              <option key={m.id} value={m.id}>{m.nombre}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label>Descripción del trabajo *</label>
+                      <textarea required placeholder="Trabajo a realizar en taller..." rows={3} value={formOT.descripcion} onChange={e => setFormOT({...formOT, descripcion: e.target.value})} className="form-textarea" style={{ resize: 'none' }} />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" onClick={() => setModalOT(false)} className="btn-secondary">Cancelar</button>
+                    <button type="submit" className="btn-primary">{editingOTId ? "Actualizar" : "Crear orden"}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: EVALUAR HALLAZGO */}
+          {modalEvaluarHallazgo && (
+            <div className="modal-backdrop" onClick={() => setModalEvaluarHallazgo(null)}>
+              <div className="modal-card" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3><Icon name="wrench" size={16} color="var(--emerald-600)" /> Evaluar hallazgo y crear OT</h3>
+                  <button className="modal-close-btn" onClick={() => setModalEvaluarHallazgo(null)}>✕</button>
+                </div>
+                <form onSubmit={handleConvertirOT}>
+                  <div className="modal-body">
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <div><span style={{ color: '#64748b', fontSize: '10.5px' }}>Vehículo:</span> <strong style={{ color: '#047857' }}>{modalEvaluarHallazgo.vehiculo?.placa || `#${modalEvaluarHallazgo.vehiculo_id}`}</strong></div>
+                        <div><span style={{ color: '#64748b', fontSize: '10.5px' }}>Reportó:</span> <strong>{modalEvaluarHallazgo.usuario_reporta?.nombre || 'Inspector'}</strong></div>
+                      </div>
+                      <div style={{ background: '#fff', border: '1px solid #fecdd3', padding: '8px', borderRadius: '6px', color: '#be123c', fontWeight: '600' }}>
+                        {modalEvaluarHallazgo.descripcion}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <label>Categoría *</label>
+                        <select required value={formEvaluar.categoria} onChange={e => setFormEvaluar({...formEvaluar, categoria: e.target.value})} className="form-select">
+                          <option value="mecanica">Mecánica General</option>
+                          <option value="frenos">Frenos</option>
+                          <option value="electrica">Eléctrica & Luces</option>
+                          <option value="neumaticos">Neumáticos</option>
+                          <option value="fluidos">Fluidos & Aceite</option>
+                          <option value="cabina">Cabina & Seguridad</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Prioridad *</label>
+                        <select required value={formEvaluar.prioridad} onChange={e => setFormEvaluar({...formEvaluar, prioridad: e.target.value})} className="form-select">
+                          <option value="baja">Baja</option>
+                          <option value="media">Media</option>
+                          <option value="alta">Alta</option>
+                          <option value="critica">Crítica</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Mecánico asignado</label>
+                      <select value={formEvaluar.responsable_id} onChange={e => setFormEvaluar({...formEvaluar, responsable_id: e.target.value})} className="form-select">
+                        <option value="">Seleccionar mecánico...</option>
+                        {usuariosList.filter(u => u.rol && (u.rol.includes('mecanico') || u.rol.includes('jefe') || u.rol.includes('taller'))).map(m => (
+                          <option key={m.id} value={m.id}>{m.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Instrucciones para taller *</label>
+                      <textarea required rows={3} value={formEvaluar.descripcion_trabajo} onChange={e => setFormEvaluar({...formEvaluar, descripcion_trabajo: e.target.value})} className="form-textarea" style={{ resize: 'none' }} placeholder="Reparación o pruebas a realizar..." />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" onClick={() => setModalEvaluarHallazgo(null)} className="btn-secondary">Cancelar</button>
+                    <button type="submit" className="btn-primary">Crear orden de trabajo</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: HOJA DE VIDA */}
+          {modalHojaVida && (
+            <div className="modal-backdrop" onClick={() => setModalHojaVida(null)}>
+              <div className="modal-card" style={{ maxWidth: '720px' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3>
+                    <Icon name="file-text" size={16} color="var(--purple-600)" />
+                    Hoja de vida — {modalHojaVida.vehiculo.placa} ({modalHojaVida.vehiculo.marca} {modalHojaVida.vehiculo.modelo})
+                  </h3>
+                  <button className="modal-close-btn" onClick={() => setModalHojaVida(null)}>✕</button>
+                </div>
+                <div className="modal-body">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Estado</div>
+                      <div style={{ marginTop: '2px' }}>
+                        <span className={`status-pill ${modalHojaVida.vehiculo.estado === 'activo' ? 'in-motion' : 'critical'}`}>
+                          {modalHojaVida.vehiculo.estado.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Órdenes</div>
+                      <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{modalHojaVida.resumen.total_ordenes}</div>
+                      <div style={{ fontSize: '9.5px', color: '#059669', fontWeight: '700' }}>{modalHojaVida.resumen.ordenes_completadas} cerradas</div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Inspecciones</div>
+                      <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{modalHojaVida.resumen.total_chequeos}</div>
+                      <div style={{ fontSize: '9.5px', color: '#64748b' }}>Pre-op</div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Inversión taller</div>
+                      <div style={{ fontSize: '15px', fontWeight: '800', color: '#7c3aed' }}>${modalHojaVida.resumen.inversion_mantenimiento_total.toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 style={{ fontSize: '12.5px', fontWeight: '700', marginBottom: '6px' }}>Historial de órdenes de trabajo</h4>
+                    {modalHojaVida.ordenes_trabajo && modalHojaVida.ordenes_trabajo.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto' }}>
+                        {modalHojaVida.ordenes_trabajo.map(ot => (
+                          <div key={ot.id} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px 10px', fontSize: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <strong style={{ color: 'var(--purple-700)' }}>{ot.codigo}</strong>
+                                <span className={`status-pill ${ot.estado === 'completada' ? 'completed' : 'warning'}`}>{ot.estado.toUpperCase()}</span>
+                              </div>
+                              <span style={{ fontSize: '10.5px', color: '#64748b' }}>{formatDate(ot.fecha_creacion)}</span>
+                            </div>
+                            <div style={{ marginTop: '3px', color: '#0f172a' }}>{ot.descripcion}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Técnico: {ot.mecanico}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '8px' }}>Sin intervenciones de taller registradas.</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 style={{ fontSize: '12.5px', fontWeight: '700', marginBottom: '6px' }}>Últimas inspecciones pre-op</h4>
+                    {modalHojaVida.chequeos_recientes && modalHojaVida.chequeos_recientes.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '140px', overflowY: 'auto' }}>
+                        {modalHojaVida.chequeos_recientes.slice(0, 5).map(ch => (
+                          <div key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11.5px' }}>
+                            <div>
+                              <strong>{formatDate(ch.fecha)}</strong> • {Number(ch.kilometraje).toLocaleString()} km • {ch.inspector}
+                            </div>
+                            <span className={`status-pill ${ch.aprobado ? 'completed' : 'critical'}`}>
+                              {ch.aprobado ? 'CONFORME' : 'NOVEDAD'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '8px' }}>Sin inspecciones registradas.</p>
+                    )}
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" onClick={() => setModalHojaVida(null)} className="btn-secondary">Cerrar</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
