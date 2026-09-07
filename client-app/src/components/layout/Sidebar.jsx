@@ -10,23 +10,26 @@ import {
   FileText, 
   Bell, 
   Settings,
-  MoreVertical,
+  LogOut,
   ChevronRight
 } from 'lucide-react';
 
-export const Sidebar = ({ activeTab, onSelectTab, currentUser }) => {
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'vehiculos', label: 'Vehículos', icon: Truck },
-    { id: 'conductores', label: 'Conductores', icon: UserCheck },
-    { id: 'usuarios', label: 'Usuarios', icon: Users },
-    { id: 'movimientos', label: 'Movimientos', icon: ArrowLeftRight },
-    { id: 'chequeos', label: 'Chequeos', icon: ClipboardCheck },
-    { id: 'mantenimiento', label: 'Mantenimiento', icon: Wrench },
-    { id: 'reportes', label: 'Reportes', icon: FileText },
-    { id: 'alertas', label: 'Alertas', icon: Bell },
-    { id: 'configuracion', label: 'Configuración', icon: Settings },
+export const Sidebar = ({ activeTab, onSelectTab, currentUser, onLogout }) => {
+  const allMenuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'operario_movimientos', 'operario_chequeo', 'mecanico', 'jefe_mecanicos'] },
+    { id: 'vehiculos', label: 'Flota', icon: Truck, roles: ['admin', 'operario_movimientos', 'operario_chequeo', 'mecanico', 'jefe_mecanicos'] },
+    { id: 'conductores', label: 'Conductores', icon: UserCheck, roles: ['admin', 'operario_movimientos'] },
+    { id: 'usuarios', label: 'Usuarios', icon: Users, roles: ['admin'] },
+    { id: 'movimientos', label: 'Movimientos', icon: ArrowLeftRight, roles: ['admin', 'operario_movimientos'] },
+    { id: 'chequeos', label: 'Chequeos', icon: ClipboardCheck, roles: ['admin', 'operario_chequeo'] },
+    { id: 'mantenimiento', label: 'Mantenimiento', icon: Wrench, roles: ['admin', 'mecanico', 'jefe_mecanicos'] },
+    { id: 'reportes', label: 'Reportes', icon: FileText, roles: ['admin'] },
+    { id: 'alertas', label: 'Alertas', icon: Bell, roles: ['admin', 'mecanico', 'jefe_mecanicos'] },
+    { id: 'configuracion', label: 'Configuración', icon: Settings, roles: ['admin'] },
   ];
+
+  const userRole = currentUser?.rol || 'admin';
+  const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
   return (
     <aside className="sidebar">
@@ -68,7 +71,12 @@ export const Sidebar = ({ activeTab, onSelectTab, currentUser }) => {
           <div className="user-name">{currentUser?.nombre || 'Administrador'}</div>
           <div className="user-email">{currentUser?.email || 'admin@normetales.com'}</div>
         </div>
-        <MoreVertical size={16} style={{ color: 'var(--sidebar-text-muted)', cursor: 'pointer' }} />
+        <LogOut 
+          size={16} 
+          style={{ color: 'var(--sidebar-text-muted)', cursor: 'pointer' }} 
+          title="Cerrar Sesión"
+          onClick={onLogout}
+        />
       </div>
     </aside>
   );

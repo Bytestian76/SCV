@@ -8,7 +8,7 @@ import { RealTimeMapCard } from '../components/dashboard/RealTimeMapCard';
 import { RecentMovementsCard } from '../components/dashboard/RecentMovementsCard';
 import { UpcomingMaintenanceCard } from '../components/dashboard/UpcomingMaintenanceCard';
 
-export const DashboardPage = ({ onNavigate }) => {
+export const DashboardPage = ({ onNavigate, currentUser }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -97,23 +97,25 @@ export const DashboardPage = ({ onNavigate }) => {
     }
   };
 
+  const userRole = currentUser?.rol || 'admin';
+
   return (
     <div className="page-body">
       {/* 1. KPIs Fila Superior */}
-      <KpiGrid kpis={data?.kpis} />
+      <KpiGrid kpis={data?.kpis} currentUser={currentUser} />
 
-      {/* 2. Fila Principal: Gráfica de Área + Dona de Estado + Alertas */}
+      {/* 2. Fila Principal */}
       <div className="dashboard-main-grid">
-        <HourlyMovementsChart data={data?.movimientos_por_hora} />
-        <VehicleStatusDonut data={data?.vehiculos_por_estado} />
-        <ActiveAlertsCard alerts={data?.alertas_activas} onNavigate={onNavigate} />
+        {['admin', 'operario_movimientos'].includes(userRole) && <HourlyMovementsChart data={data?.movimientos_por_hora} />}
+        {['admin', 'operario_chequeo', 'mecanico', 'jefe_mecanicos'].includes(userRole) && <VehicleStatusDonut data={data?.vehiculos_por_estado} />}
+        {['admin', 'mecanico', 'jefe_mecanicos', 'operario_chequeo'].includes(userRole) && <ActiveAlertsCard alerts={data?.alertas_activas} onNavigate={onNavigate} />}
       </div>
 
-      {/* 3. Fila Inferior: Últimos Movimientos + Próximos Mantenimientos + Mapa Real-time */}
+      {/* 3. Fila Inferior */}
       <div className="dashboard-bottom-grid">
-        <RecentMovementsCard movements={data?.ultimos_movimientos} onNavigate={onNavigate} />
-        <UpcomingMaintenanceCard maintenance={data?.mantenimientos_proximos} onNavigate={onNavigate} />
-        <RealTimeMapCard inMotionCount={18} />
+        {['admin', 'operario_movimientos'].includes(userRole) && <RecentMovementsCard movements={data?.ultimos_movimientos} onNavigate={onNavigate} />}
+        {['admin', 'mecanico', 'jefe_mecanicos'].includes(userRole) && <UpcomingMaintenanceCard maintenance={data?.mantenimientos_proximos} onNavigate={onNavigate} />}
+        {['admin', 'operario_movimientos'].includes(userRole) && <RealTimeMapCard inMotionCount={18} />}
       </div>
     </div>
   );

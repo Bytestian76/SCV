@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Wrench, Plus, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
-export const MantenimientoPage = () => {
+export const MantenimientoPage = ({ currentUser }) => {
   const [ordenes, setOrdenes] = useState([]);
   const [hallazgos, setHallazgos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,10 +34,12 @@ export const MantenimientoPage = () => {
       <div className="crud-table-container">
         <div className="table-header-bar">
           <h3>Órdenes de Trabajo de Taller y Mantenimiento</h3>
-          <button className="btn-primary">
-            <Plus size={16} />
-            <span>Nueva Orden de Trabajo</span>
-          </button>
+          {['admin', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+            <button className="btn-primary">
+              <Plus size={16} />
+              <span>Nueva Orden de Trabajo</span>
+            </button>
+          )}
         </div>
 
         <table className="data-table">

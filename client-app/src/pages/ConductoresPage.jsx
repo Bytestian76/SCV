@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { UserCheck, Plus, Search } from 'lucide-react';
 
-export const ConductoresPage = () => {
+export const ConductoresPage = ({ currentUser }) => {
   const [conductores, setConductores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,36 +31,39 @@ export const ConductoresPage = () => {
 
   const filtered = conductores.filter(c => 
     c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.cedula && c.cedula.includes(searchTerm)) ||
-    (c.licencia && c.licencia.toLowerCase().includes(searchTerm.toLowerCase()))
+    c.cedula?.includes(searchTerm)
   );
 
   return (
     <div className="page-body">
       <div className="crud-table-container">
         <div className="table-header-bar">
-          <div style={{ position: 'relative', width: '280px' }}>
-            <input
-              type="text"
-              placeholder="Buscar conductor por nombre o cédula..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '9px 12px 9px 36px',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--surface-border)',
-                fontSize: '13px',
-                outline: 'none'
-              }}
-            />
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#8a9c93' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ position: 'relative', width: '280px' }}>
+              <input
+                type="text"
+                placeholder="Buscar por nombre o cédula..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px 9px 36px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--surface-border)',
+                  fontSize: '13px',
+                  outline: 'none'
+                }}
+              />
+              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#8a9c93' }} />
+            </div>
           </div>
 
-          <button className="btn-primary">
-            <Plus size={16} />
-            <span>Nuevo Conductor</span>
-          </button>
+          {currentUser?.rol === 'admin' && (
+            <button className="btn-primary">
+              <Plus size={16} />
+              <span>Nuevo Conductor</span>
+            </button>
+          )}
         </div>
 
         <table className="data-table">

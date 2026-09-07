@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from app.db.session import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_role
 from app.models.usuario import Usuario
 from app.models.vehiculo import Vehiculo
 from app.models.hallazgo import Hallazgo
@@ -108,7 +108,7 @@ def create_orden_trabajo(
     orden_in: OrdenTrabajoCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos", "mecanico"])),
 ):
     vehiculo = db.query(Vehiculo).filter(Vehiculo.id == orden_in.vehiculo_id).first()
     if not vehiculo:
@@ -213,7 +213,7 @@ def update_orden_trabajo(
 def delete_orden(
     id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos"])),
 ):
     orden = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == id).first()
     if not orden:

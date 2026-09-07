@@ -1,7 +1,9 @@
 import React from 'react';
 import { Truck, Users, ClipboardCheck, BarChart3, ArrowUpRight, Minus } from 'lucide-react';
 
-export const KpiGrid = ({ kpis }) => {
+export const KpiGrid = ({ kpis, currentUser }) => {
+  const userRole = currentUser?.rol || 'admin';
+
   const cards = [
     {
       title: 'Vehículos Activos',
@@ -10,6 +12,7 @@ export const KpiGrid = ({ kpis }) => {
       isUp: true,
       icon: Truck,
       colorClass: 'green',
+      roles: ['admin', 'operario_movimientos', 'operario_chequeo', 'mecanico', 'jefe_mecanicos'],
     },
     {
       title: 'Conductores en línea',
@@ -18,6 +21,7 @@ export const KpiGrid = ({ kpis }) => {
       isUp: true,
       icon: Users,
       colorClass: 'mint',
+      roles: ['admin', 'operario_movimientos'],
     },
     {
       title: 'Chequeos del día',
@@ -26,6 +30,7 @@ export const KpiGrid = ({ kpis }) => {
       isNeutral: true,
       icon: ClipboardCheck,
       colorClass: 'amber',
+      roles: ['admin', 'operario_chequeo'],
     },
     {
       title: 'Movimientos hoy',
@@ -34,12 +39,15 @@ export const KpiGrid = ({ kpis }) => {
       isUp: true,
       icon: BarChart3,
       colorClass: 'purple',
+      roles: ['admin', 'operario_movimientos'],
     },
   ];
 
+  const visibleCards = cards.filter(card => card.roles.includes(userRole));
+
   return (
     <div className="kpi-grid">
-      {cards.map((card, idx) => {
+      {visibleCards.map((card, idx) => {
         const Icon = card.icon;
         return (
           <div key={idx} className="kpi-card">

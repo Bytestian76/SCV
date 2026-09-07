@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { ArrowLeftRight, Plus, Search, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 
-export const MovimientosPage = () => {
+export const MovimientosPage = ({ currentUser }) => {
   const [movimientos, setMovimientos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,16 +56,18 @@ export const MovimientosPage = () => {
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#8a9c93' }} />
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-primary" style={{ background: '#059669' }}>
-              <ArrowUpRight size={16} />
-              <span>Registrar Salida</span>
-            </button>
-            <button className="btn-primary" style={{ background: '#2563eb' }}>
-              <ArrowDownLeft size={16} />
-              <span>Registrar Entrada</span>
-            </button>
-          </div>
+          {['admin', 'operario_movimientos'].includes(currentUser?.rol) && (
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn-primary" style={{ background: '#059669' }}>
+                <ArrowUpRight size={16} />
+                <span>Registrar Salida</span>
+              </button>
+              <button className="btn-primary" style={{ background: '#2563eb' }}>
+                <ArrowDownLeft size={16} />
+                <span>Registrar Entrada</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <table className="data-table">

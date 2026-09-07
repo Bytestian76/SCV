@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from app.db.session import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_role
 from app.models.chequeo import Chequeo, ChequeoItem
 from app.models.vehiculo import Vehiculo
 from app.models.hallazgo import Hallazgo
@@ -24,6 +24,11 @@ def get_chequeos(
     limit: int = 50,
 ):
     query = db.query(Chequeo).join(Vehiculo).join(Usuario)
+    
+    # Restrict operario_chequeo to only see their own chequeos
+    if current_user.rol == "operario_chequeo":
+        query = query.filter(Chequeo.usuario_id == current_user.id)
+
     if vehiculo_id:
         query = query.filter(Chequeo.vehiculo_id == vehiculo_id)
     if aprobado is not None:
@@ -36,7 +41,7 @@ def get_chequeos(
 def create_chequeo(
     chequeo_in: ChequeoCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin", "operario_chequeo"])),
 ):
     vehiculo = db.query(Vehiculo).filter(Vehiculo.id == chequeo_in.vehiculo_id).first()
     if not vehiculo:
@@ -46,9 +51,12 @@ def create_chequeo(
     tiene_no_conformes = any(item.valor == "no_conforme" for item in chequeo_in.items)
     aprobado_final = not tiene_no_conformes
 
+    # For operario_chequeo, force the user id to be their own
+    final_usuario_id = current_user.id if current_user.rol == "operario_chequeo" else (chequeo_in.usuario_id or current_user.id)
+    
     chequeo = Chequeo(
         vehiculo_id=chequeo_in.vehiculo_id,
-        usuario_id=chequeo_in.usuario_id or current_user.id,
+        usuario_id=final_usuario_id,
         kilometraje=chequeo_in.kilometraje,
         fecha_venc_soat=chequeo_in.fecha_venc_soat,
         fecha_venc_rtm=chequeo_in.fecha_venc_rtm,
@@ -103,6 +111,11 @@ def export_chequeos_csv(
     from fastapi.responses import Response
 
     query = db.query(Chequeo).join(Vehiculo).join(Usuario)
+    
+    # Restrict operario_chequeo to only see their own chequeos
+    if current_user.rol == "operario_chequeo":
+        query = query.filter(Chequeo.usuario_id == current_user.id)
+
     if vehiculo_id:
         query = query.filter(Chequeo.vehiculo_id == vehiculo_id)
     if aprobado is not None:
@@ -150,6 +163,10 @@ def get_chequeo_by_id(
     chequeo = db.query(Chequeo).filter(Chequeo.id == id).first()
     if not chequeo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chequeo no encontrado")
+        
+    if current_user.rol == "operario_chequeo" and chequeo.usuario_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para ver este chequeo")
+        
     return chequeo
 
 
@@ -158,11 +175,14 @@ def update_chequeo(
     id: int,
     chequeo_in: ChequeoCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin", "operario_chequeo"])),
 ):
     chequeo = db.query(Chequeo).filter(Chequeo.id == id).first()
     if not chequeo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chequeo no encontrado")
+
+    if current_user.rol == "operario_chequeo" and chequeo.usuario_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para actualizar este chequeo")
 
     chequeo.kilometraje = chequeo_in.kilometraje
     chequeo.observaciones_generales = chequeo_in.observaciones_generales
@@ -180,7 +200,7 @@ def update_chequeo(
 def delete_chequeo(
     id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin"])),
 ):
     chequeo = db.query(Chequeo).filter(Chequeo.id == id).first()
     if not chequeo:

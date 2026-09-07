@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Truck, Plus, Search, CheckCircle2, AlertCircle } from 'lucide-react';
 
-export const VehiculosPage = () => {
+export const VehiculosPage = ({ currentUser }) => {
   const [vehiculos, setVehiculos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,10 +60,12 @@ export const VehiculosPage = () => {
             </div>
           </div>
 
-          <button className="btn-primary">
-            <Plus size={16} />
-            <span>Nuevo Vehículo</span>
-          </button>
+          {currentUser?.rol === 'admin' && (
+            <button className="btn-primary">
+              <Plus size={16} />
+              <span>Nuevo Vehículo</span>
+            </button>
+          )}
         </div>
 
         <table className="data-table">

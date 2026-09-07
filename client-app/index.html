@@ -1536,12 +1536,12 @@
       const allMenuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', roles: ['admin', 'jefe_mecanicos', 'mecanico', 'operario_chequeo', 'operario_movimientos'] },
         { id: 'mantenimiento', label: 'Mantenimiento', icon: 'wrench', roles: ['admin', 'jefe_mecanicos', 'mecanico'], badge: hallazgosAbiertos.length },
-        { id: 'vehiculos', label: 'Flota', icon: 'truck', roles: ['admin', 'jefe_mecanicos', 'mecanico', 'operario_chequeo', 'operario_movimientos'] },
-        { id: 'chequeos', label: 'Chequeos', icon: 'clipboard-check', roles: ['admin', 'jefe_mecanicos', 'operario_chequeo'] },
+        { id: 'vehiculos', label: 'Flota', icon: 'truck', roles: ['admin', 'jefe_mecanicos', 'mecanico', 'operario_movimientos'] },
+        { id: 'chequeos', label: 'Chequeos', icon: 'clipboard-check', roles: ['admin', 'operario_chequeo'] },
         { id: 'movimientos', label: 'Movimientos', icon: 'arrow-left-right', roles: ['admin', 'operario_movimientos'] },
-        { id: 'conductores', label: 'Conductores', icon: 'user-check', roles: ['admin', 'jefe_mecanicos'] },
+        { id: 'conductores', label: 'Conductores', icon: 'user-check', roles: ['admin'] },
         { id: 'usuarios', label: 'Usuarios', icon: 'users', roles: ['admin'] },
-        { id: 'reportes', label: 'Reportes', icon: 'file-text', roles: ['admin', 'jefe_mecanicos'] },
+        { id: 'reportes', label: 'Reportes', icon: 'file-text', roles: ['admin'] },
         { id: 'alertas', label: 'Alertas', icon: 'bell', roles: ['admin', 'jefe_mecanicos', 'mecanico'] },
       ];
 
@@ -1727,8 +1727,8 @@
                     </div>
                   )}
 
-                  {/* Inspecciones: admin, operario_chequeo, jefe_mecanicos */}
-                  {['admin', 'operario_chequeo', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                  {/* Inspecciones: admin, operario_chequeo */}
+                  {['admin', 'operario_chequeo'].includes(currentUser?.rol) && (
                     <div className="kpi-card" onClick={() => setActiveTab('chequeos')}>
                       <div className="kpi-icon-circle amber"><Icon name="clipboard-check" size={18} /></div>
                       <div className="kpi-content">
@@ -1872,6 +1872,7 @@
                 {/* 3. FILA INFERIOR: ACTIVIDAD RECIENTE + ACCIONES RÁPIDAS */}
                 <div className="dashboard-bottom-grid">
                   {/* Actividad reciente */}
+                  {['admin', 'jefe_mecanicos', 'mecanico', 'operario_movimientos'].includes(currentUser?.rol) && (
                   <div className="dash-card">
                     <div className="card-header">
                       <h3><Icon name="clock" size={15} color="var(--emerald-600)" /> Actividad reciente</h3>
@@ -1906,6 +1907,7 @@
                       )}
                     </div>
                   </div>
+                  )}
 
                   {/* Acciones rápidas compactas */}
                   <div className="dash-card">
@@ -1930,7 +1932,7 @@
                         </button>
                       )}
 
-                      {['admin', 'operario_movimientos', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                      {['admin', 'operario_movimientos'].includes(currentUser?.rol) && (
                         <button className="quick-action-btn" onClick={openCrearMovimiento}>
                           <div className="qa-icon-wrap"><Icon name="arrow-left-right" size={15} /></div>
                           <div>
@@ -1940,7 +1942,7 @@
                         </button>
                       )}
 
-                      {['admin', 'operario_chequeo', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                      {['admin', 'operario_chequeo'].includes(currentUser?.rol) && (
                         <button className="quick-action-btn" onClick={() => setModalChequeo(true)}>
                           <div className="qa-icon-wrap"><Icon name="clipboard-check" size={15} /></div>
                           <div>
@@ -1950,7 +1952,7 @@
                         </button>
                       )}
 
-                      {['admin', 'jefe_mecanicos'].includes(currentUser?.rol) && (
+                      {['admin'].includes(currentUser?.rol) && (
                         <button className="quick-action-btn" onClick={openCrearVehiculo}>
                           <div className="qa-icon-wrap"><Icon name="truck" size={15} /></div>
                           <div>
@@ -1989,10 +1991,12 @@
                         <Icon name="download" size={13} />
                         <span>Exportar CSV</span>
                       </button>
-                      <button className="btn-primary" onClick={openCrearVehiculo}>
-                        <Icon name="plus" size={14} />
-                        <span>Nuevo vehículo</span>
-                      </button>
+                      {['admin'].includes(currentUser?.rol) && (
+                        <button className="btn-primary" onClick={openCrearVehiculo}>
+                          <Icon name="plus" size={14} />
+                          <span>Nuevo vehículo</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 

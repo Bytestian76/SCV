@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_role
 from app.models.vehiculo import Vehiculo
 from app.models.usuario import Usuario
 from app.schemas.vehiculo import VehiculoCreate, VehiculoUpdate, VehiculoResponse
@@ -33,7 +33,7 @@ def get_vehiculos(
 def create_vehiculo(
     vehiculo_in: VehiculoCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin"])),
 ):
     existente = db.query(Vehiculo).filter(Vehiculo.placa == vehiculo_in.placa.strip().upper()).first()
     if existente:
@@ -76,7 +76,7 @@ def update_vehiculo(
     id: int,
     vehiculo_in: VehiculoUpdate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin"])),
 ):
     vehiculo = db.query(Vehiculo).filter(Vehiculo.id == id).first()
     if not vehiculo:
@@ -95,7 +95,7 @@ def update_vehiculo(
 def delete_vehiculo(
     id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin"])),
 ):
     vehiculo = db.query(Vehiculo).filter(Vehiculo.id == id).first()
     if not vehiculo:

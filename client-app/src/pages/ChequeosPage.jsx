@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { ClipboardCheck, Plus, Search, CheckCircle, AlertTriangle } from 'lucide-react';
 
-export const ChequeosPage = () => {
+export const ChequeosPage = ({ currentUser }) => {
   const [chequeos, setChequeos] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,10 +32,12 @@ export const ChequeosPage = () => {
       <div className="crud-table-container">
         <div className="table-header-bar">
           <h3>Inspecciones Preoperacionales del Día</h3>
-          <button className="btn-primary">
-            <Plus size={16} />
-            <span>Nuevo Chequeo Preoperacional</span>
-          </button>
+          {['admin', 'operario_chequeo'].includes(currentUser?.rol) && (
+            <button className="btn-primary">
+              <Plus size={16} />
+              <span>Nuevo Chequeo Preoperacional</span>
+            </button>
+          )}
         </div>
 
         <table className="data-table">

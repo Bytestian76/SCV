@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from app.db.session import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_role
 from app.models.movimiento import Movimiento
 from app.models.vehiculo import Vehiculo
 from app.models.usuario import Usuario
@@ -38,7 +38,7 @@ def get_movimientos(
 def create_movimiento(
     movimiento_in: MovimientoCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin", "operario_movimientos"])),
 ):
     vehiculo = db.query(Vehiculo).filter(Vehiculo.id == movimiento_in.vehiculo_id).first()
     if not vehiculo:
@@ -141,7 +141,7 @@ def update_movimiento(
     id: int,
     movimiento_in: MovimientoCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin", "operario_movimientos"])),
 ):
     movimiento = db.query(Movimiento).filter(Movimiento.id == id).first()
     if not movimiento:
@@ -168,7 +168,7 @@ def update_movimiento(
 def delete_movimiento(
     id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user),
+    current_user: Usuario = Depends(require_role(["admin"])),
 ):
     movimiento = db.query(Movimiento).filter(Movimiento.id == id).first()
     if not movimiento:

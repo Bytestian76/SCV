@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { DashboardPage } from './pages/DashboardPage';
@@ -10,14 +10,50 @@ import { ChequeosPage } from './pages/ChequeosPage';
 import { MantenimientoPage } from './pages/MantenimientoPage';
 import { AlertasPage } from './pages/AlertasPage';
 import { ReportesPage } from './pages/ReportesPage';
+import { LoginPage } from './pages/LoginPage';
+import { api } from './services/api';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [currentUser, setCurrentUser] = useState({
-    nombre: 'Administrador Principal',
-    email: 'admin@normetales.com',
-    rol: 'admin',
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (api.token) {
+        try {
+          const user = await api.getMe();
+          setCurrentUser(user);
+        } catch (error) {
+          console.error("Error validando sesión:", error);
+        }
+      }
+      setLoadingAuth(false);
+    };
+    checkAuth();
+  }, []);
+
+  const handleLoginSuccess = (data) => {
+    setCurrentUser({
+      nombre: data.nombre,
+      email: data.email,
+      rol: data.rol,
+      id: data.user_id
+    });
+  };
+
+  const handleLogout = () => {
+    api.setToken(null);
+    setCurrentUser(null);
+  };
+
+  if (loadingAuth) {
+    return <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-main)', color: 'var(--text-primary)' }}>Cargando sesión...</div>;
+  }
+
+  if (!currentUser) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
 
   const getHeaderInfo = () => {
     switch (activeTab) {
@@ -51,25 +87,25 @@ export function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardPage onNavigate={setActiveTab} />;
+        return <DashboardPage onNavigate={setActiveTab} currentUser={currentUser} />;
       case 'vehiculos':
-        return <VehiculosPage />;
+        return <VehiculosPage currentUser={currentUser} />;
       case 'conductores':
-        return <ConductoresPage />;
+        return <ConductoresPage currentUser={currentUser} />;
       case 'usuarios':
-        return <UsuariosPage />;
+        return <UsuariosPage currentUser={currentUser} />;
       case 'movimientos':
-        return <MovimientosPage />;
+        return <MovimientosPage currentUser={currentUser} />;
       case 'chequeos':
-        return <ChequeosPage />;
+        return <ChequeosPage currentUser={currentUser} />;
       case 'mantenimiento':
-        return <MantenimientoPage />;
+        return <MantenimientoPage currentUser={currentUser} />;
       case 'alertas':
-        return <AlertasPage />;
+        return <AlertasPage currentUser={currentUser} />;
       case 'reportes':
-        return <ReportesPage />;
+        return <ReportesPage currentUser={currentUser} />;
       default:
-        return <DashboardPage onNavigate={setActiveTab} />;
+        return <DashboardPage onNavigate={setActiveTab} currentUser={currentUser} />;
     }
   };
 
@@ -80,6 +116,7 @@ export function App() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Área de Trabajo */}
