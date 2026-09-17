@@ -1,5 +1,8 @@
 # Preparación para Despliegue en la Nube Completada
 
+> **⚠️ IMPORTANTE: NUEVA GUÍA SIMPLIFICADA DISPONIBLE**
+> Si quieres desplegar el proyecto en un VPS de Linux (como Google Cloud) de la forma más sencilla posible, no sigas estas instrucciones manuales. En su lugar, lee la **[Guía Rápida de Despliegue (Zero to Hero)](GUIA_RAPIDA_VPS.md)** y usa el script `./setup_vps.sh` que hará todo el trabajo por ti de manera automática.
+
 He finalizado las configuraciones necesarias en el repositorio para que el proyecto SCV pueda ser desplegado de manera segura en un entorno de producción.
 
 ## Cambios Realizados
