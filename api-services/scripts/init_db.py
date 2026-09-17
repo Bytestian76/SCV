@@ -1,4 +1,4 @@
-﻿"""Script para inicializar tablas de la base de datos sin sobreescribir ni sembrar datos falsos."""
+"""Script para inicializar tablas de la base de datos sin sobreescribir ni sembrar datos falsos."""
 import os
 import sys
 
@@ -16,10 +16,11 @@ def init_database():
     try:
         admin_count = db.query(Usuario).filter(Usuario.rol == "admin").count()
         if admin_count == 0:
+            default_pass = os.getenv("DEFAULT_ADMIN_PASSWORD", "DefaultStrongPass!2026")
             admin = Usuario(
                 nombre="Administrador Principal",
                 email="admin@normetales.com",
-                password_hash=get_password_hash("admin123"),
+                password_hash=get_password_hash(default_pass),
                 rol="admin",
                 estado_activo=True,
                 cedula="1000000001",
@@ -27,7 +28,7 @@ def init_database():
             sebas = Usuario(
                 nombre="Sebastian Ureña",
                 email="sebas.urenasilva@gmail.com",
-                password_hash=get_password_hash("admin123"),
+                password_hash=get_password_hash(default_pass),
                 rol="admin",
                 estado_activo=True,
                 cedula="1000000000",

@@ -19,6 +19,17 @@ root_dir = os.path.dirname(os.path.abspath(__file__))
 api_dir = os.path.join(root_dir, "api-services")
 client_dir = os.path.join(root_dir, "client-app")
 
+# Ensure running in project virtualenv if available
+venv_python = (
+    os.path.join(api_dir, "venv", "bin", "python")
+    if sys.platform != "win32"
+    else os.path.join(api_dir, "venv", "Scripts", "python.exe")
+)
+if os.path.exists(venv_python) and os.path.abspath(sys.executable) != os.path.abspath(venv_python):
+    os.execv(venv_python, [venv_python] + sys.argv)
+
+# Always run backend context from api_dir
+os.chdir(api_dir)
 sys.path.insert(0, api_dir)
 
 from scripts.init_db import init_database
@@ -31,12 +42,11 @@ print("[1/3] Verificando base de datos...")
 init_database()
 
 def run_backend():
-    os.chdir(api_dir)
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info")
 
 def run_frontend():
-    os.chdir(client_dir)
+    # Do not call os.chdir; SimpleHTTPRequestHandler handles directory argument
     handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=client_dir)
     with http.server.ThreadingHTTPServer(("0.0.0.0", 8080), handler) as httpd:
         print("[OK] Frontend sirviendo en http://localhost:8080")

@@ -90,6 +90,19 @@ class ApiService {
   async getOrdenes() {
     return this.request('/mantenimiento/ordenes');
   }
+
+  // Alertas
+  async getAlertas() {
+    return this.request('/alertas/');
+  }
+
+  // Reportes (descarga autenticada — devuelve blob URL)
+  getReporteUrl(endpoint, params = {}) {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== '' && v != null))
+    ).toString();
+    return `/api/v1${endpoint}${qs ? `?${qs}` : ''}`;
+  }
 }
 
 export const api = new ApiService();

@@ -7,6 +7,8 @@ from app.api.v1.endpoints import (
     movimientos,
     chequeos,
     mantenimiento,
+    alertas,
+    reportes,
 )
 
 api_router = APIRouter()
@@ -18,3 +20,5 @@ api_router.include_router(usuarios.router, prefix="/usuarios", tags=["Usuarios"]
 api_router.include_router(movimientos.router, prefix="/movimientos", tags=["Movimientos"])
 api_router.include_router(chequeos.router, prefix="/chequeos", tags=["Chequeos"])
 api_router.include_router(mantenimiento.router, prefix="/mantenimiento", tags=["Mantenimiento"])
+api_router.include_router(alertas.router, prefix="/alertas", tags=["Alertas"])
+api_router.include_router(reportes.router, prefix="/reportes", tags=["Reportes"])

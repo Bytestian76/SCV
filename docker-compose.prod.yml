@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # Base de datos relacional PostgreSQL 16
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: scv-postgres-db-prod
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - scv_pgdata_prod:/var/lib/postgresql/data
+      - ./db-scripts:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - scv-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend REST API (FastAPI + SQLAlchemy + Alembic)
+  api-services:
+    build:
+      context: ./api-services
+      dockerfile: Dockerfile
+    container_name: scv-api-backend-prod
+    restart: always
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-db:5432/${POSTGRES_DB}
+    networks:
+      - scv-network
+    expose:
+      - "8000"
+
+  # Frontend Client App (React + PWA)
+  client-app:
+    build:
+      context: ./client-app
+      dockerfile: Dockerfile
+    container_name: scv-client-frontend-prod
+    restart: always
+    networks:
+      - scv-network
+    expose:
+      - "80"
+
+  # Proxy Inverso y API Gateway (Nginx + WAF Filter + HTTPS)
+  nginx-gateway:
+    build:
+      context: ./nginx-gateway
+      dockerfile: Dockerfile
+    container_name: scv-nginx-gateway-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api-services
+      - client-app
+    volumes:
+      # Usar configuración de producción con HTTPS
+      - ./nginx-gateway/conf.d/default.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - web-root:/var/www/html
+    networks:
+      - scv-network
+
+  # Certbot para certificados SSL (Let's Encrypt)
+  certbot:
+    image: certbot/certbot
+    container_name: scv-certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - web-root:/var/www/html
+    depends_on:
+      - nginx-gateway
+    command: certonly --webroot --webroot-path=/var/www/html --email ${CERTBOT_EMAIL} --agree-tos --no-eff-email -d ${DOMAIN}
+
+volumes:
+  scv_pgdata_prod:
+    driver: local
+  certbot-etc:
+  certbot-var:
+  web-root:
+
+networks:
+  scv-network:
+    driver: bridge

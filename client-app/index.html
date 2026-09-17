@@ -28,7 +28,19 @@
 
     const API_BASE = "http://127.0.0.1:8000/api/v1";
 
-    // --- FORMATEADORES DE FECHA Y HORA UNIFICADOS ---
+    // --- FORMATEADORES DE FECHA, HORA Y ROL UNIFICADOS ---
+    function formatRol(rol) {
+      if (!rol) return '—';
+      const map = {
+        'admin': 'Administrador',
+        'jefe_mecanicos': 'Jefe de mecanicos',
+        'mecanico': 'Mecanico',
+        'operario_chequeo': 'Operario chequeos/conductor',
+        'operario_movimientos': 'Operario movimientos'
+      };
+      return map[rol] || rol;
+    }
+
     function formatDateTime(dateStr) {
       if (!dateStr) return '—';
       try {
@@ -276,8 +288,8 @@
 
     // --- PANTALLA DE LOGIN ---
     function LoginView({ onLoginSuccess, notice }) {
-      const [email, setEmail] = useState('sebas.urenasilva@gmail.com');
-      const [password, setPassword] = useState('admin123');
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
       const [showPassword, setShowPassword] = useState(false);
       const [loading, setLoading] = useState(false);
       const [error, setError] = useState(null);
@@ -408,19 +420,7 @@
               </button>
             </form>
 
-            <div className="demo-credentials-box">
-              <div className="title">Accesos rápidos de prueba</div>
-              <div className="demo-chips">
-                <div className="demo-chip" onClick={() => fillDemo('admin@normetales.com', 'admin123')}>
-                  <Icon name="shield" size={11} color="#059669" />
-                  <span>Admin</span>
-                </div>
-                <div className="demo-chip" onClick={() => fillDemo('sebas.urenasilva@gmail.com', 'admin123')}>
-                  <Icon name="user" size={11} color="#2563eb" />
-                  <span>Sebas (Admin)</span>
-                </div>
-              </div>
-            </div>
+
           </div>
         </div>
       );
@@ -1505,7 +1505,7 @@
           u.nombre || '',
           u.email || '',
           u.cedula || '',
-          u.rol || '',
+          formatRol(u.rol) || '',
           u.licencia || '',
           u.categoria || '',
           u.estado_activo ? 'Activo' : 'Inactivo'
@@ -2440,7 +2440,7 @@
                             <td>{u.cedula || '—'}</td>
                             <td>
                               <span style={{ background: 'var(--purple-50)', color: 'var(--purple-700)', padding: '2px 6px', borderRadius: '4px', fontSize: '10.5px', fontWeight: '700' }}>
-                                {u.rol}
+                                {formatRol(u.rol)}
                               </span>
                             </td>
                             <td>{u.licencia || '—'}</td>
@@ -3129,10 +3129,10 @@
                       <div className="form-group">
                         <label>Rol *</label>
                         <select value={formUsuario.rol} onChange={e => setFormUsuario({...formUsuario, rol: e.target.value})} className="form-select">
-                          <option value="operario_chequeo">Operario / Conductor</option>
-                          <option value="operario_movimientos">Operario de patio</option>
-                          <option value="mecanico">Mecánico</option>
-                          <option value="jefe_mecanicos">Jefe de mecánicos</option>
+                          <option value="operario_chequeo">Operario chequeos/conductor</option>
+                          <option value="operario_movimientos">Operario movimientos</option>
+                          <option value="mecanico">Mecanico</option>
+                          <option value="jefe_mecanicos">Jefe de mecanicos</option>
                           <option value="admin">Administrador</option>
                         </select>
                       </div>

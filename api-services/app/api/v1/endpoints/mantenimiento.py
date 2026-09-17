@@ -27,7 +27,14 @@ from app.schemas.orden_trabajo import (
     OrdenCostoResponse,
     OrdenEvidenciaCreate,
     OrdenEvidenciaResponse,
+    OrdenHistorialResponse,
 )
+from fastapi import UploadFile, File
+import shutil
+from pathlib import Path
+
+UPLOAD_DIR = Path("uploads/evidencias")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 router = APIRouter()
 
@@ -464,3 +471,87 @@ def get_hoja_de_vida_vehiculo(
             for ch in chequeos
         ]
     }
+
+@router.post("/ordenes/{id}/costos", response_model=OrdenCostoResponse, summary="Agregar Costo a Orden")
+def add_costo(
+    id: int,
+    costo_in: OrdenCostoCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    orden = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == id).first()
+    if not orden:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden de trabajo no encontrada")
+
+    costo = OrdenCosto(
+        orden_id=id,
+        tipo_gasto=costo_in.tipo_gasto,
+        descripcion=costo_in.descripcion,
+        cantidad=costo_in.cantidad,
+        valor_unitario=costo_in.valor_unitario,
+        total_calculado=costo_in.total_calculado,
+        registrado_por_id=current_user.id
+    )
+    db.add(costo)
+    db.commit()
+    db.refresh(costo)
+    return costo
+
+@router.delete("/ordenes/{id}/costos/{costo_id}", summary="Eliminar Costo de Orden")
+def delete_costo(
+    id: int,
+    costo_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(require_role(["admin", "jefe_mecanicos"])),
+):
+    costo = db.query(OrdenCosto).filter(OrdenCosto.id == costo_id, OrdenCosto.orden_id == id).first()
+    if not costo:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Costo no encontrado")
+    
+    db.delete(costo)
+    db.commit()
+    return {"message": "Costo eliminado correctamente"}
+
+@router.post("/ordenes/{id}/evidencias", response_model=OrdenEvidenciaResponse, summary="Subir Evidencia a Orden")
+def add_evidencia(
+    id: int,
+    tipo: str,
+    descripcion: Optional[str] = None,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    orden = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == id).first()
+    if not orden:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden de trabajo no encontrada")
+        
+    file_extension = file.filename.split(".")[-1] if file.filename else "bin"
+    file_name = f"ot_{id}_{tipo}_{int(datetime.now().timestamp())}.{file_extension}"
+    file_path = UPLOAD_DIR / file_name
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    evidencia = OrdenEvidencia(
+        orden_id=id,
+        tipo=tipo,
+        ruta_archivo=str(file_path),
+        descripcion=descripcion,
+        subido_por_id=current_user.id
+    )
+    db.add(evidencia)
+    db.commit()
+    db.refresh(evidencia)
+    return evidencia
+
+@router.get("/ordenes/{id}/historial", response_model=List[OrdenHistorialResponse], summary="Historial de Auditoría de Orden")
+def get_historial(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(require_role(["admin"])),
+):
+    orden = db.query(OrdenTrabajo).filter(OrdenTrabajo.id == id).first()
+    if not orden:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden de trabajo no encontrada")
+    
+    return orden.historial
