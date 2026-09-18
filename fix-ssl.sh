@@ -24,6 +24,7 @@ docker compose -f docker-compose.prod.yml up certbot
 echo "6. Reactivando la seguridad SSL..."
 sed -i 's/listen 443;/listen 443 ssl;/g' nginx-gateway/conf.d/default.prod.conf
 sed -i 's/# ssl_certificate/ssl_certificate/g' nginx-gateway/conf.d/default.prod.conf
+sed -i 's/# ssl_certificate/ssl_certificate/g' nginx-gateway/conf.d/default.prod.conf
 
 echo "7. Levantando todo el sistema en produccion..."
 docker compose -f docker-compose.prod.yml restart nginx-gateway
