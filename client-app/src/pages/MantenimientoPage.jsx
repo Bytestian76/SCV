@@ -1,15 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Wrench, Plus, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { OrdenTrabajoModal } from '../components/modals/OrdenTrabajoModal';
 
 export const MantenimientoPage = ({ currentUser }) => {
   const [ordenes, setOrdenes] = useState([]);
   const [hallazgos, setHallazgos] = useState([]);
+  const [vehiculos, setVehiculos] = useState([]);
+  const [mecanicos, setMecanicos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadData();
+    loadAuxData();
   }, []);
+
+  const loadAuxData = async () => {
+    try {
+      const [vList, uList] = await Promise.all([
+        api.getVehiculos(),
+        api.getUsuarios(),
+      ]);
+      setVehiculos(vList || []);
+      const mecs = (uList || []).filter(u => ['mecanico', 'jefe_mecanicos'].includes(u.rol));
+      setMecanicos(mecs.length > 0 ? mecs : (uList || []));
+    } catch (e) {
+      console.warn('Error cargando datos auxiliares para taller', e);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -29,13 +48,27 @@ export const MantenimientoPage = ({ currentUser }) => {
     }
   };
 
+  const handleSaveOrden = async (formData) => {
+    try {
+      await api.createOrden(formData);
+      await loadData();
+    } catch (err) {
+      console.error('Error al crear orden:', err);
+      alert(err.message || 'Error al crear orden de trabajo');
+    }
+  };
+
   return (
     <div className="page-body">
       <div className="crud-table-container">
         <div className="table-header-bar">
           <h3>Órdenes de Trabajo de Taller y Mantenimiento</h3>
           {['admin', 'jefe_mecanicos'].includes(currentUser?.rol) && (
-            <button className="btn-primary">
+            <button 
+              type="button" 
+              className="btn-primary"
+              onClick={() => setIsModalOpen(true)}
+            >
               <Plus size={16} />
               <span>Nueva Orden de Trabajo</span>
             </button>
@@ -82,6 +115,14 @@ export const MantenimientoPage = ({ currentUser }) => {
           </tbody>
         </table>
       </div>
+
+      <OrdenTrabajoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveOrden}
+        vehiculos={vehiculos}
+        mecanicos={mecanicos}
+      />
     </div>
   );
 };

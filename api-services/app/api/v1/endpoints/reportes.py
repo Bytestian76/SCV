@@ -330,7 +330,7 @@ def reporte_auditoria(
 
     filas = []
     for r in registros:
-        usuario_nombre = r.orden.creador.nombre if r.orden and r.orden.creador else "Sistema"
+        usuario_nombre = r.usuario.nombre if r.usuario else (r.orden.creador.nombre if r.orden and r.orden.creador else "Sistema")
         filas.append([
             _fmt_dt(r.fecha_registro),
             r.orden.codigo if r.orden else "",

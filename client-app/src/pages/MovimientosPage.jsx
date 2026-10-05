@@ -1,15 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { ArrowLeftRight, Plus, Search, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { MovimientoModal } from '../components/modals/MovimientoModal';
 
 export const MovimientosPage = ({ currentUser }) => {
   const [movimientos, setMovimientos] = useState([]);
+  const [vehiculos, setVehiculos] = useState([]);
+  const [conductores, setConductores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTipo, setModalTipo] = useState('salida');
 
   useEffect(() => {
     loadMovimientos();
+    loadAuxData();
   }, []);
+
+  const loadAuxData = async () => {
+    try {
+      const [vList, uList] = await Promise.all([
+        api.getVehiculos(),
+        api.getUsuarios(),
+      ]);
+      setVehiculos(vList || []);
+      setConductores(uList || []);
+    } catch (e) {
+      console.warn('Error cargando datos auxiliares para movimientos', e);
+    }
+  };
 
   const loadMovimientos = async () => {
     try {
@@ -26,6 +45,21 @@ export const MovimientosPage = ({ currentUser }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveMovimiento = async (formData) => {
+    try {
+      await api.createMovimiento(formData);
+      await loadMovimientos();
+    } catch (err) {
+      console.error('Error al registrar movimiento:', err);
+      alert(err.message || 'Error al registrar movimiento');
+    }
+  };
+
+  const openModal = (tipo) => {
+    setModalTipo(tipo);
+    setIsModalOpen(true);
   };
 
   const filtered = movimientos.filter(m => 
@@ -58,11 +92,21 @@ export const MovimientosPage = ({ currentUser }) => {
 
           {['admin', 'operario_movimientos'].includes(currentUser?.rol) && (
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="btn-primary" style={{ background: '#059669' }}>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                style={{ background: '#059669' }}
+                onClick={() => openModal('salida')}
+              >
                 <ArrowUpRight size={16} />
                 <span>Registrar Salida</span>
               </button>
-              <button className="btn-primary" style={{ background: '#2563eb' }}>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                style={{ background: '#2563eb' }}
+                onClick={() => openModal('entrada')}
+              >
                 <ArrowDownLeft size={16} />
                 <span>Registrar Entrada</span>
               </button>
@@ -109,6 +153,15 @@ export const MovimientosPage = ({ currentUser }) => {
           </tbody>
         </table>
       </div>
+
+      <MovimientoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveMovimiento}
+        tipoDefault={modalTipo}
+        vehiculos={vehiculos}
+        conductores={conductores}
+      />
     </div>
   );
 };

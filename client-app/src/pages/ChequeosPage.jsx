@@ -1,14 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { ClipboardCheck, Plus, Search, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ChequeoModal } from '../components/modals/ChequeoModal';
 
 export const ChequeosPage = ({ currentUser }) => {
   const [chequeos, setChequeos] = useState([]);
+  const [vehiculos, setVehiculos] = useState([]);
+  const [conductores, setConductores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadChequeos();
+    loadAuxData();
   }, []);
+
+  const loadAuxData = async () => {
+    try {
+      const [vList, uList] = await Promise.all([
+        api.getVehiculos(),
+        api.getUsuarios(),
+      ]);
+      setVehiculos(vList || []);
+      setConductores(uList || []);
+    } catch (e) {
+      console.warn('Error cargando datos auxiliares para chequeos', e);
+    }
+  };
 
   const loadChequeos = async () => {
     try {
@@ -27,13 +45,27 @@ export const ChequeosPage = ({ currentUser }) => {
     }
   };
 
+  const handleSaveChequeo = async (formData) => {
+    try {
+      await api.createChequeo(formData);
+      await loadChequeos();
+    } catch (err) {
+      console.error('Error al registrar chequeo:', err);
+      alert(err.message || 'Error al registrar chequeo');
+    }
+  };
+
   return (
     <div className="page-body">
       <div className="crud-table-container">
         <div className="table-header-bar">
           <h3>Inspecciones Preoperacionales del Día</h3>
           {['admin', 'operario_chequeo'].includes(currentUser?.rol) && (
-            <button className="btn-primary">
+            <button 
+              type="button" 
+              className="btn-primary"
+              onClick={() => setIsModalOpen(true)}
+            >
               <Plus size={16} />
               <span>Nuevo Chequeo Preoperacional</span>
             </button>
@@ -69,6 +101,14 @@ export const ChequeosPage = ({ currentUser }) => {
           </tbody>
         </table>
       </div>
+
+      <ChequeoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveChequeo}
+        vehiculos={vehiculos}
+        conductores={conductores}
+      />
     </div>
   );
 };

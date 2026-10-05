@@ -67,6 +67,13 @@ class ApiService {
     return this.request('/vehiculos/');
   }
 
+  async createVehiculo(data) {
+    return this.request('/vehiculos/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Usuarios
   async getUsuarios() {
     return this.request('/usuarios/');
@@ -77,9 +84,23 @@ class ApiService {
     return this.request('/movimientos/');
   }
 
+  async createMovimiento(data) {
+    return this.request('/movimientos/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Chequeos
   async getChequeos() {
     return this.request('/chequeos/');
+  }
+
+  async createChequeo(data) {
+    return this.request('/chequeos/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   // Mantenimiento
@@ -87,8 +108,22 @@ class ApiService {
     return this.request('/mantenimiento/hallazgos');
   }
 
+  async createHallazgo(data) {
+    return this.request('/mantenimiento/hallazgos', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getOrdenes() {
     return this.request('/mantenimiento/ordenes');
+  }
+
+  async createOrden(data) {
+    return this.request('/mantenimiento/ordenes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   // Alertas

@@ -10,7 +10,9 @@ from app.models.usuario import Usuario
 from app.models.token_revocado import TokenRevocado
 from app.schemas.token import Token
 from app.schemas.usuario import LoginRequest, UsuarioResponse
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, oauth2_scheme
+from jose import jwt, JWTError
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -104,14 +106,28 @@ def get_me(current_user: Usuario = Depends(get_current_user)):
 @router.post("/logout", summary="Cerrar Sesión y Revocar Token")
 def logout(
     current_user: Usuario = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ):
-    """Revoca la sesión activa."""
-    jti = str(uuid.uuid4())
-    revocado = TokenRevocado(
-        jti=jti,
-        expiracion=datetime.now(timezone.utc) + timedelta(hours=8),
-    )
-    db.add(revocado)
-    db.commit()
+    """Revoca la sesión activa extrayendo el JTI del token JWT."""
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        jti = payload.get("jti")
+        exp_ts = payload.get("exp")
+        expiracion = (
+            datetime.fromtimestamp(exp_ts, tz=timezone.utc)
+            if exp_ts
+            else (datetime.now(timezone.utc) + timedelta(hours=8))
+        )
+        if jti:
+            revocado = TokenRevocado(
+                jti=jti,
+                expiracion=expiracion,
+            )
+            db.add(revocado)
+            db.commit()
+    except JWTError:
+        pass
     return {"message": "Sesión finalizada correctamente"}

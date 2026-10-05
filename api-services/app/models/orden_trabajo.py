@@ -109,3 +109,4 @@ class OrdenHistorial(Base):
     )
 
     orden: Mapped["OrdenTrabajo"] = relationship("OrdenTrabajo", back_populates="historial")
+    usuario: Mapped[Optional["Usuario"]] = relationship("Usuario")

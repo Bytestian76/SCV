@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Truck, Plus, Search, CheckCircle2, AlertCircle } from 'lucide-react';
+import { VehiculoModal } from '../components/modals/VehiculoModal';
 
 export const VehiculosPage = ({ currentUser }) => {
   const [vehiculos, setVehiculos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadVehiculos();
@@ -27,6 +29,16 @@ export const VehiculosPage = ({ currentUser }) => {
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveVehiculo = async (formData) => {
+    try {
+      await api.createVehiculo(formData);
+      await loadVehiculos();
+    } catch (err) {
+      console.error('Error al registrar vehículo:', err);
+      alert(err.message || 'Error al registrar vehículo');
     }
   };
 
@@ -61,7 +73,11 @@ export const VehiculosPage = ({ currentUser }) => {
           </div>
 
           {currentUser?.rol === 'admin' && (
-            <button className="btn-primary">
+            <button 
+              type="button" 
+              className="btn-primary"
+              onClick={() => setIsModalOpen(true)}
+            >
               <Plus size={16} />
               <span>Nuevo Vehículo</span>
             </button>
@@ -99,6 +115,12 @@ export const VehiculosPage = ({ currentUser }) => {
           </tbody>
         </table>
       </div>
+
+      <VehiculoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveVehiculo}
+      />
     </div>
   );
 };
