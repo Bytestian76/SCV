@@ -1,4 +1,4 @@
-﻿# ========================
+# ========================
 # Python / Backend
 # ========================
 __pycache__/
@@ -23,9 +23,38 @@ backend_stderr.log
 frontend_stdout.log
 frontend_stderr.log
 
-# Variables de entorno (sensibles)
+# ========================
+# Variables de entorno y secretos
+# ========================
 .env
+.env.*
+.env*.local
 !.env.example
+!api-services/.env.example
+
+# ========================
+# Certificados y llaves criptográficas
+# ========================
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.pub
+certbot/
+certbot-etc/
+certbot-var/
+
+# ========================
+# Respaldos de base de datos
+# ========================
+backups/
+*.sql.gz
+
+# ========================
+# Archivos subidos por usuarios (Media / Evidencias)
+# ========================
+uploads/
 
 # ========================
 # Node / Frontend
